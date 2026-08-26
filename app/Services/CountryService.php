@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class CountryService
 {
@@ -23,10 +24,18 @@ class CountryService
 
     protected function getHeaders(): array
     {
-        return [
+        $headers = [
             'X-Country-Code' => $this->countryCode,
             'Accept' => 'application/json',
         ];
+
+        // Add Bearer token if available in session
+        $accessToken = Session::get('access_token');
+        if ($accessToken) {
+            $headers['Authorization'] = 'Bearer ' . $accessToken;
+        }
+
+        return $headers;
     }
 
     protected function getBaseUrl(): string
@@ -36,18 +45,10 @@ class CountryService
 
     /**
      * Universal API caller.
-     *
-     * @param bool $unwrapData When true (default, back-compat), returns just the
-     *   'data' key from the response - fine for simple endpoints like
-     *   categories/locations that have no sibling data (no pagination etc).
-     *   Pass false for endpoints like 'jobs' where you need the full
-     *   {success, data, pagination} shape - unwrapping there was silently
-     *   throwing pagination away and breaking the empty-response guard
-     *   in JobsController::jobs().
      */
     public function api(string $endpoint, array $params = [], string $method = 'GET', int $cacheMinutes = 0, bool $unwrapData = true): array
     {
-        // ALWAYS add API key as query parameter (works everywhere - local & production)
+        // ALWAYS add API key as query parameter (this ensures it works with the middleware)
         if ($this->apiKey) {
             $params['api_key'] = $this->apiKey;
         }
@@ -56,7 +57,11 @@ class CountryService
 
         $cacheKey = 'api.' . $this->countryCode . '.' . md5($url . json_encode($params) . $method . ($unwrapData ? 'unwrapped' : 'full'));
 
-        if ($method === 'GET' && $cacheMinutes > 0) {
+        // Don't cache authenticated requests or POST/PUT/DELETE
+        $hasToken = Session::has('access_token');
+        $shouldCache = $method === 'GET' && $cacheMinutes > 0 && !$hasToken;
+
+        if ($shouldCache) {
             return Cache::remember($cacheKey, $cacheMinutes, function () use ($url, $params, $method, $unwrapData) {
                 return $this->callApi($url, $params, $method, $unwrapData);
             });
@@ -68,20 +73,29 @@ class CountryService
     protected function callApi(string $url, array $params = [], string $method = 'GET', bool $unwrapData = true): array
     {
         try {
-            $response = Http::withHeaders($this->getHeaders());
+            $headers = $this->getHeaders();
+            $http = Http::withHeaders($headers);
+
+            // Log the request for debugging
+            Log::info('📤 API Request', [
+                'url' => $url,
+                'method' => $method,
+                'has_api_key' => isset($params['api_key']),
+                'has_country_code' => isset($headers['X-Country-Code']),
+            ]);
 
             switch (strtoupper($method)) {
                 case 'POST':
-                    $response = $response->post($url, $params);
+                    $response = $http->post($url, $params);
                     break;
                 case 'PUT':
-                    $response = $response->put($url, $params);
+                    $response = $http->put($url, $params);
                     break;
                 case 'DELETE':
-                    $response = $response->delete($url, $params);
+                    $response = $http->delete($url, $params);
                     break;
                 default:
-                    $response = $response->get($url, $params);
+                    $response = $http->get($url, $params);
                     break;
             }
 
@@ -95,18 +109,30 @@ class CountryService
                 return $data;
             }
 
-            // Log::warning('API call returned non-successful response', [
-            //     'url' => $url,
-            //     'status' => $response->status(),
-            //     'body' => $response->body(),
-            // ]);
+            Log::warning('⚠️ API call returned non-successful response', [
+                'url' => $url,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
-            return [];
+            return [
+                'success' => false,
+                'message' => $response->json()['message'] ?? 'API request failed',
+                'status' => $response->status(),
+            ];
+
         } catch (\Exception $e) {
-            Log::error('API call error: ' . $e->getMessage());
-            return [];
+            Log::error('❌ API call error: ' . $e->getMessage(), [
+                'url' => $url,
+                'method' => $method,
+            ]);
+            return [
+                'success' => false,
+                'message' => 'Connection error: ' . $e->getMessage(),
+            ];
         }
     }
+
 
     public function getCountryData(): array
     {

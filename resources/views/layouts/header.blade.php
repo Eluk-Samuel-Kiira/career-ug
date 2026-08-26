@@ -55,10 +55,6 @@
 									<!-- Desktop: hover-based dropdown -->
 									<div class="jp-nav-categories-desktop">
 										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('categories.show') ? 'active' : '' }}" style="cursor: pointer;">
-											<!-- <i class="ki-duotone ki-folder fs-4 text-warning">
-												<span class="path1"></span>
-												<span class="path2"></span>
-											</i> -->
 											Categories
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -93,10 +89,6 @@
 									<!-- Mobile: details-based dropdown -->
 									<details class="jp-nav-categories-mobile">
 										<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('categories.show') ? 'active' : '' }}" style="cursor: pointer;">
-											<!-- <i class="ki-duotone ki-folder fs-3 me-1">
-												<span class="path1"></span>
-												<span class="path2"></span>
-											</i> -->
 											Categories
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -135,10 +127,6 @@
 									<!-- Desktop: hover-based dropdown -->
 									<div class="jp-nav-locations-desktop">
 										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('locations.show') ? 'active' : '' }}" style="cursor: pointer;">
-											<!-- <i class="ki-duotone ki-geolocation fs-3 me-1">
-												<span class="path1"></span>
-												<span class="path2"></span>
-											</i> -->
 											Locations
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -172,10 +160,6 @@
 									<!-- Mobile: details-based dropdown -->
 									<details class="jp-nav-locations-mobile">
 										<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('locations.show') ? 'active' : '' }}" style="cursor: pointer;">
-											<!-- <i class="ki-duotone ki-geolocation fs-3 me-1">
-												<span class="path1"></span>
-												<span class="path2"></span>
-											</i> -->
 											Locations
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -207,35 +191,142 @@
 									</details>
 								</div>
 								<!--end::Menu item - Locations-->
-								
-								<div class="menu-item">
-									<a class="menu-link nav-link py-3 px-4 px-xxl-6 {{ Route::is('social-media.*') ? 'active' : '' }}" 
-									href="{{ route('social-media.featured') }}" 
-									data-kt-drawer-dismiss="true">
-										Join Us
-									</a>
-								</div>
-								{{-- 
-								<!--begin::Menu item-->
-								<div class="menu-item">
-									<a class="menu-link nav-link py-3 px-4 px-xxl-6" href="#team" data-kt-scroll-toggle="true" data-kt-drawer-dismiss="true">Team</a>
-								</div>
-								<!--end::Menu item-->
 
-								<!--begin::Menu item-->
-								<div class="menu-item">
-									<a class="menu-link nav-link py-3 px-4 px-xxl-6" href="#pricing" data-kt-scroll-toggle="true" data-kt-drawer-dismiss="true">Pricing</a>
-								</div>
-								<!--end::Menu item-->
-								--}}
+								<!--begin::Menu item - Resources (Dropdown)-->
+								<div class="menu-item jp-nav-resources">
+									<!-- Desktop: hover-based dropdown -->
+									<div class="jp-nav-resources-desktop">
+										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*') ? 'active' : '' }}" style="cursor: pointer;">
+											Resources
+											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M6 9l6 6 6-6"/>
+											</svg>
+										</span>
+										<div class="jp-nav-resources-panel">
+											<!-- Join Us -->
+											<a href="{{ route('social-media.featured') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('social-media.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="bi bi-people-fill text-primary" style="font-size: 1.1rem;">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Join Us
+												</span>
+											</a>
+											<!-- Blog -->
+											<a href="{{ route('blog.index') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('blog.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-book fs-4 text-info">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Blog
+												</span>
+											</a>
+											<!-- Email Alerts -->
+											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('email-alerts.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-sms fs-4 text-success">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Email Alerts
+												</span>
+											</a>
+											<!-- Tenders -->
+											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('tenders.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-document fs-4 text-warning">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Tenders
+												</span>
+											</a>
+										</div>
+									</div>
 
-								<!--begin::Menu item - Mobile Sign In (visible only on mobile)-->
-								<div class="menu-item d-lg-none mt-5 pt-5 border-top">
-									<a href="{{ route('login') }}" class="menu-link py-3 px-4">
-										<span class="btn btn-success w-100">Sign In</span>
-									</a>
+									<!-- Mobile: details-based dropdown -->
+									<details class="jp-nav-resources-mobile">
+										<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*') ? 'active' : '' }}" style="cursor: pointer;">
+											Resources
+											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M6 9l6 6 6-6"/>
+											</svg>
+										</summary>
+										<div class="jp-nav-resources-panel">
+											<!-- Join Us -->
+											<a href="{{ route('social-media.featured') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('social-media.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="bi bi-people-fill text-primary" style="font-size: 1.1rem;">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Join Us
+												</span>
+											</a>
+											<!-- Blog -->
+											<a href="{{ route('blog.index') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('blog.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-book fs-4 text-info">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Blog
+												</span>
+											</a>
+											<!-- Email Alerts -->
+											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('email-alerts.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-sms fs-4 text-success">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Email Alerts
+												</span>
+											</a>
+											<!-- Tenders -->
+											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('tenders.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-document fs-4 text-warning">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Tenders
+												</span>
+											</a>
+										</div>
+									</details>
 								</div>
-								<!--end::Menu item - Mobile Sign In-->
+								<!--end::Menu item - Resources-->
+
+								@php
+									$user = session('user');
+									$isAuthenticated = $user && session('access_token');
+								@endphp
+
+								<!-- Mobile Sign In / Dashboard -->
+								@if($isAuthenticated)
+									<div class="menu-item d-lg-none mt-5 pt-5 border-top">
+										<a href="{{ route('dashboard') }}" class="menu-link py-3 px-4">
+											<span class="btn btn-primary w-100">
+												<i class="ki-duotone ki-element-11 fs-3 me-1">
+													<span class="path1"></span>
+													<span class="path2"></span>
+													<span class="path3"></span>
+													<span class="path4"></span>
+												</i>
+												Dashboard
+											</span>
+										</a>
+									</div>
+								@else
+									<div class="menu-item d-lg-none mt-5 pt-5 border-top">
+										<a href="{{ route('login') }}" class="menu-link py-3 px-4">
+											<span class="btn btn-success w-100">Sign In</span>
+										</a>
+									</div>
+								@endif
 							</div>
 							<!--end::Menu-->
 						</div>
@@ -244,8 +335,19 @@
 
 					<!--begin::Right side - Mobile menu toggle + Desktop Sign In-->
 					<div class="d-flex align-items-center gap-2 gap-lg-0">
-						<!-- Desktop Sign In -->
-						<a href="{{ route('login') }}" class="btn btn-success d-none d-lg-inline-block">Sign In</a>
+						@if($isAuthenticated)
+							<a href="{{ route('dashboard') }}" class="btn btn-primary d-none d-lg-inline-block">
+								<i class="ki-duotone ki-element-11 fs-3 me-1">
+									<span class="path1"></span>
+									<span class="path2"></span>
+									<span class="path3"></span>
+									<span class="path4"></span>
+								</i>
+								Dashboard
+							</a>
+						@else
+							<a href="{{ route('login') }}" class="btn btn-success d-none d-lg-inline-block">Sign In</a>
+						@endif
 
 						<!-- Mobile menu toggle - visible only on mobile -->
 						<button class="btn btn-icon btn-active-color-primary d-flex d-lg-none p-0" id="kt_landing_menu_toggle" style="margin-right: -12px; margin-top: 2px;">
@@ -262,17 +364,6 @@
 			</div>
 			<!--end::Container-->
 		</div>
-
-		{{--
-		@if(Route::currentRouteName() === 'home')
-		<!--begin::Landing hero-->
-		<div class="d-flex flex-column flex-center w-100 min-h-250px min-h-lg-500px px-9">
-			...
-		</div>
-		<!--end::Landing hero-->
-		@endif
-		--}}
-
 	</div>
 	<!--end::Wrapper-->
 </div>
@@ -323,5 +414,147 @@
 /* Logo line at the top of the mobile drawer */
 .jp-drawer-logo {
 	border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ==================== RESOURCES DROPDOWN STYLES ==================== */
+.jp-nav-resources {
+	position: relative;
+}
+
+/* Desktop dropdown */
+.jp-nav-resources-desktop {
+	position: relative;
+}
+
+.jp-nav-resources-desktop .jp-nav-resources-panel {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	min-width: 200px;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 20px 60px rgba(11, 28, 46, 0.15);
+	border: 1px solid var(--jp-line, rgba(15, 27, 45, 0.08));
+	padding: 8px 0;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: all 0.2s ease;
+	z-index: 1000;
+}
+
+.jp-nav-resources-desktop:hover .jp-nav-resources-panel,
+.jp-nav-resources-desktop:focus-within .jp-nav-resources-panel {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	margin-top: 4px;
+}
+
+.jp-nav-resources-panel a {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 20px;
+	color: #3B5166;
+	text-decoration: none;
+	font-size: 0.9rem;
+	font-weight: 500;
+	transition: all 0.15s ease;
+	border-left: 3px solid transparent;
+}
+
+.jp-nav-resources-panel a:hover {
+	background: var(--jp-bg-soft, #F4F8F7);
+	color: var(--jp-teal, #03A588);
+	border-left-color: var(--jp-teal, #03A588);
+}
+
+.jp-nav-resources-panel a.active {
+	background: var(--jp-bg-soft, #F4F8F7);
+	color: var(--jp-teal, #03A588);
+	border-left-color: var(--jp-teal, #03A588);
+}
+
+.jp-nav-resources-panel a .badge {
+	font-size: 0.7rem;
+	padding: 2px 10px;
+}
+
+/* Mobile dropdown */
+.jp-nav-resources-mobile {
+	display: none;
+}
+
+.jp-nav-resources-mobile summary {
+	list-style: none;
+}
+
+.jp-nav-resources-mobile summary::-webkit-details-marker {
+	display: none;
+}
+
+.jp-nav-resources-mobile .jp-nav-resources-panel {
+	padding: 4px 0 8px 16px;
+}
+
+.jp-nav-resources-mobile .jp-nav-resources-panel a {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 16px;
+	color: #3B5166;
+	text-decoration: none;
+	font-size: 0.9rem;
+	font-weight: 500;
+	border-radius: 6px;
+	transition: all 0.15s ease;
+}
+
+.jp-nav-resources-mobile .jp-nav-resources-panel a:hover {
+	background: var(--jp-bg-soft, #F4F8F7);
+	color: var(--jp-teal, #03A588);
+}
+
+.jp-nav-resources-mobile .jp-nav-resources-panel a.active {
+	background: var(--jp-bg-soft, #F4F8F7);
+	color: var(--jp-teal, #03A588);
+}
+
+/* Show mobile dropdown on small screens */
+@media (max-width: 991.98px) {
+	.jp-nav-resources-desktop {
+		display: none !important;
+	}
+	.jp-nav-resources-mobile {
+		display: block;
+	}
+}
+
+/* Show desktop dropdown on large screens */
+@media (min-width: 992px) {
+	.jp-nav-resources-desktop {
+		display: block;
+	}
+	.jp-nav-resources-mobile {
+		display: none !important;
+	}
+}
+
+/* Ensure dropdown doesn't get cut off on smaller desktop screens */
+.jp-nav-resources-desktop .jp-nav-resources-panel {
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+/* Arrow rotation for mobile dropdown */
+.jp-nav-resources-mobile[open] summary svg {
+	transform: rotate(180deg);
+	transition: transform 0.2s ease;
+}
+
+.jp-nav-resources-mobile summary svg {
+	transition: transform 0.2s ease;
 }
 </style>
