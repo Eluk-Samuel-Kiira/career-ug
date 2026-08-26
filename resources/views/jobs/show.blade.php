@@ -312,7 +312,7 @@
                         </h2>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach($skills as $skill)
-                                <span class="jp-skill-tag" style="font-family: Arial, Helvetica, sans-serif; font-size: 11pt; font-weight: normal;">{{ $skill }}</span>
+                                <span class="jp-skill-tag" style="font-size: 9pt; font-weight: normal;">{{ $skill }}</span>
                             @endforeach
                         </div>
                     </div>

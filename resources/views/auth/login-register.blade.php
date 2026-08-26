@@ -35,7 +35,7 @@
 	.jp-type-toggle input:checked + label{ background:#fff; color:var(--jp-ink); box-shadow:0 4px 12px rgba(11,28,46,0.1); }
 
 	.jp-tab-toggle{ display:flex; gap:28px; border-bottom:1px solid var(--jp-line); margin-bottom:28px; }
-	.jp-tab-toggle a{ padding-bottom:14px; font-weight:700; color:var(--jp-muted); border-bottom:2px solid transparent; text-decoration:none; }
+	.jp-tab-toggle a{ padding-bottom:14px; font-weight:700; color:var(--jp-muted); border-bottom:2px solid transparent; text-decoration:none; cursor:pointer; }
 	.jp-tab-toggle a.active{ color:var(--jp-ink); border-color:var(--jp-teal); }
 
 	.jp-form-panel .form-label{ font-weight:700; color:#33475B; font-size:.87rem; }
@@ -55,6 +55,31 @@
 	[data-account-type="employer"] ~ * .jp-fields-employer,
 	body.acct-employer .jp-fields-employer{ display:block; }
 	body.acct-employer .jp-fields-seeker{ display:none; }
+
+	/* Magic link styles */
+	.jp-magic-link-info {
+		background: var(--jp-bg-soft);
+		border-radius: 10px;
+		padding: 12px 16px;
+		margin-top: 12px;
+		font-size: .85rem;
+		color: var(--jp-muted);
+		border: 1px solid var(--jp-line);
+	}
+	.jp-magic-link-info i {
+		color: var(--jp-teal);
+		margin-right: 8px;
+	}
+	.jp-magic-link-success {
+		background: #E9F9EF;
+		border-color: #1E9E4C;
+		color: #1E9E4C;
+	}
+	.jp-magic-link-error {
+		background: #FEE2E2;
+		border-color: #DC2626;
+		color: #DC2626;
+	}
 </style>
 @endpush
 
@@ -68,9 +93,9 @@
 			<div class="jp-brand-panel">
 				<div class="content">
 					<span class="jp-eyebrow" style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;color:#BFF7D2;background:rgba(32,170,62,0.14);border:1px solid rgba(32,170,62,0.35);">
-						<i class="ki-duotone ki-abstract-14 fs-6"><span class="path1"></span><span class="path2"></span></i> JobMatch
+						<i class="ki-duotone ki-abstract-14 fs-6"><span class="path1"></span><span class="path2"></span></i> Stardena Careers
 					</span>
-					<h2 class="mt-5 mb-2btn jp-btn-primary">One account, built for how you hire or how you're hired.</h2>
+					<h2 class="btn jp-btn-primary mt-5 mb-2">One account, built for how you hire or how you're hired.</h2>
 					<p style="color:#B9C6D6;">Switch anytime — your account adapts to job seeker or employer tools.</p>
 
 					<ul class="jp-brand-list">
@@ -98,27 +123,46 @@
 					<label for="type-employer"><i class="ki-duotone ki-briefcase fs-4 me-1"><span class="path1"></span><span class="path2"></span></i> Employer</label>
 				</div>
 
-				<!-- Login / Register tab toggle -->
+				<!-- Login / Register tab toggle - Login first (active by default) -->
 				<div class="jp-tab-toggle">
-					<a href="#" class="jp-tab-link active" data-tab="register">Create Account</a>
-					<a href="#" class="jp-tab-link" data-tab="login">Sign In</a>
+					<a href="#" class="jp-tab-link active" data-tab="login">Sign In</a>
+					<a href="#" class="jp-tab-link" data-tab="register">Create Account</a>
 				</div>
 
+				<!-- ============ LOGIN FORM (Magic Link) - ACTIVE BY DEFAULT ============ -->
+				<form id="jp-login-form" action="{{ route('login.magic-link') }}" method="POST">
+					@csrf
+					<input type="hidden" name="account_type" id="login-account-type" value="{{ request('as', 'seeker') }}" />
+
+					<div class="mb-4">
+						<label class="form-label">Email address</label>
+						<input type="email" name="email" class="form-control" placeholder="you@example.com" required />
+					</div>
+
+					<div class="jp-magic-link-info" id="login-magic-info">
+						<i class="ki-duotone ki-information-5 fs-4"><span class="path1"></span><span class="path2"></span></i>
+						We'll send you a magic link to sign in instantly — no password needed.
+					</div>
+
+					<button type="submit" class="btn jp-btn-primary mt-4" id="loginSubmitBtn">Send Magic Link</button>
+				</form>
+
 				<!-- ============ REGISTER FORM ============ -->
-				<form id="jp-register-form" action="{{ route('register') }}" method="POST">
+				<form id="jp-register-form" action="{{ route('register') }}" method="POST" style="display:none;">
 					@csrf
 					<input type="hidden" name="account_type" id="register-account-type" value="{{ request('as', 'seeker') }}" />
+					<input type="hidden" name="country_code" value="{{ country_code() }}" />
 
 					<!-- Seeker fields -->
 					<div class="jp-fields-seeker">
 						<div class="row g-4 mb-4">
 							<div class="col-6">
 								<label class="form-label">First name</label>
-								<input type="text" name="first_name" class="form-control" placeholder="Jordan" />
+								<input type="text" name="first_name" class="form-control" placeholder="Jordan" required />
 							</div>
 							<div class="col-6">
 								<label class="form-label">Last name</label>
-								<input type="text" name="last_name" class="form-control" placeholder="Lee" />
+								<input type="text" name="last_name" class="form-control" placeholder="Lee" required />
 							</div>
 						</div>
 						<div class="mb-4">
@@ -141,10 +185,10 @@
 							<div class="col-6">
 								<label class="form-label">Company size</label>
 								<select name="company_size" class="form-select">
-									<option>1–10 employees</option>
-									<option>11–50 employees</option>
-									<option>51–200 employees</option>
-									<option>200+ employees</option>
+									<option value="1-10">1–10 employees</option>
+									<option value="11-50">11–50 employees</option>
+									<option value="51-200">51–200 employees</option>
+									<option value="200+">200+ employees</option>
 								</select>
 							</div>
 						</div>
@@ -154,59 +198,49 @@
 						<label class="form-label">Email address</label>
 						<input type="email" name="email" class="form-control" placeholder="you@example.com" required />
 					</div>
-					<div class="row g-4 mb-4">
-						<div class="col-6">
-							<label class="form-label">Mobile (WhatsApp)</label>
-							<input type="tel" name="phone" class="form-control" placeholder="04XX XXX XXX" />
+					
+					<div class="mb-4">
+						<label class="form-label">WhatsApp Number</label>
+						<div class="input-group">
+							<span class="input-group-text" style="border-radius:10px 0 0 10px; border-color:var(--jp-line); background:#f8f9fa; font-weight:600; color:var(--jp-muted);">
+								{{ config('app.country_phone_code', '+256') }}
+							</span>
+							<input type="tel" name="phone" class="form-control" placeholder="7XX XXX XXX" style="border-radius:0 10px 10px 0; border-color:var(--jp-line);" />
 						</div>
-						<div class="col-6">
-							<label class="form-label">Password</label>
-							<input type="password" name="password" class="form-control" placeholder="Minimum 8 characters" required />
-						</div>
+						<div class="text-muted fs-8 mt-1">Include your phone number without the country code</div>
 					</div>
 
-					<div class="form-check form-check-custom mb-6">
+					<div class="jp-magic-link-info" id="register-magic-info">
+						<i class="ki-duotone ki-information-5 fs-4"><span class="path1"></span><span class="path2"></span></i>
+						After registration, we'll send you a magic link to verify your email and sign in.
+					</div>
+
+					<div class="form-check form-check-custom mb-6 mt-4">
 						<input class="form-check-input" type="checkbox" id="terms" name="terms" required />
 						<label class="form-check-label fs-8 text-muted" for="terms">I agree to the <a href="{{ route('home') }}" class="text-hover-primary">Terms &amp; Conditions</a> and <a href="{{ route('home') }}" class="text-hover-primary">Privacy Policy</a>.</label>
 					</div>
 
-					<button type="submit" class="btn jp-btn-primary">Create Account</button>
-
-					<div class="jp-divider">or continue with</div>
-					<div class="row g-3">
-						<div class="col-6"><button type="button" class="jp-social-btn"><i class="ki-duotone ki-user fs-4 me-1"></i>Google</button></div>
-						<div class="col-6"><button type="button" class="jp-social-btn"><i class="ki-duotone ki-message-text-2 fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>WhatsApp</button></div>
-					</div>
-				</form>
-
-				<!-- ============ LOGIN FORM ============ -->
-				<form id="jp-login-form" action="{{ route('login') }}" method="POST" style="display:none;">
-					@csrf
-					<input type="hidden" name="account_type" id="login-account-type" value="{{ request('as', 'seeker') }}" />
-
-					<div class="mb-4">
-						<label class="form-label">Email address</label>
-						<input type="email" name="email" class="form-control" placeholder="you@example.com" required />
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Password</label>
-						<input type="password" name="password" class="form-control" placeholder="Enter your password" required />
-					</div>
-					<div class="d-flex justify-content-end mb-6">
-						<a href="{{ route('home') }}" class="fs-8 fw-semibold text-hover-primary">Forgot password?</a>
-					</div>
-
-					<button type="submit" class="btn jp-btn-primary">Sign In</button>
-
-					<div class="jp-divider">or continue with</div>
-					<div class="row g-3">
-						<div class="col-6"><button type="button" class="jp-social-btn"><i class="ki-duotone ki-user fs-4 me-1"></i>Google</button></div>
-						<div class="col-6"><button type="button" class="jp-social-btn"><i class="ki-duotone ki-message-text-2 fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>WhatsApp</button></div>
-					</div>
+					<button type="submit" class="btn jp-btn-primary" id="registerSubmitBtn">Create Account</button>
 				</form>
 
 			</div>
 		</div>
+	</div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastStackContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+<!-- Toast Template -->
+<div id="toastTemplate" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true">
+	<div class="toast-header bg-white">
+		<i class="ki-duotone ki-abstract-23 fs-2 me-3"></i>
+		<strong class="me-auto">Title</strong>
+		<small class="text-muted">Just now</small>
+		<button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+	</div>
+	<div class="toast-body bg-white">
+		Message goes here.
 	</div>
 </div>
 
@@ -215,7 +249,87 @@
 @push('scripts')
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
-		// Account type toggle (seeker / employer)
+		// ----- Toast System -----
+		const container = document.getElementById('toastStackContainer');
+		const template = document.getElementById('toastTemplate');
+
+		if (container && template) {
+			template.remove();
+
+			window.showToast = function(type, message, title = '', duration = 5000) {
+				const newToast = template.cloneNode(true);
+				newToast.classList.remove('d-none');
+				newToast.style.boxShadow = '0 0.5rem 1rem rgba(0, 0, 0, 0.15)';
+
+				const titleElem = newToast.querySelector('.toast-header strong');
+				const bodyElem = newToast.querySelector('.toast-body');
+				const timeElem = newToast.querySelector('.toast-header small');
+				const icon = newToast.querySelector('.toast-header i');
+
+				if (titleElem) titleElem.textContent = title || (type.charAt(0).toUpperCase() + type.slice(1));
+				if (bodyElem) bodyElem.textContent = message;
+				if (timeElem) {
+					const now = new Date();
+					timeElem.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+				}
+
+				// Style based on type
+				const elementsToReset = [icon, titleElem, bodyElem, timeElem];
+				elementsToReset.forEach(el => {
+					if (el) {
+						el.classList.remove('text-success', 'text-danger', 'text-warning', 'text-info', 'text-muted');
+					}
+				});
+
+				switch (type) {
+					case 'success':
+						if (icon) {
+							icon.classList.add('text-success');
+							icon.className = 'ki-duotone ki-check-circle fs-2 me-3 text-success';
+						}
+						if (titleElem) titleElem.classList.add('text-success');
+						if (bodyElem) bodyElem.classList.add('text-success');
+						if (timeElem) timeElem.classList.add('text-success');
+						break;
+					case 'error':
+					case 'danger':
+						if (icon) {
+							icon.classList.add('text-danger');
+							icon.className = 'ki-duotone ki-cross-circle fs-2 me-3 text-danger';
+						}
+						if (titleElem) titleElem.classList.add('text-danger');
+						if (bodyElem) bodyElem.classList.add('text-danger');
+						if (timeElem) timeElem.classList.add('text-danger');
+						break;
+					case 'warning':
+						if (icon) {
+							icon.classList.add('text-warning');
+							icon.className = 'ki-duotone ki-information-5 fs-2 me-3 text-warning';
+						}
+						if (titleElem) titleElem.classList.add('text-warning');
+						if (bodyElem) bodyElem.classList.add('text-warning');
+						if (timeElem) timeElem.classList.add('text-warning');
+						break;
+					case 'info':
+					default:
+						if (icon) {
+							icon.classList.add('text-info');
+							icon.className = 'ki-duotone ki-information-4 fs-2 me-3 text-info';
+						}
+						if (titleElem) titleElem.classList.add('text-info');
+						if (bodyElem) bodyElem.classList.add('text-info');
+						if (timeElem) timeElem.classList.add('text-info');
+						break;
+				}
+
+				container.appendChild(newToast);
+				const bsToast = new bootstrap.Toast(newToast, { autohide: true, delay: duration });
+				bsToast.show();
+				newToast.addEventListener('hidden.bs.toast', () => newToast.remove());
+			};
+		}
+
+		// ----- Account type toggle -----
 		var typeInputs = document.querySelectorAll('input[name="account_type"]');
 		var seekerFields = document.querySelectorAll('.jp-fields-seeker');
 		var employerFields = document.querySelectorAll('.jp-fields-employer');
@@ -235,7 +349,7 @@
 		});
 		applyType(document.querySelector('input[name="account_type"]:checked')?.value || 'seeker');
 
-		// Login / Register tab toggle
+		// ----- Login / Register tab toggle -----
 		var tabLinks = document.querySelectorAll('.jp-tab-link');
 		var registerForm = document.getElementById('jp-register-form');
 		var loginForm = document.getElementById('jp-login-form');
@@ -254,6 +368,179 @@
 				}
 			});
 		});
+
+		// ----- Handle Login Form (Magic Link) -----
+		var loginFormElement = document.getElementById('jp-login-form');
+		if (loginFormElement) {
+			loginFormElement.addEventListener('submit', function(e) {
+				e.preventDefault();
+				var formData = new FormData(this);
+				var submitBtn = document.getElementById('loginSubmitBtn');
+				var originalText = submitBtn.innerHTML;
+				var infoDiv = document.getElementById('login-magic-info');
+				
+				submitBtn.innerHTML = 'Sending... <span class="spinner-border spinner-border-sm ms-2"></span>';
+				submitBtn.disabled = true;
+
+				fetch(this.action, {
+					method: 'POST',
+					headers: {
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+						'Accept': 'application/json'
+					},
+					body: formData
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						infoDiv.innerHTML = '<i class="ki-duotone ki-check-circle fs-4"><span class="path1"></span><span class="path2"></span></i> ' + data.message;
+						infoDiv.className = 'jp-magic-link-info jp-magic-link-success';
+						submitBtn.innerHTML = '✅ Sent!';
+						submitBtn.disabled = true;
+						
+						// Show toast notification
+						if (typeof window.showToast === 'function') {
+							window.showToast('success', data.message, 'Success');
+						}
+					} else {
+						// Show error in toast
+						if (typeof window.showToast === 'function') {
+							window.showToast('error', data.message || 'Something went wrong. Please try again.', 'Error');
+						}
+						submitBtn.innerHTML = originalText;
+						submitBtn.disabled = false;
+					}
+				})
+				.catch(function(error) {
+					console.error('Error:', error);
+					if (typeof window.showToast === 'function') {
+						window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+					}
+					submitBtn.innerHTML = originalText;
+					submitBtn.disabled = false;
+				});
+			});
+		}
+
+		// ----- Handle Register Form -----
+		var registerFormElement = document.getElementById('jp-register-form');
+		if (registerFormElement) {
+			registerFormElement.addEventListener('submit', function(e) {
+				e.preventDefault();
+				
+				// Get account type
+				var accountType = document.querySelector('input[name="account_type"]:checked').value;
+				
+				// Validate employer fields if employer is selected
+				if (accountType === 'employer') {
+					var companyName = this.querySelector('input[name="company_name"]');
+					var contactName = this.querySelector('input[name="contact_name"]');
+					var isValid = true;
+					
+					if (!companyName.value.trim()) {
+						companyName.classList.add('is-invalid');
+						isValid = false;
+					} else {
+						companyName.classList.remove('is-invalid');
+					}
+					
+					if (!contactName.value.trim()) {
+						contactName.classList.add('is-invalid');
+						isValid = false;
+					} else {
+						contactName.classList.remove('is-invalid');
+					}
+					
+					if (!isValid) {
+						if (typeof window.showToast === 'function') {
+							window.showToast('warning', 'Please fill in all employer fields.', 'Validation Error');
+						}
+						return;
+					}
+				}
+				
+				var formData = new FormData(this);
+				var submitBtn = document.getElementById('registerSubmitBtn');
+				var originalText = submitBtn.innerHTML;
+				var infoDiv = document.getElementById('register-magic-info');
+				
+				submitBtn.innerHTML = 'Creating Account... <span class="spinner-border spinner-border-sm ms-2"></span>';
+				submitBtn.disabled = true;
+
+				fetch(this.action, {
+					method: 'POST',
+					headers: {
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+						'Accept': 'application/json'
+					},
+					body: formData
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						infoDiv.innerHTML = '<i class="ki-duotone ki-check-circle fs-4"><span class="path1"></span><span class="path2"></span></i> ' + data.message;
+						infoDiv.className = 'jp-magic-link-info jp-magic-link-success';
+						submitBtn.innerHTML = '✅ Account Created!';
+						submitBtn.disabled = true;
+						
+						if (typeof window.showToast === 'function') {
+							window.showToast('success', data.message, 'Account Created');
+						}
+						
+						setTimeout(function() {
+							var loginTab = document.querySelector('.jp-tab-link[data-tab="login"]');
+							if (loginTab) {
+								loginTab.click();
+							}
+						}, 3000);
+					} else {
+						var errorMsg = data.message;
+						if (data.errors) {
+							errorMsg = Object.values(data.errors).flat().join('\n');
+						}
+						
+						if (typeof window.showToast === 'function') {
+							window.showToast('error', errorMsg || 'Something went wrong. Please try again.', 'Registration Failed');
+						}
+						submitBtn.innerHTML = originalText;
+						submitBtn.disabled = false;
+					}
+				})
+				.catch(function(error) {
+					console.error('Error:', error);
+					if (typeof window.showToast === 'function') {
+						window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+					}
+					submitBtn.innerHTML = originalText;
+					submitBtn.disabled = false;
+				});
+			});
+		}
+
+		// ----- Display session messages as toasts -----
+		@if(session('success'))
+			if (typeof window.showToast === 'function') {
+				window.showToast('success', '{{ session('success') }}', 'Success');
+			}
+		@endif
+
+		@if(session('error'))
+			if (typeof window.showToast === 'function') {
+				window.showToast('error', '{{ session('error') }}', 'Error');
+			}
+		@endif
+
+		@if(session('warning'))
+			if (typeof window.showToast === 'function') {
+				window.showToast('warning', '{{ session('warning') }}', 'Warning');
+			}
+		@endif
+
+		@if(session('info'))
+			if (typeof window.showToast === 'function') {
+				window.showToast('info', '{{ session('info') }}', 'Info');
+			}
+		@endif
 	});
 </script>
 @endpush

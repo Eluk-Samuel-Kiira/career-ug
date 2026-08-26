@@ -41,7 +41,7 @@
 						<a href="{{ route('home') }}" style="color:#AFC0D2; text-decoration:none; font-size:.9rem; display:block; margin-bottom:12px;">Features</a>
 						<a href="{{ route('home') }}" style="color:#AFC0D2; text-decoration:none; font-size:.9rem; display:block; margin-bottom:12px;">Pricing</a>
 						<a href="{{ route('home') }}" style="color:#AFC0D2; text-decoration:none; font-size:.9rem; display:block; margin-bottom:12px;">Services</a>
-						<a href="{{ route('home') }}" style="color:#AFC0D2; text-decoration:none; font-size:.9rem; display:block;">Blog</a>
+						<a href="{{ route('blog.index') }}" style="color:#AFC0D2; text-decoration:none; font-size:.9rem; display:block;">Blog</a>
 					</div>
 
 					<div class="col-6">
