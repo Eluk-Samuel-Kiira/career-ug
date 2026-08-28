@@ -13,7 +13,18 @@ Route::middleware(['auth.web'])->group(function () {
     Route::get('/seeker/dashboard', [DashboardController::class, 'seekerDashboard'])->name('seeker.dashboard');
 
     
-    Route::get('/profile/edit', function () {
-        return view('profile.edit');
-    })->name('profile.edit');
+});
+
+use App\Http\Controllers\Home\{ ProfileController, CvController };
+
+Route::middleware(['auth.web'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+});
+
+Route::middleware(['auth.web'])->group(function () {
+    Route::get('/profile/cv', [CvController::class, 'edit'])->name('cv.edit');
+    Route::post('/profile/cv/upload', [CvController::class, 'upload'])->name('cv.upload');
+    Route::post('/cv/delete', [CvController::class, 'delete'])->name('cv.delete');
 });

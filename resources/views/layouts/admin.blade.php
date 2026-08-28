@@ -10,6 +10,7 @@
     <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @stack('styles')
     <script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 </head>
@@ -138,6 +139,8 @@
     </div>
 
     <script>
+
+
         (function() {
             // ----- DOM elements -----
             const container = document.getElementById('toastStackContainer');
@@ -262,6 +265,38 @@
             button.removeAttribute('data-kt-indicator');
             button.disabled = false;
         };
+
+
+    </script>
+
+    <script>
+    
+	document.addEventListener('DOMContentLoaded', function () {
+        	// ----- Display session messages as toasts -----
+            @if(session('success'))
+                if (typeof window.showToast === 'function') {
+                    window.showToast('success', '{{ session('success') }}', 'Success');
+                }
+            @endif
+
+            @if(session('error'))
+                if (typeof window.showToast === 'function') {
+                    window.showToast('error', '{{ session('error') }}', 'Error');
+                }
+            @endif
+
+            @if(session('warning'))
+                if (typeof window.showToast === 'function') {
+                    window.showToast('warning', '{{ session('warning') }}', 'Warning');
+                }
+            @endif
+
+            @if(session('info'))
+                if (typeof window.showToast === 'function') {
+                    window.showToast('info', '{{ session('info') }}', 'Info');
+                }
+            @endif
+        });
     </script>
 
 
