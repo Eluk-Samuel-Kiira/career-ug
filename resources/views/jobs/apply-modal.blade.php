@@ -155,27 +155,277 @@ function reportMissingApplicationLink(jobId, jobTitle, companyName) {
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const applyModal = document.getElementById('applyModal');
-    if (!applyModal) return;
- 
-    let tracked = false; // only fire once per page view even if reopened
- 
-    applyModal.addEventListener('show.bs.modal', function () {
-        if (tracked) return;
-        tracked = true;
- 
-        fetch('{{ route('jobs.track-application', $job['id']) }}', {
+    // ---------- Track Application ----------
+    document.addEventListener('DOMContentLoaded', function () {
+        const applyModal = document.getElementById('applyModal');
+        if (!applyModal) return;
+    
+        let tracked = false;
+        let isGuestContinue = false;
+
+        applyModal.addEventListener('show.bs.modal', function (e) {
+            // If continuing as guest, skip the login check
+            if (isGuestContinue) {
+                isGuestContinue = false;
+                if (!tracked) {
+                    tracked = true;
+                    trackApplication();
+                }
+                return;
+            }
+            
+            // Check if user is logged in
+            const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
+            
+            if (!isLoggedIn) {
+                e.preventDefault();
+                e.stopPropagation();
+                showLoginOrGuestModal();
+                return;
+            }
+            
+            if (tracked) return;
+            
+            // User is logged in, track the application
+            tracked = true;
+            trackApplication();
+        });
+
+        function showLoginOrGuestModal() {
+            const modalHtml = `
+                <div class="modal fade" id="loginOrGuestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg rounded-4">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold">Apply for Job</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center p-5">
+                                <div class="mb-4">
+                                    <div class="symbol symbol-80px bg-light-primary rounded-3 d-flex align-items-center justify-content-center mx-auto">
+                                        <i class="bi bi-person-check fs-3x text-primary"></i>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-2">Ready to Apply?</h4>
+                                <p class="text-muted mb-4">
+                                    Sign in to track your application status or continue as a guest.
+                                </p>
+                                
+                                <div class="d-flex flex-column gap-3">
+                                    <a href="{{ route('login') }}" class="btn jp-btn-primary py-3">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                                        Sign In & Apply
+                                    </a>
+                                    <button type="button" class="btn btn-outline-secondary py-3" id="continueAsGuestBtn">
+                                        <i class="bi bi-person me-2"></i>
+                                        Continue as Guest
+                                    </button>
+                                </div>
+                                
+                                <p class="text-muted fs-7 mt-4 mb-0">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Your application will not be tracked anonymously.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const existingModal = document.getElementById('loginOrGuestModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('loginOrGuestModal'));
+            modal.show();
+            
+            // Handle Continue as Guest
+            document.getElementById('continueAsGuestBtn').addEventListener('click', function() {
+                // Set the flag to bypass login check
+                isGuestContinue = true;
+                
+                // Hide the login/guest modal
+                modal.hide();
+                
+                // Track as guest
+                trackGuestApplication();
+                
+                // Show the actual apply modal after a short delay
+                setTimeout(() => {
+                    const applyModalEl = document.getElementById('applyModal');
+                    if (applyModalEl) {
+                        // Clean up any existing backdrop
+                        const backdrops = document.querySelectorAll('.modal-backdrop');
+                        backdrops.forEach(b => b.remove());
+                        document.body.classList.remove('modal-open');
+                        
+                        // Show the apply modal
+                        const bsModal = new bootstrap.Modal(applyModalEl);
+                        bsModal.show();
+                    }
+                }, 200);
+            });
+        }
+
+        function trackApplication() {
+            const jobId = document.querySelector('.jp-save-job-btn')?.dataset.jobId;
+            if (!jobId) return;
+            
+            fetch(`/jobs/${jobId}/track-application`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Application tracked successfully');
+                }
+            })
+            .catch(error => {
+                console.error('Tracking error:', error);
+            });
+        }
+
+        function trackGuestApplication() {
+            const jobId = document.querySelector('.jp-save-job-btn')?.dataset.jobId;
+            if (!jobId) return;
+            
+            fetch('/guest/track-application', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify({ job_id: jobId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Guest application tracked in session');
+                }
+            })
+            .catch(error => {
+                console.error('Guest tracking error:', error);
+            });
+        }
+    });
+</script>
+
+<script>
+    // ---------- Save Job Functionality ----------
+    document.addEventListener('DOMContentLoaded', function() {
+        const saveBtn = document.querySelector('.jp-save-job-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                const jobId = this.dataset.jobId;
+                const isSaved = this.dataset.isSaved === 'true';
+                const icon = this.querySelector('i');
+                const text = this.querySelector('span');
+                
+                // Check if user is logged in via session
+                const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
+                
+                if (!isLoggedIn) {
+                    showSaveLoginModal();
+                    return;
+                }
+                
+                // Toggle save via web controller
+                toggleSaveJob(jobId, isSaved, icon, text);
+            });
+        }
+    });
+
+    function toggleSaveJob(jobId, isSaved, icon, text) {
+        const url = `/jobs/${jobId}/save`;
+        
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
             },
-        }).catch(() => {
-            // Tracking is best-effort - a failed request here must never
-            // block or interrupt the person's actual apply flow.
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const newState = data.is_saved;
+                if (newState) {
+                    icon.className = 'bi bi-heart-fill fs-3 me-2 text-danger';
+                    text.textContent = 'Saved';
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('success', 'Job saved successfully!', 'Saved');
+                    }
+                } else {
+                    icon.className = 'bi bi-heart fs-3 me-2';
+                    text.textContent = 'Save';
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('info', 'Job removed from saved.', 'Unsaved');
+                    }
+                }
+                // Update data attribute
+                document.querySelector('.jp-save-job-btn').dataset.isSaved = newState;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+            }
         });
-    });
-});
+    }
+
+    function showSaveLoginModal() {
+        const modalHtml = `
+            <div class="modal fade" id="saveLoginModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg rounded-4">
+                        <div class="modal-body text-center p-5">
+                            <div class="mb-4">
+                                <div class="symbol symbol-80px bg-light-warning rounded-3 d-flex align-items-center justify-content-center mx-auto">
+                                    <i class="bi bi-heart fs-3x text-warning"></i>
+                                </div>
+                            </div>
+                            <h4 class="fw-bold mb-2">Login to Save Jobs</h4>
+                            <p class="text-muted mb-4">
+                                Create an account or sign in to save jobs and track your applications.
+                            </p>
+                            <div class="d-flex flex-column gap-3">
+                                <a href="{{ route('login') }}" class="btn jp-btn-primary py-3">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                    Sign In
+                                </a>
+                                <a href="{{ route('register') }}" class="btn jp-btn-outline py-3">
+                                    <i class="bi bi-person-plus me-2"></i>
+                                    Create Account
+                                </a>
+                            </div>
+                            <p class="text-muted fs-7 mt-4 mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Save jobs to your profile and track your applications.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('saveLoginModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('saveLoginModal'));
+        modal.show();
+    }
 </script>

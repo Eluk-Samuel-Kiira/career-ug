@@ -517,6 +517,30 @@
 			});
 		}
 
+		// Display session messages as toasts
+        @if(session('error'))
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', '{{ session('error') }}', 'Error');
+            }
+        @endif
+
+        @if(session('success'))
+            if (typeof window.showToast === 'function') {
+                window.showToast('success', '{{ session('success') }}', 'Success');
+            }
+        @endif
+
+        @if(session('warning'))
+            if (typeof window.showToast === 'function') {
+                window.showToast('warning', '{{ session('warning') }}', 'Warning');
+            }
+        @endif
+
+        @if(session('info'))
+            if (typeof window.showToast === 'function') {
+                window.showToast('info', '{{ session('info') }}', 'Info');
+            }
+        @endif
 
 	});
 </script>

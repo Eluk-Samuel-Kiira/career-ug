@@ -138,6 +138,7 @@
         </div>
     </div>
 
+    
     <script>
 
 
@@ -271,7 +272,7 @@
 
     <script>
     
-	document.addEventListener('DOMContentLoaded', function () {
+	    document.addEventListener('DOMContentLoaded', function () {
         	// ----- Display session messages as toasts -----
             @if(session('success'))
                 if (typeof window.showToast === 'function') {

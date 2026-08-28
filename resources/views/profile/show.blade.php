@@ -21,10 +21,7 @@
                             <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle p-1" 
                                     data-bs-toggle="modal" data-bs-target="#avatarModal" 
                                     style="width: 32px; height: 32px; border-radius: 50%;">
-                                <i class="ki-duotone ki-camera fs-4">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                </i>
+                                <i class="bi bi-camera fs-5"></i>
                             </button>
                         </div>
 
@@ -147,6 +144,30 @@
                                         placeholder="Tell us about yourself">{{ $user['bio'] ?? '' }}</textarea>
                             </div>
 
+                            <div class="col-12">
+                                <div class="d-flex align-items-center justify-content-between p-4 bg-light rounded-3 border border-gray-200">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">Public Profile</h6>
+                                        <p class="text-muted fs-7 mb-0">
+                                            <i class="bi bi-globe2 me-1"></i>
+                                            Allow employers/public to view your bio and skills for potential gigs
+                                        </p>
+                                    </div>
+                                    <div class="form-check form-switch form-check-custom form-check-solid">
+                                        <input class="form-check-input" type="checkbox" 
+                                            name="is_public" 
+                                            id="is_public" 
+                                            value="1"
+                                            {{ isset($user['is_public']) && $user['is_public'] ? 'checked' : '' }} />
+                                        <label class="form-check-label" for="is_public">
+                                            <span id="is_public_label" class="badge badge-{{ isset($user['is_public']) && $user['is_public'] ? 'success' : 'secondary' }}">
+                                                {{ isset($user['is_public']) && $user['is_public'] ? 'Public' : 'Private' }}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Social Links -->
                             <div class="col-12">
                                 <h5 class="fw-bold mb-3">Social Links</h5>
@@ -226,14 +247,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const profileForm = document.getElementById('profileForm');
     const profileSubmitBtn = document.getElementById('profileSubmitBtn');
 
-    // console.log('Profile form found:', profileForm);
-    // console.log('Profile submit button found:', profileSubmitBtn);
+    const isPublicCheckbox = document.getElementById('is_public');
+    const isPublicLabel = document.getElementById('is_public_label');
+    
+    if (isPublicCheckbox && isPublicLabel) {
+        isPublicCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                isPublicLabel.textContent = 'Public';
+                isPublicLabel.className = 'badge badge-success';
+            } else {
+                isPublicLabel.textContent = 'Private';
+                isPublicLabel.className = 'badge badge-secondary';
+            }
+        });
+    }
 
     if (profileForm && profileSubmitBtn) {
         profileForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            // console.log('Form submitted!');
             
             // Show loading state
             const originalText = profileSubmitBtn.innerHTML;
@@ -245,27 +276,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData(this);
             
-            // Log form data for debugging
-            for (let [key, value] of formData.entries()) {
-                // console.log('Form field:', key, value);
-            }
-            
-            // Get CSRF token from meta tag or fallback to the @csrf token in the form
+            // Get CSRF token
             let csrfToken = document.querySelector('meta[name="csrf-token"]');
             if (csrfToken) {
                 csrfToken = csrfToken.content;
             } else {
-                // Fallback: try to get from the form's hidden input
                 const csrfInput = document.querySelector('input[name="_token"]');
                 if (csrfInput) {
                     csrfToken = csrfInput.value;
                 }
             }
             
-            // console.log('CSRF Token:', csrfToken);
-            
             const url = document.getElementById('profileForm').action || '{{ route('profile.update') }}';
-            // console.log('Submit URL:', url);
             
             fetch(url, {
                 method: 'POST',
@@ -277,53 +299,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             })
             .then(response => {
-                // console.log('Response status:', response.status);
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.message || 'Server error');
-                    });
-                }
-                return response.json();
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        // Pass the error data to the catch block
+                        throw { 
+                            status: response.status, 
+                            data: data 
+                        };
+                    }
+                    return data;
+                });
             })
             .then(data => {
-                // console.log('Response data:', data);
                 if (data.success) {
                     if (typeof window.showToast === 'function') {
-                        window.showToast('success', data.message, 'Success');
+                        window.showToast('success', data.message || 'Profile updated successfully!', 'Success');
                     } else {
-                        alert(data.message);
+                        alert(data.message || 'Profile updated successfully!');
                     }
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    const errorMsg = data.message || 'Failed to update profile';
+                    // Handle validation errors from the server
+                    let errorMessage = data.message || 'Failed to update profile';
+                    
                     if (data.errors) {
-                        const errorList = Object.values(data.errors).flat().join('\n');
-                        console.error('Validation errors:', errorList);
+                        // Build a readable error message from validation errors
+                        const errorList = [];
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            // Format the field name for display
+                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            errorList.push(`${fieldName}: ${errors.join(', ')}`);
+                        }
+                        errorMessage = errorList.join('\n');
                     }
+                    
                     if (typeof window.showToast === 'function') {
-                        window.showToast('error', errorMsg, 'Error');
+                        window.showToast('error', errorMessage, 'Validation Error');
                     } else {
-                        alert(errorMsg);
+                        alert(errorMessage);
                     }
                     profileSubmitBtn.disabled = false;
                     profileSubmitBtn.innerHTML = originalText;
                 }
             })
             .catch(error => {
-                console.error('Fetch error:', error);
+                // console.error('Error:', error);
+                
+                // Check if we have structured error data
+                let errorMessage = 'Something went wrong. Please try again.';
+                if (error.data) {
+                    if (error.data.message) {
+                        errorMessage = error.data.message;
+                    }
+                    if (error.data.errors) {
+                        const errorList = [];
+                        for (const [field, errors] of Object.entries(error.data.errors)) {
+                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            errorList.push(`${fieldName}: ${errors.join(', ')}`);
+                        }
+                        if (errorList.length > 0) {
+                            errorMessage = errorList.join('\n');
+                        }
+                    }
+                } else if (error.message && !error.message.includes('Failed to fetch')) {
+                    errorMessage = error.message;
+                }
+                
                 if (typeof window.showToast === 'function') {
-                    window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+                    window.showToast('error', errorMessage, 'Error');
                 } else {
-                    alert('Something went wrong. Please try again.');
+                    alert(errorMessage);
                 }
                 profileSubmitBtn.disabled = false;
                 profileSubmitBtn.innerHTML = originalText;
             });
         });
-    } else {
-        console.error('Profile form or submit button not found!');
-        // console.log('Profile form:', document.getElementById('profileForm'));
-        // console.log('Submit button:', document.getElementById('profileSubmitBtn'));
     }
 
     // Avatar form submission
@@ -331,9 +381,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const avatarSubmitBtn = document.getElementById('avatarSubmitBtn');
     const avatarInput = document.getElementById('avatarInput');
     const avatarPreview = document.getElementById('avatarPreview');
-
-    // console.log('Avatar form found:', avatarForm);
-    // console.log('Avatar submit button found:', avatarSubmitBtn);
 
     // Preview avatar before upload
     if (avatarInput) {
@@ -353,8 +400,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (avatarForm && avatarSubmitBtn) {
         avatarForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            // console.log('Avatar form submitted!');
             
             if (!avatarInput || !avatarInput.files || !avatarInput.files.length) {
                 if (typeof window.showToast === 'function') {
@@ -387,7 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const url = document.getElementById('avatarForm').action || '{{ route('profile.avatar') }}';
-            // console.log('Avatar upload URL:', url);
             
             fetch(url, {
                 method: 'POST',
@@ -399,23 +443,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             })
             .then(response => {
-                // console.log('Avatar upload response status:', response.status);
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.message || 'Server error');
-                    });
-                }
-                return response.json();
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        throw { 
+                            status: response.status, 
+                            data: data 
+                        };
+                    }
+                    return data;
+                });
             })
             .then(data => {
-                // console.log('Avatar upload data:', data);
                 if (data.success) {
                     if (typeof window.showToast === 'function') {
-                        window.showToast('success', data.message, 'Success');
+                        window.showToast('success', data.message || 'Avatar updated successfully!', 'Success');
                     } else {
-                        alert(data.message);
+                        alert(data.message || 'Avatar updated successfully!');
                     }
-                    // Update avatar in header
+                    
                     if (data.avatar) {
                         const profileAvatar = document.getElementById('profileAvatar');
                         if (profileAvatar) {
@@ -425,29 +470,59 @@ document.addEventListener('DOMContentLoaded', function() {
                             avatarPreview.src = data.avatar + '?t=' + Date.now();
                         }
                     }
-                    // Close modal
+                    
                     const modal = bootstrap.Modal.getInstance(document.getElementById('avatarModal'));
                     if (modal) {
                         modal.hide();
                     }
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    const errorMsg = data.message || 'Failed to update avatar';
+                    let errorMessage = data.message || 'Failed to update avatar';
+                    
+                    if (data.errors) {
+                        const errorList = [];
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            errorList.push(`${fieldName}: ${errors.join(', ')}`);
+                        }
+                        errorMessage = errorList.join('\n');
+                    }
+                    
                     if (typeof window.showToast === 'function') {
-                        window.showToast('error', errorMsg, 'Error');
+                        window.showToast('error', errorMessage, 'Error');
                     } else {
-                        alert(errorMsg);
+                        alert(errorMessage);
                     }
                     avatarSubmitBtn.disabled = false;
                     avatarSubmitBtn.innerHTML = originalText;
                 }
             })
             .catch(error => {
-                console.error('Avatar upload error:', error);
+                // console.error('Avatar upload error:', error);
+                
+                let errorMessage = 'Something went wrong. Please try again.';
+                if (error.data) {
+                    if (error.data.message) {
+                        errorMessage = error.data.message;
+                    }
+                    if (error.data.errors) {
+                        const errorList = [];
+                        for (const [field, errors] of Object.entries(error.data.errors)) {
+                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            errorList.push(`${fieldName}: ${errors.join(', ')}`);
+                        }
+                        if (errorList.length > 0) {
+                            errorMessage = errorList.join('\n');
+                        }
+                    }
+                } else if (error.message && !error.message.includes('Failed to fetch')) {
+                    errorMessage = error.message;
+                }
+                
                 if (typeof window.showToast === 'function') {
-                    window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+                    window.showToast('error', errorMessage, 'Error');
                 } else {
-                    alert('Something went wrong. Please try again.');
+                    alert(errorMessage);
                 }
                 avatarSubmitBtn.disabled = false;
                 avatarSubmitBtn.innerHTML = originalText;

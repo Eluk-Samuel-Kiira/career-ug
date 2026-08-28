@@ -20,8 +20,17 @@ Route::get('/jobs', [JobsController::class, 'jobs'])->name('jobs.index');
 // Job detail
 Route::get('/job/{id}', [JobsController::class, 'show'])->name('jobs.show');
 // Job application
-Route::post('/jobs/{id}/track-application', [JobsController::class, 'trackApplication'])
-    ->name('jobs.track-application');
+Route::post('/guest/track-application', [JobsController::class, 'trackGuestApplication'])->name('guest.track-application');
+
+Route::middleware(['auth.web'])->group(function () {
+    Route::post('/jobs/{id}/save', [JobsController::class, 'toggleSave'])->name('jobs.toggle-save');
+    Route::post('/jobs/{id}/track-application', [JobsController::class, 'trackApplication'])->name('jobs.track-application');
+    Route::get('/jobs/{id}/status', [JobsController::class, 'getJobStatus'])->name('jobs.status');
+    Route::post('/jobs/sync-guest', [JobsController::class, 'syncGuestApplications'])->name('jobs.sync-guest');
+    Route::get('/jobs/saved', [JobsController::class, 'savedJobs'])->name('jobs.saved');
+    Route::get('/jobs/applied', [JobsController::class, 'appliedJobs'])->name('jobs.applied');
+    Route::post('/jobs/{id}/unsave', [JobsController::class, 'unsaveJob'])->name('jobs.unsave');
+});
 
 
 Route::get('/companies', [CompaniesController::class, 'companies'])->name('companies.index');

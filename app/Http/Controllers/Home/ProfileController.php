@@ -44,6 +44,7 @@ class ProfileController extends Controller
         $isEmployer = $role === 'employer';
         $isSeeker = $role === 'job_seeker';
 
+        // \Log::info($user);
         return view('profile.show', compact('user', 'isEmployer', 'isSeeker', 'role'));
     }
 
@@ -84,6 +85,7 @@ class ProfileController extends Controller
             'education' => 'nullable|array',
             'certifications' => 'nullable|array',
             'projects' => 'nullable|array',
+            'is_public' => 'nullable|boolean', 
         ]);
 
         // Prepare data for API - include ALL fields
@@ -112,6 +114,7 @@ class ProfileController extends Controller
             'education' => $request->education,
             'certifications' => $request->certifications,
             'projects' => $request->projects,
+            'is_public' => $request->has('is_public') ? filter_var($request->is_public, FILTER_VALIDATE_BOOLEAN) : false,
         ];
 
         // Remove null values

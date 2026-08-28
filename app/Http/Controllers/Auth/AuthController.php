@@ -124,13 +124,13 @@ class AuthController extends Controller
      */
     public function verifyMagicLink($token)
     {
-        Log::info('Verifying magic link', ['token' => substr($token, 0, 20) . '...']);
+        // Log::info('Verifying magic link', ['token' => substr($token, 0, 20) . '...']);
 
         $response = $this->countryService->api('auth/verify-token', [
             'token' => $token,
         ], 'POST', 0, false);
 
-        Log::info('Verify token response', ['response' => $response]);
+        // Log::info('Verify token response', ['response' => $response]);
 
         if (isset($response['success']) && $response['success'] && isset($response['user'])) {
             // Store user data in session
@@ -138,11 +138,11 @@ class AuthController extends Controller
             Session::put('access_token', $response['api_token']);
             Session::put('account_type', $response['user']['role'] ?? 'job_seeker');
 
-            Log::info('User authenticated successfully', [
-                'user_id' => $response['user']['id'],
-                'email' => $response['user']['email'],
-                'role' => $response['user']['role'] ?? 'job_seeker'
-            ]);
+            // Log::info('User authenticated successfully', [
+            //     'user_id' => $response['user']['id'],
+            //     'email' => $response['user']['email'],
+            //     'role' => $response['user']['role'] ?? 'job_seeker'
+            // ]);
 
             // Both roles go to the same dashboard - role determines content
             return redirect()->route('dashboard');

@@ -31,6 +31,7 @@
 		<!-- Canonical -->
 		<link rel="canonical" href="@yield('canonical_url', url('/'))" />
 		<meta name="csrf-token" content="{{ csrf_token() }}">
+		<meta name="user-logged-in" content="{{ session()->has('user') && session()->has('access_token') ? 'true' : 'false' }}">
 		
 		<!-- Favicon -->
 		<link rel="shortcut icon" href="{{ country_favicon() }}" />

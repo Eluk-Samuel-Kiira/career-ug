@@ -227,8 +227,11 @@
 				<button type="button" class="btn jp-btn-primary" data-bs-toggle="modal" data-bs-target="#applyModal">
                     <i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
                 </button>
-				<button type="button" class="btn jp-btn-outline px-6 py-3">
-					<i class="ki-duotone ki-heart fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Save
+				<button type="button" class="btn jp-btn-outline px-6 py-3 jp-save-job-btn" 
+						data-job-id="{{ $job['id'] }}"
+						data-is-saved="{{ $isSaved ? 'true' : 'false' }}">
+					<i class="bi bi-{{ $isSaved ? 'heart-fill text-danger' : 'heart' }} fs-3 me-2"></i>
+					<span>{{ $isSaved ? 'Saved' : 'Save' }}</span>
 				</button>
                 <div class="d-flex gap-2 ms-auto">
                     <a class="jp-share-btn" href="mailto:?subject={{ urlencode($jobTitle) }}&body={{ urlencode(request()->fullUrl()) }}" title="Share by email">
