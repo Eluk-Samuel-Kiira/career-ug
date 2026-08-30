@@ -44,9 +44,14 @@ class CountryService
     }
 
     /**
-     * Universal API caller.
+     * Universal API caller - handles both plain JSON/form requests and
+     * multipart file uploads through the same path. Pass $files to attach
+     * one or more Illuminate\Http\UploadedFile instances (or raw streams);
+     * when $files is non-empty the request is automatically sent as
+     * multipart/form-data instead of the normal body, so callers don't
+     * need to pick a different method for uploads.
      */
-    public function api(string $endpoint, array $params = [], string $method = 'GET', int $cacheMinutes = 0, bool $unwrapData = true): array
+    public function api(string $endpoint, array $params = [], string $method = 'GET', int $cacheMinutes = 0, bool $unwrapData = true, array $files = []): array
     {
         // ALWAYS add API key as query parameter (this ensures it works with the middleware)
         if ($this->apiKey) {
@@ -57,32 +62,50 @@ class CountryService
 
         $cacheKey = 'api.' . $this->countryCode . '.' . md5($url . json_encode($params) . $method . ($unwrapData ? 'unwrapped' : 'full'));
 
-        // Don't cache authenticated requests or POST/PUT/DELETE
+        // Never cache file uploads, authenticated requests, or non-GET calls
         $hasToken = Session::has('access_token');
-        $shouldCache = $method === 'GET' && $cacheMinutes > 0 && !$hasToken;
+        $shouldCache = $method === 'GET' && $cacheMinutes > 0 && !$hasToken && empty($files);
 
         if ($shouldCache) {
-            return Cache::remember($cacheKey, $cacheMinutes, function () use ($url, $params, $method, $unwrapData) {
-                return $this->callApi($url, $params, $method, $unwrapData);
+            return Cache::remember($cacheKey, $cacheMinutes, function () use ($url, $params, $method, $unwrapData, $files) {
+                return $this->callApi($url, $params, $method, $unwrapData, $files);
             });
         }
 
-        return $this->callApi($url, $params, $method, $unwrapData);
+        return $this->callApi($url, $params, $method, $unwrapData, $files);
     }
 
-    protected function callApi(string $url, array $params = [], string $method = 'GET', bool $unwrapData = true): array
+    protected function callApi(string $url, array $params = [], string $method = 'GET', bool $unwrapData = true, array $files = []): array
     {
         try {
             $headers = $this->getHeaders();
-            $http = Http::withHeaders($headers);
+            
+            // ⚠️ FIX: Set timeout based on whether it's a CV upload or regular request
+            $timeout = 30; // default timeout
+            
+            // Check if this is a CV upload endpoint (takes longer to process)
+            if (str_contains($url, '/auth/user/cv')) {
+                $timeout = 180; // 3 minutes for CV processing
+            } elseif (str_contains($url, '/auth/user/avatar')) {
+                $timeout = 60; // 1 minute for avatar upload
+            }
+            
+            $http = Http::timeout($timeout)->withHeaders($headers);
 
-            // Log the request for debugging
-            Log::info('📤 API Request', [
-                'url' => $url,
-                'method' => $method,
-                'has_api_key' => isset($params['api_key']),
-                'has_country_code' => isset($headers['X-Country-Code']),
-            ]);
+            // Attach any files - this switches the underlying Guzzle request
+            // to multipart/form-data automatically, so the same method call
+            // handles both "normal" API calls and file uploads.
+            foreach ($files as $fieldName => $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $http = $http->attach(
+                        $fieldName,
+                        fopen($file->getRealPath(), 'r'),
+                        $file->getClientOriginalName()
+                    );
+                } elseif (is_resource($file)) {
+                    $http = $http->attach($fieldName, $file);
+                }
+            }
 
             switch (strtoupper($method)) {
                 case 'POST':
@@ -113,6 +136,7 @@ class CountryService
                 'url' => $url,
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'had_files' => !empty($files),
             ]);
 
             return [
@@ -121,10 +145,22 @@ class CountryService
                 'status' => $response->status(),
             ];
 
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('⏱️ API connection timeout: ' . $e->getMessage(), [
+                'url' => $url,
+                'method' => $method,
+                'had_files' => !empty($files),
+            ]);
+            return [
+                'success' => false,
+                'message' => 'The request is taking too long. Please try again.',
+                'status' => 408,
+            ];
         } catch (\Exception $e) {
             Log::error('❌ API call error: ' . $e->getMessage(), [
                 'url' => $url,
                 'method' => $method,
+                'had_files' => !empty($files),
             ]);
             return [
                 'success' => false,

@@ -30,13 +30,7 @@ class JobsController extends Controller
         $categories = $this->countryService->api('categories', [], 'GET', 3600);
         $locations = $this->countryService->api('locations', [], 'GET', 3600);
 
-        // unwrapData: false - the jobs endpoint returns {success, data, pagination}.
-        // Unwrapping it to just 'data' (the old default) silently threw pagination
-        // away, which made the `!isset($jobs['data'])` guard below fire on every
-        // request (since a plain numeric jobs array never has a 'data' key) and
-        // reset real results back to empty every time.
         $jobsResponse = $this->countryService->api('jobs', $filters, 'GET', 300, unwrapData: false);
-
         $featuredResponse = $this->countryService->api('jobs', ['featured' => true, 'per_page' => 10], 'GET', 300, unwrapData: false);
         $featuredJobs = $featuredResponse['data'] ?? [];
 
@@ -67,39 +61,276 @@ class JobsController extends Controller
 
         $country = $this->countryService->getCountryData();
 
-        return view('jobs.show', compact('job', 'country'));
+        // Check if job is saved by current user
+        $isSaved = false;
+        $user = session('user');
+        if ($user) {
+            $statusResponse = $this->countryService->api("job-action/{$id}/status", [], 'GET', 0, false);
+            if (isset($statusResponse['success']) && $statusResponse['success']) {
+                $isSaved = $statusResponse['is_saved'] ?? false;
+            }
+        }
+
+        return view('jobs.show', compact('job', 'country', 'isSaved'));
     }
 
     /**
-     * Record that the apply modal was opened for a job. Called from JS the
-     * moment #applyModal fires 'show.bs.modal' - see jobs/show.blade.php.
-     *
-     * This is the browser's same-origin target (it proxies to the main app
-     * via CountryService, which is where the Authorization header and API
-     * key live) - the browser never talks to the main app directly.
-     *
-     * Session-based de-dupe: reopening the modal, or refreshing the page and
-     * clicking Apply again, does not inflate application_count repeatedly
-     * within the same session - only the first open per job per session counts.
+     * Save or unsave a job (AJAX)
+     */
+    public function toggleSave(Request $request, $id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login to save jobs.',
+                'requires_login' => true
+            ], 401);
+        }
+
+        $result = $this->countryService->api("job-action/{$id}/save", [], 'POST', 0, false);
+
+        if (isset($result['success']) && $result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'] ?? 'Job saved successfully!',
+                'is_saved' => $result['is_saved'] ?? true,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to save job.',
+        ], 400);
+    }
+
+    /**
+     * Unsave a job (AJAX)
+     */
+    public function unsaveJob(Request $request, $id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login to unsave jobs.',
+                'requires_login' => true
+            ], 401);
+        }
+
+        $result = $this->countryService->api("job-action/{$id}/save", [], 'POST', 0, false);
+
+        if (isset($result['success']) && $result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Job removed from saved.',
+                'is_saved' => false,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to unsave job.',
+        ], 400);
+    }
+
+    /**
+     * Get job status (saved, applied, etc.) for current user (AJAX)
+     */
+    public function getJobStatus(Request $request, $id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login.',
+                'requires_login' => true
+            ], 401);
+        }
+
+        $result = $this->countryService->api("job-action/{$id}/status", [], 'GET', 0, false);
+        return response()->json($result);
+    }
+
+    /**
+     * Track application for logged-in user (AJAX)
      */
     public function trackApplication(Request $request, $id)
     {
-        // \Log::info($id);
+        $user = session('user');
+        
+        // Always track the application even if not logged in (guest tracking handled separately)
+        $result = $this->countryService->api("job-action/{$id}/track-application", [], 'POST', 0, false);
+
+        if (!$user) {
+            // For guests, store in session
+            $sessionKey = 'guest_applied_jobs';
+            $guestJobs = $request->session()->get($sessionKey, []);
+            if (!in_array($id, $guestJobs)) {
+                $guestJobs[] = $id;
+                $request->session()->put($sessionKey, $guestJobs);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'already_recorded' => false,
+                'data' => $result,
+                'guest' => true,
+            ]);
+        }
+
         $sessionKey = 'applied_job_' . $id;
- 
         if ($request->session()->has($sessionKey)) {
             return response()->json(['success' => true, 'already_recorded' => true]);
         }
- 
-        $result = $this->countryService->api("jobs/{$id}/track-application", [], 'POST');
- 
+
         $request->session()->put($sessionKey, true);
- 
+
         return response()->json([
             'success' => true,
             'already_recorded' => false,
             'data' => $result,
         ]);
     }
+
+    /**
+     * Track application for guest users (AJAX)
+     */
+    public function trackGuestApplication(Request $request)
+    {
+        $request->validate([
+            'job_id' => 'required|integer',
+        ]);
+
+        $jobId = $request->job_id;
+        $sessionKey = 'guest_applied_jobs';
+
+        $guestJobs = $request->session()->get($sessionKey, []);
+
+        if (!in_array($jobId, $guestJobs)) {
+            $guestJobs[] = $jobId;
+            $request->session()->put($sessionKey, $guestJobs);
+            $this->countryService->api("job-action/{$jobId}/track-application-guest", [], 'POST', 0, false);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Application tracked for guest',
+        ]);
+    }
+
+    /**
+     * Sync guest applications when user logs in
+     */
+    public function syncGuestApplications(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not logged in',
+            ], 401);
+        }
+
+        $sessionKey = 'guest_applied_jobs';
+        $guestJobs = $request->session()->get($sessionKey, []);
+
+        if (empty($guestJobs)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No guest applications to sync',
+            ]);
+        }
+
+        $synced = 0;
+        foreach ($guestJobs as $jobId) {
+            $result = $this->countryService->api("job-action/{$jobId}/track-application", [], 'POST', 0, false);
+            if (isset($result['success']) && $result['success']) {
+                $synced++;
+            }
+        }
+
+        $request->session()->forget($sessionKey);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Synced {$synced} guest applications",
+            'synced' => $synced,
+        ]);
+    }
+
+    /**
+     * Display saved jobs page (VIEW)
+     */
+    public function savedJobs(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please login to view saved jobs.');
+        }
+
+        $response = $this->countryService->api('job-action/saved', [], 'GET', 0, false);
+        
+        $savedJobs = $response['data'] ?? [];
+        $total = $response['total'] ?? 0;
+
+        return view('job-seeker.saved-jobs', compact('savedJobs', 'total'));
+    }
+
+    /**
+     * Display applied jobs page (VIEW)
+     */
+    public function appliedJobs(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please login to view your applications.');
+        }
+
+        $response = $this->countryService->api('job-action/applied', [], 'GET', 0, false);
+        
+        $appliedJobs = $response['data'] ?? [];
+        $total = $response['total'] ?? 0;
+
+        return view('job-seeker.applied-jobs', compact('appliedJobs', 'total'));
+    }
+
+    /**
+     * Update application status (for job seeker)
+     */
+    public function updateApplicationStatus(Request $request, $id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login.',
+                'requires_login' => true
+            ], 401);
+        }
+
+        $request->validate([
+            'status' => 'required|in:applied,interviewing,hired,rejected',
+        ]);
+
+        // No need to send seeker_profile_id - it's taken from the authenticated user
+        $result = $this->countryService->api("job-action/{$id}/application-status", [
+            'status' => $request->status,
+        ], 'PUT', 0, false);
+
+        if (isset($result['success']) && $result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Application status updated successfully!',
+                'status' => $result['status'] ?? $request->status,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to update status.',
+        ], 400);
+    }
+
 
 }

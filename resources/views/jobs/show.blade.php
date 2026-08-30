@@ -128,7 +128,8 @@
     $companyWebsite = $job['company']['website'] ?? null;
     $companyDescription = $job['company']['description'] ?? '';
 
-    $location = $job['job_location']['name'] ?? ($job['duty_station'] ?: null);
+	$jobId = $job['id'] ?? null;
+    $location = $job['job_location']['name'] ?? ($job['duty_station'] ?? null);
     $jobTypeName = $job['job_type']['name'] ?? ucfirst(str_replace('-', ' ', $job['employment_type'] ?? 'Full-time'));
     $category = $job['job_category']['name'] ?? null;
     $industry = $job['industry']['name'] ?? null;
@@ -227,8 +228,11 @@
 				<button type="button" class="btn jp-btn-primary" data-bs-toggle="modal" data-bs-target="#applyModal">
                     <i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
                 </button>
-				<button type="button" class="btn jp-btn-outline px-6 py-3">
-					<i class="ki-duotone ki-heart fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Save
+				<button type="button" class="btn jp-btn-outline px-6 py-3 jp-save-job-btn" 
+						data-job-id="{{ $jobId ?? '' }}"
+						data-is-saved="{{ $isSaved ? 'true' : 'false' }}">
+					<i class="bi bi-{{ $isSaved ? 'heart-fill text-danger' : 'heart' }} fs-3 me-2"></i>
+					<span>{{ $isSaved ? 'Saved' : 'Save' }}</span>
 				</button>
                 <div class="d-flex gap-2 ms-auto">
                     <a class="jp-share-btn" href="mailto:?subject={{ urlencode($jobTitle) }}&body={{ urlencode(request()->fullUrl()) }}" title="Share by email">
@@ -458,23 +462,26 @@
 					@endif
 
                     @if(!empty($job['similar_jobs']) && count($job['similar_jobs']) > 0)
-                    <div class="jp-sidebar-card">
-                        <h2 class="fs-7 fw-bold mb-3" style="color:var(--jp-ink);">Similar Jobs</h2>
-                        @foreach($job['similar_jobs'] as $similar)
-                            @php $simInitials = strtoupper(substr($similar['company']['name'] ?? 'JM', 0, 2)); @endphp
-                            <a href="{{ route('jobs.show', $similar['slug'] ?? $similar['id']) }}" class="jp-similar-item">
-                                <div class="jp-logo-sq jp-logo-sq-sm">
-                                    @if(!empty($similar['company']['logo']))<img src="{{ $similar['company']['logo'] }}" alt="">@else{{ $simInitials }}@endif
-                                </div>
-                                <div class="jp-similar-body">
-                                    <div class="title text-truncate">{{ $similar['job_title'] ?? 'Job' }}</div>
-                                    <div class="sub text-truncate">{{ $similar['company']['name'] ?? 'Company' }} @if(!empty($similar['duty_station'])) · {{ $similar['duty_station'] }} @endif</div>
-                                    <div class="sub fw-bold text-truncate" style="color:var(--jp-teal);">{{ $similar['formatted_salary'] ?? 'Negotiable' }}</div>
-                                </div>
-                            </a>
-                        @endforeach
-                    </div>
-                    @endif
+					<div class="jp-sidebar-card">
+						<h2 class="fs-7 fw-bold mb-3" style="color:var(--jp-ink);">Similar Jobs</h2>
+						@foreach($job['similar_jobs'] as $similar)
+							@php 
+								$simInitials = strtoupper(substr($similar['company']['name'] ?? 'JM', 0, 2)); 
+								$simDutyStation = $similar['duty_station'] ?? '';
+							@endphp
+							<a href="{{ route('jobs.show', $similar['slug'] ?? $similar['id']) }}" class="jp-similar-item">
+								<div class="jp-logo-sq jp-logo-sq-sm">
+									@if(!empty($similar['company']['logo']))<img src="{{ $similar['company']['logo'] }}" alt="">@else{{ $simInitials }}@endif
+								</div>
+								<div class="jp-similar-body">
+									<div class="title text-truncate">{{ $similar['job_title'] ?? 'Job' }}</div>
+									<div class="sub text-truncate">{{ $similar['company']['name'] ?? 'Company' }} @if(!empty($simDutyStation)) · {{ $simDutyStation }} @endif</div>
+									<div class="sub fw-bold text-truncate" style="color:var(--jp-teal);">{{ $similar['formatted_salary'] ?? 'Negotiable' }}</div>
+								</div>
+							</a>
+						@endforeach
+					</div>
+					@endif
 
 				</div>
 			</div>
