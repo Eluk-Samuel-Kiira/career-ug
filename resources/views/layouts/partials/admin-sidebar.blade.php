@@ -61,14 +61,14 @@
                     </div>
 
                     <div class="menu-item">
-                        <a class="menu-link {{ request()->routeIs('jobs.index') ? 'active' : '' }}" href="{{ route('jobs.index') }}">
+                        <a class="menu-link {{ request()->routeIs('jobs.index') ? 'active' : '' }}" href="{{ route('jobs.index') }}" target="_blank">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-briefcase fs-2">
                                     <span class="path1"></span>
                                     <span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">View Jobs</span>
+                            <span class="menu-title">Browse Jobs</span>
                         </a>
                     </div>
 

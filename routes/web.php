@@ -26,6 +26,7 @@ Route::middleware(['auth.web'])->group(function () {
     Route::post('/jobs/{id}/save', [JobsController::class, 'toggleSave'])->name('jobs.toggle-save');
     Route::post('/jobs/{id}/track-application', [JobsController::class, 'trackApplication'])->name('jobs.track-application');
     Route::get('/jobs/{id}/status', [JobsController::class, 'getJobStatus'])->name('jobs.status');
+    Route::post('/jobs/{id}/update-status', [JobsController::class, 'updateApplicationStatus'])->name('jobs.update-status');
     Route::post('/jobs/sync-guest', [JobsController::class, 'syncGuestApplications'])->name('jobs.sync-guest');
     Route::get('/jobs/saved', [JobsController::class, 'savedJobs'])->name('jobs.saved');
     Route::get('/jobs/applied', [JobsController::class, 'appliedJobs'])->name('jobs.applied');

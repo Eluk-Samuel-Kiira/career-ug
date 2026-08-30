@@ -53,7 +53,7 @@ class JobsController extends Controller
      */
     public function show($id)
     {
-        $job = $this->countryService->api('job-action/' . $id);
+        $job = $this->countryService->api('jobs/' . $id);
 
         if (!$job) {
             abort(404, 'Job not found');
@@ -294,4 +294,43 @@ class JobsController extends Controller
 
         return view('job-seeker.applied-jobs', compact('appliedJobs', 'total'));
     }
+
+    /**
+     * Update application status (for job seeker)
+     */
+    public function updateApplicationStatus(Request $request, $id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login.',
+                'requires_login' => true
+            ], 401);
+        }
+
+        $request->validate([
+            'status' => 'required|in:applied,interviewing,hired,rejected',
+        ]);
+
+        // No need to send seeker_profile_id - it's taken from the authenticated user
+        $result = $this->countryService->api("job-action/{$id}/application-status", [
+            'status' => $request->status,
+        ], 'PUT', 0, false);
+
+        if (isset($result['success']) && $result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Application status updated successfully!',
+                'status' => $result['status'] ?? $request->status,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to update status.',
+        ], 400);
+    }
+
+
 }
