@@ -37,3 +37,17 @@ Route::middleware(['auth.web'])->group(function () {
     Route::post('/alert-preferences/update', [AlertPreferenceController::class, 'update'])->name('alert.preferences.update');
 
 });
+
+use App\Http\Controllers\Home\CvReviewController;
+
+Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
+    Route::get('/', [CvReviewController::class, 'index'])->name('cv-review.index');
+    Route::get('/new', [CvReviewController::class, 'create'])->name('cv-review.create');
+    Route::get('/my', [CvReviewController::class, 'myRequests'])->name('cv-review.my');
+    Route::post('/', [CvReviewController::class, 'store'])->name('cv-review.store');
+    Route::get('/{uuid}', [CvReviewController::class, 'show'])->name('cv-review.show');
+    Route::post('/{uuid}/answers', [CvReviewController::class, 'submitAnswers'])->name('cv-review.answers');
+    Route::post('/{uuid}/pay', [CvReviewController::class, 'pay'])->name('cv-review.pay');
+    Route::post('/{uuid}/revision', [CvReviewController::class, 'requestRevision'])->name('cv-review.revision');
+    Route::delete('/{uuid}', [CvReviewController::class, 'destroy'])->name('cv-review.destroy');
+});
