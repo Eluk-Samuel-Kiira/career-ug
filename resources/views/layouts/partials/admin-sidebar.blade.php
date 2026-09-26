@@ -252,46 +252,41 @@
                     {{-- ===================== EMPLOYER MENU ===================== --}}
                     @elseif($userRole === 'employer')
 
-                    {{-- Post a Job --}}
-                    <div class="menu-item">
-                        <a class="menu-link" href="#">
-                            <span class="menu-icon">
-                                <i class="ki-duotone ki-plus-square fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                    <span class="path3"></span>
-                                </i>
-                            </span>
-                            <span class="menu-title">Post a Job</span>
-                        </a>
-                    </div>
+                    {{-- My Jobs dropdown --}}
+                    <div data-kt-menu-trigger="click"
+                        class="menu-item menu-accordion {{ request()->routeIs('employer.jobs.*') ? 'show here' : '' }}">
 
-                    {{-- My Jobs --}}
-                    <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-briefcase fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
+                                    <span class="path1"></span><span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">My Job Posts</span>
-                        </a>
-                    </div>
+                            <span class="menu-title">My Jobs</span>
+                            <span class="menu-arrow"></span>
+                        </span>
 
-                    {{-- Applications --}}
-                    <div class="menu-item">
-                        <a class="menu-link" href="#">
-                            <span class="menu-icon">
-                                <i class="ki-duotone ki-user-tick fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                    <span class="path3"></span>
-                                </i>
-                            </span>
-                            <span class="menu-title">Applications Received</span>
-                            <span class="badge badge-light-danger ms-2">12</span>
-                        </a>
+                        <div class="menu-sub menu-sub-accordion">
+
+                            {{-- 1. My Job Posts --}}
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('employer.jobs.index') || request()->routeIs('employer.jobs.show') ? 'active' : '' }}"
+                                href="{{ route('employer.jobs.index') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">My Job Posts</span>
+                                </a>
+                            </div>
+
+                            {{-- 2. Post a Job --}}
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('employer.jobs.create') ? 'active' : '' }}"
+                                href="{{ route('employer.jobs.create') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Post a Job</span>
+                                </a>
+                            </div>
+
+                        </div>
                     </div>
 
                     {{-- CV Filtering --}}
@@ -330,14 +325,40 @@
 
                     {{-- Company Profile --}}
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('employer.profile.*') ? 'active' : '' }}"
+                        href="{{ route('employer.profile.index') }}">
                             <span class="menu-icon">
-                                <i class="ki-duotone ki-building fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                </i>
+                                 <span class="menu-icon">
+                                    <i class="ki-duotone ki-briefcase fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                </span>
                             </span>
                             <span class="menu-title">Company Profile</span>
+                        </a>
+                    </div>
+
+                    {{-- Compliance --}}
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('employer.compliance.*') ? 'active' : '' }}"
+                        href="{{ route('employer.compliance.index') }}">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-shield-tick fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Compliance</span>
+                            @php
+                                $complianceStatus = session('user')['compliance_status'] ?? 'incomplete';
+                            @endphp
+                            @if($complianceStatus === 'verified')
+                                <span class="badge badge-light-success ms-2">✓</span>
+                            @elseif($complianceStatus === 'submitted')
+                                <span class="badge badge-light-info ms-2">Review</span>
+                            @else
+                                <span class="badge badge-light-warning ms-2">!</span>
+                            @endif
                         </a>
                     </div>
 

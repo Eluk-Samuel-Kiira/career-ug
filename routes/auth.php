@@ -51,3 +51,52 @@ Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
     Route::post('/{uuid}/revision', [CvReviewController::class, 'requestRevision'])->name('cv-review.revision');
     Route::delete('/{uuid}', [CvReviewController::class, 'destroy'])->name('cv-review.destroy');
 });
+
+
+
+use App\Http\Controllers\Employer\{ AtsController, EmployerProfileController, ComplianceController, JobSubmissionController };
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+    Route::get('/profile',           [EmployerProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile',          [EmployerProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/logo',     [EmployerProfileController::class, 'uploadLogo'])->name('profile.logo.upload');
+    Route::delete('/profile/logo',   [EmployerProfileController::class, 'deleteLogo'])->name('profile.logo.delete');
+});
+
+
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+
+    Route::get('/compliance',              [ComplianceController::class, 'index'])->name('compliance.index');
+    Route::post('/compliance/{type}',      [ComplianceController::class, 'upload'])->name('compliance.upload');
+    Route::delete('/compliance/{type}',    [ComplianceController::class, 'destroy'])->name('compliance.destroy');
+    Route::post('/compliance/submit',      [ComplianceController::class, 'submit'])->name('compliance.submit');
+});
+
+
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+
+    // Job Submissions
+    Route::get('/jobs',                 [JobSubmissionController::class, 'index'])->name('jobs.index');
+    Route::get('/jobs/new',             [JobSubmissionController::class, 'create'])->name('jobs.create');
+    Route::post('/jobs',                [JobSubmissionController::class, 'store'])->name('jobs.store');
+    Route::get('/jobs/{uuid}',          [JobSubmissionController::class, 'show'])->name('jobs.show');
+    Route::post('/jobs/{uuid}/payment', [JobSubmissionController::class, 'recordPayment'])->name('jobs.payment');
+    Route::post('/jobs/{uuid}/cancel',  [JobSubmissionController::class, 'cancel'])->name('jobs.cancel');
+    Route::delete('/jobs/{uuid}',       [JobSubmissionController::class, 'destroy'])->name('jobs.destroy');
+});
+
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+
+    Route::post('/jobs/{slug}/applicants/screen', [AtsController::class, 'screen'])->name('ats.screen');
+    Route::get('/jobs/ats/batches/{uuid}',        [AtsController::class, 'batchStatus'])->name('ats.batch-status');
+    Route::get('/jobs/{slug}/applicants',         [AtsController::class, 'index'])->name('ats.index');
+    Route::get('/jobs/{slug}/applicants/data',    [AtsController::class, 'data'])->name('ats.data');
+    Route::get('/jobs/{slug}/applicants/export',  [AtsController::class, 'export'])->name('ats.export');
+    Route::post('/jobs/{slug}/applicants/bulk',   [AtsController::class, 'bulk'])->name('ats.bulk');
+    Route::get('/jobs/{slug}/applicants/{id}',    [AtsController::class, 'show'])->name('ats.show');
+    Route::put('/jobs/{slug}/applicants/{id}',    [AtsController::class, 'update'])->name('ats.update');
+    Route::get('/jobs/{slug}/applicants/{id}/cv', [AtsController::class, 'downloadCv'])->name('ats.download-cv');
+});

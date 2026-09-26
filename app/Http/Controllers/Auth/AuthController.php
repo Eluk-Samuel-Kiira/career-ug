@@ -21,75 +21,68 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // Get account type
-        $accountType = $request->account_type ?? 'seeker';
+        $accountType = $request->input('account_type', 'seeker');
+        $isEmployer  = $accountType === 'employer';
 
-        // Build validation rules
         $rules = [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email',
-            'phone' => 'nullable|string|max:20',
+            'email'        => 'required|email',
+            'phone'        => 'nullable|string|max:20',
             'account_type' => 'nullable|in:seeker,employer',
-            'desired_title' => 'nullable|string|max:255',
             'country_code' => 'nullable|string|size:2',
-            'terms' => 'accepted',
+            'terms'        => 'accepted',
         ];
 
-        // Add conditional validation for employer
-        if ($accountType === 'employer') {
+        if ($isEmployer) {
             $rules['company_name'] = 'required|string|max:255';
             $rules['contact_name'] = 'required|string|max:255';
             $rules['company_size'] = 'nullable|string|max:50';
+        } else {
+            $rules['first_name']    = 'required|string|max:255';
+            $rules['last_name']     = 'required|string|max:255';
+            $rules['desired_title'] = 'nullable|string|max:255';
         }
 
         $request->validate($rules);
 
-        // Build phone number with country code
-        $phone = $request->phone;
+        // Build phone with country code
+        $phone = $request->input('phone');
         if ($phone) {
-            $countryCode = $request->country_code ?? config('app.country_code', 'UG');
-            // Remove any existing country code from the phone
             $phone = ltrim($phone, '+');
-            // Add country code prefix if not present
-            if (!str_starts_with($phone, config('app.country_phone_code', '256'))) {
-                $phone = config('app.country_phone_code', '256') . $phone;
+            $prefix = config('app.country_phone_code', '256');
+            if (!str_starts_with($phone, $prefix)) {
+                $phone = $prefix . $phone;
             }
         }
 
-        // Determine the role based on account_type
-        $role = $accountType === 'employer' ? 'employer' : 'job_seeker';
+        $role = $isEmployer ? 'employer' : 'job_seeker';
 
-        // Build the data array to send to main app
         $data = [
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'phone' => $phone,
-            'role' => $role,
-            'desired_title' => $request->desired_title,
-            'company_name' => $request->company_name,
-            'company_size' => $request->company_size,
-            'country_code' => $request->country_code ?? config('app.country_code', 'UG'),
-            'terms' => true,
+            'first_name'    => $request->input('first_name', ''),
+            'last_name'     => $request->input('last_name', ''),
+            'email'         => $request->input('email'),
+            'phone'         => $phone,
+            'role'          => $role,
+            'desired_title' => $request->input('desired_title'),
+            'company_name'  => $request->input('company_name'),
+            'contact_name'  => $request->input('contact_name'),
+            'company_size'  => $request->input('company_size'),
+            'country_code'  => $request->input('country_code', config('app.country_code', 'UG')),
+            'terms'         => true,
         ];
 
-        // Send to main app via CountryService
         $response = $this->countryService->api('auth/register', $data, 'POST', 0, false);
 
-        // Check if registration was successful
         if (isset($response['success']) && $response['success']) {
             return response()->json([
                 'success' => true,
-                'message' => $response['message'] ?? 'Account created! Check your email for the magic link.'
+                'message' => $response['message'] ?? 'Account created! Check your email for the magic link.',
             ]);
         }
 
-        // Return error response
         return response()->json([
             'success' => false,
             'message' => $response['message'] ?? 'Registration failed. Please try again.',
-            'errors' => $response['errors'] ?? null
+            'errors'  => $response['errors'] ?? null,
         ], 400);
     }
 
