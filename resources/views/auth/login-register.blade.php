@@ -158,33 +158,38 @@
 						<div class="row g-4 mb-4">
 							<div class="col-6">
 								<label class="form-label">First name</label>
-								<input type="text" name="first_name" class="form-control" placeholder="Jordan" required />
+								<input type="text" name="first_name" class="form-control"
+									placeholder="Jordan" data-required-for="seeker" />
 							</div>
 							<div class="col-6">
 								<label class="form-label">Last name</label>
-								<input type="text" name="last_name" class="form-control" placeholder="Lee" required />
+								<input type="text" name="last_name" class="form-control"
+									placeholder="Lee" data-required-for="seeker" />
 							</div>
 						</div>
 						<div class="mb-4">
 							<label class="form-label">Desired job title</label>
-							<input type="text" name="desired_title" class="form-control" placeholder="e.g. Warehouse Supervisor" />
+							<input type="text" name="desired_title" class="form-control"
+								placeholder="e.g. Warehouse Supervisor" data-required-for="seeker" />
 						</div>
 					</div>
 
-					<!-- Employer fields -->
+					{{-- Employer fields --}}
 					<div class="jp-fields-employer">
 						<div class="mb-4">
 							<label class="form-label">Company name</label>
-							<input type="text" name="company_name" class="form-control" placeholder="Acme Pty Ltd" />
+							<input type="text" name="company_name" class="form-control"
+								placeholder="Acme Pty Ltd" data-required-for="employer" />
 						</div>
 						<div class="row g-4 mb-4">
 							<div class="col-6">
 								<label class="form-label">Contact person</label>
-								<input type="text" name="contact_name" class="form-control" placeholder="Jordan Lee" />
+								<input type="text" name="contact_name" class="form-control"
+									placeholder="Jordan Lee" data-required-for="employer" />
 							</div>
 							<div class="col-6">
 								<label class="form-label">Company size</label>
-								<select name="company_size" class="form-select">
+								<select name="company_size" class="form-select" data-required-for="employer">
 									<option value="1-10">1–10 employees</option>
 									<option value="11-50">11–50 employees</option>
 									<option value="51-200">51–200 employees</option>
@@ -338,8 +343,33 @@
 
 		function applyType(val) {
 			var isEmployer = val === 'employer';
+
+			// Toggle visibility
 			seekerFields.forEach(function (el) { el.style.display = isEmployer ? 'none' : 'block'; });
 			employerFields.forEach(function (el) { el.style.display = isEmployer ? 'block' : 'none'; });
+
+			// Toggle `required` based on which section is visible
+			document.querySelectorAll('[data-required-for]').forEach(function (el) {
+				var shouldBeRequired = el.dataset.requiredFor === val;
+				el.required = shouldBeRequired;
+			});
+
+			// Hidden inputs still submit their values — clear them when switching
+			// so the backend doesn't get stale seeker fields in an employer form
+			if (isEmployer) {
+				// Seeker-only fields: clear so they don't leak into the employer request
+				['first_name', 'last_name', 'desired_title'].forEach(function (name) {
+					var f = document.querySelector('#jp-register-form input[name="' + name + '"]');
+					if (f) f.value = '';
+				});
+			} else {
+				// Employer-only fields: clear
+				['company_name', 'contact_name', 'company_size'].forEach(function (name) {
+					var f = document.querySelector('#jp-register-form [name="' + name + '"]');
+					if (f) f.value = '';
+				});
+			}
+
 			if (registerHidden) registerHidden.value = val;
 			if (loginHidden) loginHidden.value = val;
 		}

@@ -286,4 +286,18 @@ class CountryService
             Cache::flush();
         }
     }
+
+    public function stream(string $endpoint, array $params = [], string $method = 'GET')
+    {
+        if ($this->apiKey) {
+            $params['api_key'] = $this->apiKey;
+        }
+
+        $url = $this->getBaseUrl() . '/api/' . ltrim($endpoint, '/');
+
+        return \Illuminate\Support\Facades\Http::withHeaders($this->getHeaders())
+            ->timeout(120)
+            ->send($method, $url, ['query' => $params]);
+    }
+    
 }
