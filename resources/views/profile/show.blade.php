@@ -168,6 +168,122 @@
                                 </div>
                             </div>
 
+                            @if($isSeeker)
+                                {{-- PROFESSIONAL PREFERENCES --}}
+                                <div class="col-12">
+                                    <h5 class="fw-bold mb-3 mt-4">
+                                        <i class="ki-duotone ki-category fs-3 me-2">
+                                            <span class="path1"></span><span class="path2"></span>
+                                            <span class="path3"></span><span class="path4"></span>
+                                        </i>
+                                        Professional Preferences
+                                    </h5>
+                                    <p class="text-muted fs-7 mb-4">
+                                        These fields help employers find you. The more you fill in, the more relevant your matches.
+                                    </p>
+                                </div>
+
+                                {{-- Category --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Job Category</label>
+                                    <select name="job_category_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select category">
+                                        <option value=""></option>
+                                        @foreach($filters['categories'] ?? [] as $c)
+                                            <option value="{{ $c['id'] }}"
+                                                {{ (int)($user['job_category_id'] ?? 0) === (int)$c['id'] ? 'selected' : '' }}>
+                                                {{ $c['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Industry --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Industry</label>
+                                    <select name="industry_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select industry">
+                                        <option value=""></option>
+                                        @foreach($filters['industries'] ?? [] as $i)
+                                            <option value="{{ $i['id'] }}"
+                                                {{ (int)($user['industry_id'] ?? 0) === (int)$i['id'] ? 'selected' : '' }}>
+                                                {{ $i['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Job Type --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Preferred Job Type</label>
+                                    <select name="job_type_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select job type">
+                                        <option value=""></option>
+                                        @foreach($filters['job_types'] ?? [] as $t)
+                                            <option value="{{ $t['id'] }}"
+                                                {{ (int)($user['job_type_id'] ?? 0) === (int)$t['id'] ? 'selected' : '' }}>
+                                                {{ $t['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Location --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Preferred Location</label>
+                                    <select name="job_location_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select location">
+                                        <option value=""></option>
+                                        @foreach($filters['locations'] ?? [] as $l)
+                                            <option value="{{ $l['id'] }}"
+                                                {{ (int)($user['job_location_id'] ?? 0) === (int)$l['id'] ? 'selected' : '' }}>
+                                                {{ $l['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Experience Level --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Experience Level</label>
+                                    <select name="experience_level_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select level">
+                                        <option value=""></option>
+                                        @foreach($filters['experience_levels'] ?? [] as $e)
+                                            <option value="{{ $e['id'] }}"
+                                                {{ (int)($user['experience_level_id'] ?? 0) === (int)$e['id'] ? 'selected' : '' }}>
+                                                {{ $e['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Education Level --}}
+                                <div class="col-md-4">
+                                    <label class="fw-semibold fs-6 mb-2">Education Level</label>
+                                    <select name="education_level_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select level">
+                                        <option value=""></option>
+                                        @foreach($filters['education_levels'] ?? [] as $e)
+                                            <option value="{{ $e['id'] }}"
+                                                {{ (int)($user['education_level_id'] ?? 0) === (int)$e['id'] ? 'selected' : '' }}>
+                                                {{ $e['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Salary Range --}}
+                                <div class="col-12">
+                                    <label class="fw-semibold fs-6 mb-2">Salary Expectation</label>
+                                    <select name="salary_range_id" class="form-select form-select-lg filter-select" data-control="select2" data-placeholder="Select range">
+                                        <option value=""></option>
+                                        @foreach($filters['salary_ranges'] ?? [] as $s)
+                                            <option value="{{ $s['id'] }}"
+                                                {{ (int)($user['salary_range_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' }}>
+                                                {{ $s['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="text-muted fs-7 mt-1">Helps employers match salary expectations before contact.</div>
+                                </div>
+                            @endif
+
+
                             <!-- Social Links -->
                             <div class="col-12">
                                 <h5 class="fw-bold mb-3">Social Links</h5>

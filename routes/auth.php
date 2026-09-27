@@ -100,3 +100,35 @@ Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(fu
     Route::put('/jobs/{slug}/applicants/{id}',    [AtsController::class, 'update'])->name('ats.update');
     Route::get('/jobs/{slug}/applicants/{id}/cv', [AtsController::class, 'downloadCv'])->name('ats.download-cv');
 });
+
+
+use App\Http\Controllers\Employer\AnalyticsController;
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+
+    Route::get('/analytics',      [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/data', [AnalyticsController::class, 'data'])->name('analytics.data');
+});
+
+
+Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
+
+    Route::prefix('cv-filter')->name('cv-filter.')->group(function () {
+        Route::get('/',           [\App\Http\Controllers\Employer\CvFilterController::class, 'index'])->name('index');
+        Route::get('/data',       [\App\Http\Controllers\Employer\CvFilterController::class, 'data'])->name('data');
+        Route::get('/{id}',       [\App\Http\Controllers\Employer\CvFilterController::class, 'show'])->name('show');
+        Route::get('/{id}/cv',    [\App\Http\Controllers\Employer\CvFilterController::class, 'viewCv'])->name('cv');
+    });
+});
+
+
+Route::middleware(['auth.web'])->prefix('letters')->name('letters.')->group(function () {
+    Route::get('/',               [\App\Http\Controllers\Seeker\LetterController::class, 'index'])->name('index');
+    Route::get('/create',         [\App\Http\Controllers\Seeker\LetterController::class, 'create'])->name('create');
+    Route::post('/',              [\App\Http\Controllers\Seeker\LetterController::class, 'store'])->name('store');
+    Route::get('/search-jobs',    [\App\Http\Controllers\Seeker\LetterController::class, 'searchJobs'])->name('search-jobs');
+    Route::get('/{uuid}',         [\App\Http\Controllers\Seeker\LetterController::class, 'show'])->name('show');
+    Route::post('/{uuid}/pay',    [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
+    Route::get('/{uuid}/download',[\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
+    Route::delete('/{uuid}',      [\App\Http\Controllers\Seeker\LetterController::class, 'destroy'])->name('destroy');
+});

@@ -98,7 +98,7 @@
                     </div>
 
                     {{-- CV Review Service --}}
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('cv-review*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('cv-review*', 'letters*',) ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-note-2 fs-2">
@@ -126,34 +126,21 @@
                                     @endif
                                 </a>
                             </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('letters.index') ? 'active' : '' }}"
+                                href="{{ route('letters.index') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">My Letters</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('letters.create') ? 'active' : '' }}"
+                                href="{{ route('letters.create') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Generate a Letter</span>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-
-                    {{-- Application Letter --}}
-                    <div class="menu-item">
-                        <a class="menu-link" href="#">
-                            <span class="menu-icon">
-                                <i class="ki-duotone ki-message-text-2 fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                    <span class="path3"></span>
-                                </i>
-                            </span>
-                            <span class="menu-title">Application Letter</span>
-                        </a>
-                    </div>
-
-                    {{-- Cover Letter --}}
-                    <div class="menu-item">
-                        <a class="menu-link" href="#">
-                            <span class="menu-icon">
-                                <i class="ki-duotone ki-document fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                </i>
-                            </span>
-                            <span class="menu-title">Cover Letter</span>
-                        </a>
                     </div>
 
                     {{-- Job Alerts --}}
@@ -290,12 +277,13 @@
                     </div>
 
                     {{-- CV Filtering --}}
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('employer.cv-filter.*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
-                                <i class="ki-duotone ki-filter fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
+                                <i class="ki-duotone ki-people fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                    <span class="path3"></span><span class="path4"></span>
+                                    <span class="path5"></span>
                                 </i>
                             </span>
                             <span class="menu-title">CV Filtering</span>
@@ -303,21 +291,12 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div class="menu-item">
-                                <a class="menu-link" href="#">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">By Category</span>
-                                </a>
-                            </div>
-                            <div class="menu-item">
-                                <a class="menu-link" href="#">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">By Experience</span>
-                                </a>
-                            </div>
-                            <div class="menu-item">
-                                <a class="menu-link" href="#">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">By Location</span>
+                                <a class="menu-link {{ request()->routeIs('employer.cv-filter.index') ? 'active' : '' }}"
+                                href="{{ route('employer.cv-filter.index') }}">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">Search Candidates</span>
                                 </a>
                             </div>
                         </div>
@@ -364,12 +343,11 @@
 
                     {{-- Analytics --}}
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('employer.analytics.*') ? 'active' : '' }}"
+                        href="{{ route('employer.analytics.index') }}">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-chart-simple fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                    <span class="path3"></span>
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                                 </i>
                             </span>
                             <span class="menu-title">Job Analytics</span>

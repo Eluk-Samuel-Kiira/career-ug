@@ -195,8 +195,12 @@
                                 {{-- LEFT: title + meta + preview --}}
                                 <div class="flex-1 min-w-0">
                                     <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                                        <span class="fw-bold fs-4">{{ $s['job_title'] }}</span>
-
+                                        @if($s['status'] === 'published' && !empty($s['job_post_slug']))
+                                            <a href="{{ route('jobs.show', $s['job_post_slug']) }}" target="_blank"><span class="fw-bold fs-4">{{ $s['job_title'] }}</span></a>
+                                        @else
+                                            <span class="fw-bold fs-4">{{ $s['job_title'] }}</span>
+                                        @endif
+                                        
                                         @if($badge === 'popular')
                                             <span class="badge badge-light-warning">⭐ Popular</span>
                                         @elseif($badge === 'urgent')
@@ -229,6 +233,58 @@
                                             </i>
                                             {{ $s['service_name'] }}
                                         </span>
+                                        {{-- Live stats: only meaningful once the job is published --}}
+                                        @if($s['status'] === 'published')
+                                            <div class="d-flex align-items-center gap-4 mb-3 flex-wrap">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="symbol symbol-30px">
+                                                        <span class="symbol-label bg-light-info">
+                                                            <i class="ki-duotone ki-eye fs-5 text-info">
+                                                                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                            </i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex flex-column lh-1">
+                                                        <span class="fs-6 fw-bold text-gray-800">{{ number_format($s['view_count'] ?? 0) }}</span>
+                                                        <span class="fs-8 text-muted">{{ Str::plural('view', $s['view_count'] ?? 0) }}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="symbol symbol-30px">
+                                                        <span class="symbol-label bg-light-primary">
+                                                            <i class="ki-duotone ki-user-tick fs-5 text-primary">
+                                                                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                            </i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex flex-column lh-1">
+                                                        <span class="fs-6 fw-bold text-gray-800">{{ number_format($s['application_count'] ?? 0) }}</span>
+                                                        <span class="fs-8 text-muted">{{ Str::plural('applicant', $s['application_count'] ?? 0) }}</span>
+                                                    </div>
+                                                </div>
+
+                                                {{-- Conversion rate --}}
+                                                @php
+                                                    $views = max(1, (int) ($s['view_count'] ?? 0));
+                                                    $apps  = (int) ($s['application_count'] ?? 0);
+                                                    $rate  = $views > 0 ? round(($apps / $views) * 100, 1) : 0;
+                                                @endphp
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="symbol symbol-30px">
+                                                        <span class="symbol-label bg-light-success">
+                                                            <i class="ki-duotone ki-chart-line-up fs-5 text-success">
+                                                                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                            </i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex flex-column lh-1">
+                                                        <span class="fs-6 fw-bold text-gray-800">{{ $rate }}%</span>
+                                                        <span class="fs-8 text-muted">conversion</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <div class="text-gray-700 fs-7 mb-3">

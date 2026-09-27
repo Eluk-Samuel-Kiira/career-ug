@@ -22,7 +22,13 @@
 				</li>
 				<li class="nav-item p-0 ms-0 me-8">
 					<a class="nav-link btn btn-color-muted px-0" data-bs-toggle="tab" href="#tab_personal">
-						<span class="nav-text fw-semibold fs-4 mb-3">Personal & Summary</span>
+						<span class="nav-text fw-semibold fs-4 mb-3">Personal Info</span>
+						<span class="bullet-custom position-absolute z-index-2 w-100 h-2px top-100 bottom-n100 bg-primary rounded"></span>
+					</a>
+				</li>
+				<li class="nav-item p-0 ms-0 me-8">
+					<a class="nav-link btn btn-color-muted px-0" data-bs-toggle="tab" href="#tab_preferences">
+						<span class="nav-text fw-semibold fs-4 mb-3">Job Preferences</span>
 						<span class="bullet-custom position-absolute z-index-2 w-100 h-2px top-100 bottom-n100 bg-primary rounded"></span>
 					</a>
 				</li>
@@ -237,6 +243,119 @@
 						<div class="col-12">
 							<label class="fw-semibold fs-6 mb-2">Professional Summary</label>
 							<textarea class="form-control form-control-lg" rows="4" id="f_professional_summary"></textarea>
+						</div>
+					</div>
+				</div>
+
+				<!-- ===================== JOB PREFERENCES ===================== -->
+				<div class="tab-pane fade" id="tab_preferences">
+					<div class="mb-6">
+						<h5 class="fw-bold mb-2">Job Preferences</h5>
+						<p class="text-muted fs-7 mb-0">
+							These fields drive employer matching and job recommendations. Keep them up to date so
+							relevant roles reach you first.
+						</p>
+					</div>
+
+					<div class="row g-5">
+						{{-- Job Category --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Job Category</label>
+							<select id="f_job_category_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select category">
+								<option value=""></option>
+								@foreach($filters['categories'] ?? [] as $c)
+									<option value="{{ $c['id'] }}">{{ $c['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Industry --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Industry</label>
+							<select id="f_industry_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select industry">
+								<option value=""></option>
+								@foreach($filters['industries'] ?? [] as $i)
+									<option value="{{ $i['id'] }}">{{ $i['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Job Type --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Preferred Job Type</label>
+							<select id="f_job_type_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select job type">
+								<option value=""></option>
+								@foreach($filters['job_types'] ?? [] as $t)
+									<option value="{{ $t['id'] }}">{{ $t['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Location --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Preferred Location</label>
+							<select id="f_job_location_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select location">
+								<option value=""></option>
+								@foreach($filters['locations'] ?? [] as $l)
+									<option value="{{ $l['id'] }}">{{ $l['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Experience Level --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Experience Level</label>
+							<select id="f_experience_level_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select experience level">
+								<option value=""></option>
+								@foreach($filters['experience_levels'] ?? [] as $e)
+									<option value="{{ $e['id'] }}">{{ $e['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Education Level --}}
+						<div class="col-md-6">
+							<label class="fw-semibold fs-6 mb-2">Education Level</label>
+							<select id="f_education_level_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select education level">
+								<option value=""></option>
+								@foreach($filters['education_levels'] ?? [] as $e)
+									<option value="{{ $e['id'] }}">{{ $e['label'] }}</option>
+								@endforeach
+							</select>
+						</div>
+
+						{{-- Salary Range --}}
+						<div class="col-12">
+							<label class="fw-semibold fs-6 mb-2">Salary Expectation</label>
+							<select id="f_salary_range_id" class="form-select form-select-lg pref-select"
+									data-control="select2" data-placeholder="Select salary range">
+								<option value=""></option>
+								@foreach($filters['salary_ranges'] ?? [] as $s)
+									<option value="{{ $s['id'] }}">{{ $s['label'] }}</option>
+								@endforeach
+							</select>
+							<div class="text-muted fs-7 mt-1">
+								Helps employers match salary expectations before they reach out.
+							</div>
+						</div>
+					</div>
+
+					<div class="alert alert-dismissible bg-light-primary border border-primary border-dashed d-flex flex-column flex-sm-row w-100 p-5 mt-6">
+						<i class="ki-duotone ki-information-5 fs-2hx text-primary me-4 mb-5 mb-sm-0">
+							<span class="path1"></span><span class="path2"></span><span class="path3"></span>
+						</i>
+						<div class="d-flex flex-column pe-0 pe-sm-10">
+							<h5 class="mb-1">Why this matters</h5>
+							<span class="fs-7">
+								Complete preferences make your profile eligible for employer filters and are required
+								before applying to jobs.
+							</span>
 						</div>
 					</div>
 				</div>
@@ -466,6 +585,25 @@ document.addEventListener('DOMContentLoaded', function () {
 		setVal('f_professional_summary', profile.professional_summary);
 		setVal('f_skills', Array.isArray(profile.skills) ? profile.skills.join(', ') : (profile.skills ?? ''));
 		setVal('f_languages', Array.isArray(profile.languages) ? profile.languages.join(', ') : (profile.languages ?? ''));
+		// Preference selects — use val() + trigger so Select2 UI updates too
+		const setSelect = (id, value) => {
+			const el = document.getElementById(id);
+			if (!el) return;
+			const v = (value === null || value === undefined) ? '' : String(value);
+			if (typeof jQuery !== 'undefined' && jQuery(el).hasClass('select2-hidden-accessible')) {
+				jQuery(el).val(v).trigger('change.select2');
+			} else {
+				el.value = v;
+			}
+		};
+
+		setSelect('f_job_category_id',     profile.job_category_id);
+		setSelect('f_industry_id',         profile.industry_id);
+		setSelect('f_job_type_id',         profile.job_type_id);
+		setSelect('f_job_location_id',     profile.job_location_id);
+		setSelect('f_experience_level_id', profile.experience_level_id);
+		setSelect('f_education_level_id',  profile.education_level_id);
+		setSelect('f_salary_range_id',     profile.salary_range_id);
 
 		const expList = document.getElementById('experienceList'); 
 		if (expList) {
@@ -605,6 +743,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			btn.disabled = true;
 			btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
+			const getSelectValue = (id) => {
+				const el = document.getElementById(id);
+				if (!el) return null;
+				const v = el.value;
+				return (v === '' || v === null) ? null : v;
+			};
+
 			const payload = {
 				first_name: document.getElementById('f_first_name')?.value || '',
 				last_name: document.getElementById('f_last_name')?.value || '',
@@ -627,6 +772,14 @@ document.addEventListener('DOMContentLoaded', function () {
 				education: collectRows('educationList'),
 				certifications: collectRows('certificationsList'),
 				projects: collectRows('projectsList'),
+
+				job_category_id:     getSelectValue('f_job_category_id'),
+				industry_id:         getSelectValue('f_industry_id'),
+				job_type_id:         getSelectValue('f_job_type_id'),
+				job_location_id:     getSelectValue('f_job_location_id'),
+				experience_level_id: getSelectValue('f_experience_level_id'),
+				education_level_id:  getSelectValue('f_education_level_id'),
+				salary_range_id:     getSelectValue('f_salary_range_id'),
 			};
 
 			fetch('{{ route('profile.update') }}', {

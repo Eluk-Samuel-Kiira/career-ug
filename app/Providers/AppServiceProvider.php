@@ -4,52 +4,76 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Cache;
 use App\Services\CountryService;
-use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
+        // ─────────────────────────────────────────────────────────
+        // Global share: filter dropdowns (categories, industries,
+        // job types, locations, experience/education levels,
+        // salary ranges, countries)
+        // ─────────────────────────────────────────────────────────
+        View::composer('*', function ($view) {
+            $countryService = app(CountryService::class);
+            $countryCode    = $countryService->getCode();
+
+            $cacheKey = "filters.dropdowns.{$countryCode}";
+
+            $filters = Cache::remember($cacheKey, now()->addHour(), function () use ($countryService) {
+                $data = $countryService->api('filters/dropdowns', [], 'GET', 3600);
+
+                // If the API failed, return empty arrays so blade doesn't explode
+                if (!is_array($data) || ($data['success'] ?? true) === false) {
+                    return [
+                        'categories'        => [],
+                        'industries'        => [],
+                        'job_types'         => [],
+                        'locations'         => [],
+                        'experience_levels' => [],
+                        'education_levels'  => [],
+                        'salary_ranges'     => [],
+                        'countries'         => [],
+                    ];
+                }
+
+                return $data;
+            });
+
+            $view->with('filters', $filters);
+        });
+
+        // ─────────────────────────────────────────────────────────
+        // Header (nav categories & locations) — existing behaviour
+        // ─────────────────────────────────────────────────────────
         View::composer('layouts.header', function ($view) {
             $countryService = app(CountryService::class);
 
-            // Fetch categories
             $categories = $countryService->api('all_categories', [], 'GET', 3600);
-            
-            // Fetch locations
-            $locations = $countryService->api('locations', [], 'GET', 3600);
+            $locations  = $countryService->api('locations', [], 'GET', 3600);
 
             $view->with('navCategories', is_array($categories) ? $categories : []);
-            $view->with('navLocations', is_array($locations) ? $locations : []);
+            $view->with('navLocations',  is_array($locations)  ? $locations  : []);
         });
 
-        // Share pages with footer
+        // ─────────────────────────────────────────────────────────
+        // Footer pages
+        // ─────────────────────────────────────────────────────────
         View::composer('layouts.footer', function ($view) {
             $countryService = app(CountryService::class);
 
-            // Fetch pages from API
             $pages = $countryService->api('pages', [], 'GET', 3600);
-            
-            // Filter only active pages and sort by sort_order
+
             $footerPages = [];
             if (is_array($pages) && !empty($pages)) {
-                // Sort by sort_order
-                usort($pages, function($a, $b) {
-                    return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
-                });
-                
+                usort($pages, fn($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
                 $footerPages = $pages;
             }
 

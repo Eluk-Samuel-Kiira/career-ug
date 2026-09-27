@@ -86,6 +86,14 @@ class ProfileController extends Controller
             'certifications' => 'nullable|array',
             'projects' => 'nullable|array',
             'is_public' => 'nullable|boolean', 
+
+            'job_category_id'       => 'nullable|integer',
+            'industry_id'           => 'nullable|integer',
+            'job_type_id'           => 'nullable|integer',
+            'job_location_id'       => 'nullable|integer',
+            'experience_level_id'   => 'nullable|integer',
+            'education_level_id'    => 'nullable|integer',
+            'salary_range_id'       => 'nullable|integer',
         ]);
 
         // Prepare data for API - include ALL fields
@@ -115,6 +123,14 @@ class ProfileController extends Controller
             'certifications' => $request->certifications,
             'projects' => $request->projects,
             'is_public' => $request->has('is_public') ? filter_var($request->is_public, FILTER_VALIDATE_BOOLEAN) : false,
+
+            'job_category_id'     => $request->input('job_category_id'),
+            'industry_id'         => $request->input('industry_id'),
+            'job_type_id'         => $request->input('job_type_id'),
+            'job_location_id'     => $request->input('job_location_id'),
+            'experience_level_id' => $request->input('experience_level_id'),
+            'education_level_id'  => $request->input('education_level_id'),
+            'salary_range_id'     => $request->input('salary_range_id'),
         ];
 
         // Remove null values
