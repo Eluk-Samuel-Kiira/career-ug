@@ -159,7 +159,6 @@ class JobsController extends Controller
     {
         $user = session('user');
         
-        // Always track the application even if not logged in (guest tracking handled separately)
         $result = $this->countryService->api("job-action/{$id}/track-application", [], 'POST', 0, false);
 
         if (!$user) {

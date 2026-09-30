@@ -196,7 +196,7 @@
 								<div class="menu-item jp-nav-resources">
 									<!-- Desktop: hover-based dropdown -->
 									<div class="jp-nav-resources-desktop">
-										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*') ? 'active' : '' }}" style="cursor: pointer;">
+										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*','pricing.*') ? 'active' : '' }}" style="cursor: pointer;">
 											Resources
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -223,16 +223,6 @@
 													Blog
 												</span>
 											</a>
-											<!-- Email Alerts -->
-											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('email-alerts.*') ? 'active' : '' }}">
-												<span class="d-flex align-items-center gap-2">
-													<i class="ki-duotone ki-sms fs-4 text-success">
-														<span class="path1"></span>
-														<span class="path2"></span>
-													</i>
-													Email Alerts
-												</span>
-											</a>
 											<!-- Tenders -->
 											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('tenders.*') ? 'active' : '' }}">
 												<span class="d-flex align-items-center gap-2">
@@ -243,12 +233,21 @@
 													Tenders
 												</span>
 											</a>
+											<a href="{{ route('pricing.index') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('pricing.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-dollar fs-4 text-success">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Pricing
+												</span>
+											</a>
 										</div>
 									</div>
 
 									<!-- Mobile: details-based dropdown -->
 									<details class="jp-nav-resources-mobile">
-										<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*') ? 'active' : '' }}" style="cursor: pointer;">
+										<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*','pricing.*') ? 'active' : '' }}" style="cursor: pointer;">
 											Resources
 											<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 												<path d="M6 9l6 6 6-6"/>
@@ -275,16 +274,6 @@
 													Blog
 												</span>
 											</a>
-											<!-- Email Alerts -->
-											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('email-alerts.*') ? 'active' : '' }}">
-												<span class="d-flex align-items-center gap-2">
-													<i class="ki-duotone ki-sms fs-4 text-success">
-														<span class="path1"></span>
-														<span class="path2"></span>
-													</i>
-													Email Alerts
-												</span>
-											</a>
 											<!-- Tenders -->
 											<a href="" data-kt-drawer-dismiss="true" class="{{ Route::is('tenders.*') ? 'active' : '' }}">
 												<span class="d-flex align-items-center gap-2">
@@ -293,6 +282,15 @@
 														<span class="path2"></span>
 													</i>
 													Tenders
+												</span>
+											</a>
+											<a href="{{ route('pricing.index') }}" data-kt-drawer-dismiss="true" class="{{ Route::is('pricing.*') ? 'active' : '' }}">
+												<span class="d-flex align-items-center gap-2">
+													<i class="ki-duotone ki-dollar fs-4 text-success">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+													Pricing
 												</span>
 											</a>
 										</div>

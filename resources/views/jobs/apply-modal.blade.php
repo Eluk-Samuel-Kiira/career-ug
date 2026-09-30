@@ -119,7 +119,9 @@
     </div>
 </div>
 
+
 <script>
+// ---------- Copy helper (used by the apply modal) ----------
 function jpCopy(el, text) {
     navigator.clipboard.writeText(text).then(() => {
         const original = el.textContent;
@@ -131,253 +133,275 @@ function jpCopy(el, text) {
 </script>
 
 <script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        // Show toast or alert
-        alert('Copied to clipboard!');
-    }).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        alert('Copied to clipboard!');
-    });
-}
+(function () {
+    'use strict';
 
-function reportMissingApplicationLink(jobId, jobTitle, companyName) {
-    if (confirm(`Report missing application link for "${jobTitle}"?`)) {
-        // Your reporting logic here
-        alert('Thank you! Admin has been notified.');
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+    const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
+
+    // ─────────────────────────────────────────────────────────────
+    // Shared toast helper — uses window.showToast when available
+    // ─────────────────────────────────────────────────────────────
+    function toast(type, msg, title) {
+        if (typeof window.showToast === 'function') {
+            window.showToast(type, msg, title || (type === 'success' ? 'Done' : type === 'error' ? 'Error' : 'Info'));
+        } else {
+            console[type === 'error' ? 'error' : 'log'](msg);
+        }
     }
-}
-</script>
 
-<script>
-    // ---------- Track Application ----------
-    document.addEventListener('DOMContentLoaded', function () {
-        const applyModal = document.getElementById('applyModal');
-        if (!applyModal) return;
-    
-        let tracked = false;
-        let isGuestContinue = false;
+    // ─────────────────────────────────────────────────────────────
+    // Login gate — reuses whatever login/guest modal this page has
+    // ─────────────────────────────────────────────────────────────
+    function showLoginGate() {
+        if (typeof window.showSaveLoginModal === 'function') {
+            window.showSaveLoginModal();
+            return;
+        }
+        if (typeof window.showLoginOrGuestModal === 'function') {
+            window.showLoginOrGuestModal();
+            return;
+        }
+        // Fallback redirect
+        const back = encodeURIComponent(window.location.href);
+        window.location.href = '{{ route("login") }}?redirect=' + back;
+    }
 
-        applyModal.addEventListener('show.bs.modal', function (e) {
-            // If continuing as guest, skip the login check
-            if (isGuestContinue) {
-                isGuestContinue = false;
-                if (!tracked) {
-                    tracked = true;
-                    trackApplication();
-                }
-                return;
-            }
-            
-            // Check if user is logged in
-            const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
-            
-            if (!isLoggedIn) {
-                e.preventDefault();
-                e.stopPropagation();
-                showLoginOrGuestModal();
-                return;
-            }
-            
-            if (tracked) return;
-            
-            // User is logged in, track the application
-            tracked = true;
-            trackApplication();
+    // ─────────────────────────────────────────────────────────────
+    // Flip every apply button on the page to the "Applied" state
+    // ─────────────────────────────────────────────────────────────
+    function markPageAsApplied() {
+        document.querySelectorAll('.jp-easy-apply-btn').forEach(btn => {
+            btn.dataset.applied = 'true';
+            btn.classList.remove('jp-btn-primary');
+            btn.classList.add('jp-btn-outline');
+            btn.innerHTML = `
+                <i class="ki-duotone ki-check-circle fs-3 me-2">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Applied
+            `;
         });
 
-        function showLoginOrGuestModal() {
-            const modalHtml = `
-                <div class="modal fade" id="loginOrGuestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 shadow-lg rounded-4">
-                            <div class="modal-header border-0 pb-0">
-                                <h5 class="modal-title fw-bold">Apply for Job</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-center p-5">
-                                <div class="mb-4">
-                                    <div class="symbol symbol-80px bg-light-primary rounded-3 d-flex align-items-center justify-content-center mx-auto">
-                                        <i class="bi bi-person-check fs-3x text-primary"></i>
-                                    </div>
-                                </div>
-                                <h4 class="fw-bold mb-2">Ready to Apply?</h4>
-                                <p class="text-muted mb-4">
-                                    Sign in to track your application status or continue as a guest.
-                                </p>
-                                
-                                <div class="d-flex flex-column gap-3">
-                                    <a href="{{ route('login') }}" class="btn jp-btn-primary py-3">
-                                        <i class="bi bi-box-arrow-in-right me-2"></i>
-                                        Sign In & Apply
-                                    </a>
-                                    <button type="button" class="btn btn-outline-secondary py-3" id="continueAsGuestBtn">
-                                        <i class="bi bi-person me-2"></i>
-                                        Continue as Guest
-                                    </button>
-                                </div>
-                                
-                                <p class="text-muted fs-7 mt-4 mb-0">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Your application will not be tracked anonymously.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const existingModal = document.getElementById('loginOrGuestModal');
-            if (existingModal) {
-                existingModal.remove();
+        document.querySelectorAll('[data-bs-target="#applyModal"]').forEach(btn => {
+            btn.dataset.applied = 'true';
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Track application — the ONE function both buttons use
+    // ─────────────────────────────────────────────────────────────
+    async function trackApplication(jobId) {
+        if (!jobId) {
+            return { success: false, message: 'Missing job id.' };
+        }
+
+        try {
+            const res = await fetch(`/jobs/${jobId}/track-application`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': CSRF,
+                },
+            });
+
+            const data = await res.json();
+            return data;
+
+        } catch (err) {
+            console.error('trackApplication error:', err);
+            return { success: false, message: 'Network error. Please try again.' };
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Unified click handler for BOTH button types
+    // ─────────────────────────────────────────────────────────────
+    async function handleApplyClick(btn, { useModal }) {
+        // Already applied?
+        if (btn.dataset.applied === 'true') {
+            toast('info', 'You have already applied to this job.', 'Applied');
+            return;
+        }
+
+        // Not logged in? Open the login gate (unless the modal itself handles it)
+        if (!isLoggedIn && !useModal) {
+            showLoginGate();
+            return;
+        }
+        if (!isLoggedIn && useModal) {
+            // Let the normal modal flow open; it has its own login check
+            return false;
+        }
+
+        const jobId = btn.dataset.jobId;
+        if (!jobId) {
+            toast('error', 'Job id is missing. Please refresh the page.', 'Error');
+            return;
+        }
+
+        // Visual feedback
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Applying...';
+
+        const data = await trackApplication(jobId);
+
+        // ── Success
+        if (data.success) {
+            markPageAsApplied();
+
+            if (data.is_applied && data.message === 'Already applied') {
+                toast('info', 'You have already applied to this job.', 'Applied');
+            } else {
+                toast('success', 'Application submitted successfully!', 'Applied');
             }
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const modal = new bootstrap.Modal(document.getElementById('loginOrGuestModal'));
-            modal.show();
-            
-            // Handle Continue as Guest
-            document.getElementById('continueAsGuestBtn').addEventListener('click', function() {
-                // Set the flag to bypass login check
-                isGuestContinue = true;
-                
-                // Hide the login/guest modal
-                modal.hide();
-                
-                // Track as guest
-                trackGuestApplication();
-                
-                // Show the actual apply modal after a short delay
-                setTimeout(() => {
-                    const applyModalEl = document.getElementById('applyModal');
-                    if (applyModalEl) {
-                        // Clean up any existing backdrop
-                        const backdrops = document.querySelectorAll('.modal-backdrop');
-                        backdrops.forEach(b => b.remove());
-                        document.body.classList.remove('modal-open');
-                        
-                        // Show the apply modal
-                        const bsModal = new bootstrap.Modal(applyModalEl);
-                        bsModal.show();
+
+            btn.disabled = false;
+            return;
+        }
+
+        // ── Not logged in (server said so)
+        if (data.requires_login) {
+            btn.disabled = false;
+            btn.innerHTML = original;
+            showLoginGate();
+            return;
+        }
+
+        // ── Profile incomplete
+        if (data.code === 'profile_incomplete') {
+            btn.disabled = false;
+            btn.innerHTML = original;
+            toast('warning', data.message || 'Please complete your profile before applying.', 'Profile Incomplete');
+            return;
+        }
+
+        // ── Any other error
+        btn.disabled = false;
+        btn.innerHTML = original;
+        toast('error', data.message || 'Could not submit your application.', 'Error');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Bind buttons
+    // ─────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ── Easy Apply buttons — direct track, no modal
+        document.querySelectorAll('.jp-easy-apply-btn').forEach(btn => {
+            // If already in "Applied" state, bind only the info toast
+            if (btn.dataset.applied === 'true') {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    toast('info', 'You have already applied to this job.', 'Applied');
+                });
+                return;
+            }
+
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                handleApplyClick(btn, { useModal: false });
+            });
+        });
+
+        // ── Normal Apply Now buttons — open the modal, but pre-gate on login
+        document.querySelectorAll('[data-bs-target="#applyModal"]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                // If already applied via this session, don't open the modal
+                if (btn.dataset.applied === 'true') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toast('info', 'You have already applied to this job.', 'Applied');
+                    return;
+                }
+
+                if (!isLoggedIn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showLoginGate();
+                    return;
+                }
+
+                // Let the modal open — its own show handler will track
+            });
+        });
+
+        // ── The modal's own show handler tracks intent
+        const applyModal = document.getElementById('applyModal');
+        if (applyModal) {
+            let tracked = false;
+
+            applyModal.addEventListener('show.bs.modal', function () {
+                if (tracked || !isLoggedIn) return;
+                tracked = true;
+
+                const btn = document.querySelector('.jp-save-job-btn');
+                const jobId = btn?.dataset.jobId;
+
+                trackApplication(jobId).then(data => {
+                    if (data.success && data.is_applied) {
+                        markPageAsApplied();
                     }
-                }, 200);
-            });
-        }
-
-        function trackApplication() {
-            const jobId = document.querySelector('.jp-save-job-btn')?.dataset.jobId;
-            if (!jobId) return;
-            
-            fetch(`/jobs/${jobId}/track-application`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Application tracked successfully');
-                }
-            })
-            .catch(error => {
-                console.error('Tracking error:', error);
-            });
-        }
-
-        function trackGuestApplication() {
-            const jobId = document.querySelector('.jp-save-job-btn')?.dataset.jobId;
-            if (!jobId) return;
-            
-            fetch('/guest/track-application', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                },
-                body: JSON.stringify({ job_id: jobId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Guest application tracked in session');
-                }
-            })
-            .catch(error => {
-                console.error('Guest tracking error:', error);
+                });
             });
         }
     });
+})();
 </script>
 
 <script>
-    // ---------- Save Job Functionality ----------
-    document.addEventListener('DOMContentLoaded', function() {
+    // ---------- Save Job Functionality (unchanged) ----------
+    document.addEventListener('DOMContentLoaded', function () {
         const saveBtn = document.querySelector('.jp-save-job-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', function() {
-                const jobId = this.dataset.jobId;
-                const isSaved = this.dataset.isSaved === 'true';
-                const icon = this.querySelector('i');
-                const text = this.querySelector('span');
-                
-                // Check if user is logged in via session
-                const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
-                
-                if (!isLoggedIn) {
-                    showSaveLoginModal();
-                    return;
-                }
-                
-                // Toggle save via web controller
-                toggleSaveJob(jobId, isSaved, icon, text);
-            });
-        }
+        if (!saveBtn) return;
+
+        saveBtn.addEventListener('click', function () {
+            const jobId = this.dataset.jobId;
+            const isSaved = this.dataset.isSaved === 'true';
+            const icon = this.querySelector('i');
+            const text = this.querySelector('span');
+            const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
+
+            if (!isLoggedIn) {
+                showSaveLoginModal();
+                return;
+            }
+
+            toggleSaveJob(jobId, isSaved, icon, text);
+        });
     });
 
     function toggleSaveJob(jobId, isSaved, icon, text) {
-        const url = `/jobs/${jobId}/save`;
-        
-        fetch(url, {
+        fetch(`/jobs/${jobId}/save`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({}),
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                const newState = data.is_saved;
-                if (newState) {
-                    icon.className = 'bi bi-heart-fill fs-3 me-2 text-danger';
-                    text.textContent = 'Saved';
-                    if (typeof window.showToast === 'function') {
-                        window.showToast('success', 'Job saved successfully!', 'Saved');
-                    }
-                } else {
-                    icon.className = 'bi bi-heart fs-3 me-2';
-                    text.textContent = 'Save';
-                    if (typeof window.showToast === 'function') {
-                        window.showToast('info', 'Job removed from saved.', 'Unsaved');
-                    }
-                }
-                // Update data attribute
-                document.querySelector('.jp-save-job-btn').dataset.isSaved = newState;
+            if (!data.success) return;
+            const newState = data.is_saved;
+
+            icon.className = newState ? 'bi bi-heart-fill fs-3 me-2 text-danger' : 'bi bi-heart fs-3 me-2';
+            text.textContent = newState ? 'Saved' : 'Save';
+
+            if (typeof window.showToast === 'function') {
+                window.showToast(
+                    newState ? 'success' : 'info',
+                    newState ? 'Job saved successfully!' : 'Job removed from saved.',
+                    newState ? 'Saved' : 'Unsaved'
+                );
             }
+
+            document.querySelector('.jp-save-job-btn').dataset.isSaved = newState;
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(() => {
             if (typeof window.showToast === 'function') {
                 window.showToast('error', 'Something went wrong. Please try again.', 'Error');
             }

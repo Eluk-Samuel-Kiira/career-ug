@@ -225,9 +225,42 @@
 			</div>
 
 			<div class="d-flex flex-wrap align-items-center gap-3 mt-6 pt-6" style="border-top:1px solid var(--jp-line);">
-				<button type="button" class="btn jp-btn-primary" data-bs-toggle="modal" data-bs-target="#applyModal">
-                    <i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
-                </button>
+				@php
+					$easyApply = (bool) ($job['easy_apply'] ?? false);
+					$isApplied = (bool) ($job['is_applied'] ?? false);
+					$isSaved = (bool) ($job['is_saved'] ?? false);
+				@endphp
+
+				@if($easyApply)
+					@if($isApplied)
+						<button type="button"
+								class="btn jp-btn-outline px-8 py-3 jp-easy-apply-btn"
+								data-job-id="{{ $jobId }}"
+								data-applied="true"
+								disabled>
+							<i class="ki-duotone ki-check-circle fs-3 me-2">
+								<span class="path1"></span><span class="path2"></span>
+							</i>
+							Applied
+						</button>
+					@else
+						<button type="button"
+								class="btn jp-btn-primary px-8 py-3 jp-easy-apply-btn"
+								data-job-id="{{ $jobId }}"
+								data-job-title="{{ $jobTitle }}"
+								data-company-name="{{ $companyName }}"
+								data-applied="false">
+							<i class="ki-duotone ki-flash fs-3 me-2">
+								<span class="path1"></span><span class="path2"></span>
+							</i>
+							Easy Apply
+						</button>
+					@endif
+				@else
+					<button type="button" class="btn jp-btn-primary px-8 py-3" data-bs-toggle="modal" data-bs-target="#applyModal">
+						<i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
+					</button>
+				@endif
 				<button type="button" class="btn jp-btn-outline px-6 py-3 jp-save-job-btn" 
 						data-job-id="{{ $jobId ?? '' }}"
 						data-is-saved="{{ $isSaved ? 'true' : 'false' }}">
@@ -343,26 +376,53 @@
                     <div class="jp-content-card" id="apply">
                         <h2><i class="ki-duotone ki-send fs-3"><span class="path1"></span><span class="path2"></span></i>How to Apply</h2>
 
-                        @if($applicationProcedure)
-                            <div class="jp-prose">{!! $applicationProcedure !!}</div>
-                        @else
-                            <div class="jp-prose">
-                                <p>To apply for this role{{ $companyName ? ' at ' . $companyName : '' }}, use one of the contact options below.</p>
-                            </div>
-                        @endif
+						@if($easyApply)
+							@if($isApplied)
+								<button type="button"
+										class="btn jp-btn-outline px-8 py-3 jp-easy-apply-btn"
+										data-job-id="{{ $jobId }}"
+										data-applied="true"
+										disabled>
+									<i class="ki-duotone ki-check-circle fs-3 me-2">
+										<span class="path1"></span><span class="path2"></span>
+									</i>
+									Applied
+								</button>
+							@else
+								<button type="button"
+										class="btn jp-btn-primary px-8 py-3 jp-easy-apply-btn"
+										data-job-id="{{ $jobId }}"
+										data-job-title="{{ $jobTitle }}"
+										data-company-name="{{ $companyName }}"
+										data-applied="false">
+									<i class="ki-duotone ki-flash fs-3 me-2">
+										<span class="path1"></span><span class="path2"></span>
+									</i>
+									Easy Apply
+								</button>
+							@endif
+						@else
+						
+							@if($applicationProcedure)
+								<div class="jp-prose">{!! $applicationProcedure !!}</div>
+							@else
+								<div class="jp-prose">
+									<p>To apply for this role{{ $companyName ? ' at ' . $companyName : '' }}, use one of the contact options below.</p>
+								</div>
+							@endif
 
-                        @if(!empty($job['is_resume_required']) || !empty($job['is_cover_letter_required']) || !empty($job['is_academic_documents_required']))
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            @if($job['is_resume_required'])<span class="jp-pill">Resume / CV required</span>@endif
-                            @if($job['is_cover_letter_required'])<span class="jp-pill">Cover letter required</span>@endif
-                            @if($job['is_academic_documents_required'])<span class="jp-pill">Academic documents required</span>@endif
-                        </div>
-                        @endif
-
-                        <button type="button" class="btn jp-btn-primary mt-5" data-bs-toggle="modal" data-bs-target="#applyModal">
-                            <i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>
-                            {{ $hasApplicationMethod ? 'Choose How to Apply' : 'View Application Options' }}
-                        </button>
+							@if(!empty($job['is_resume_required']) || !empty($job['is_cover_letter_required']) || !empty($job['is_academic_documents_required']))
+							<div class="d-flex flex-wrap gap-2 mt-3">
+								@if($job['is_resume_required'])<span class="jp-pill">Resume / CV required</span>@endif
+								@if($job['is_cover_letter_required'])<span class="jp-pill">Cover letter required</span>@endif
+								@if($job['is_academic_documents_required'])<span class="jp-pill">Academic documents required</span>@endif
+							</div>
+							@endif
+							<button type="button" class="btn jp-btn-primary mt-5" data-bs-toggle="modal" data-bs-target="#applyModal">
+								<i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>
+								{{ $hasApplicationMethod ? 'Choose How to Apply' : 'View Application Options' }}
+							</button>
+						@endif
                     </div>
 				</div>
 			</div>
@@ -438,9 +498,36 @@
 						@endif
 
 						<div class="jp-fact-row">
-							<button type="button" class="btn jp-btn-primary px-8 py-3" data-bs-toggle="modal" data-bs-target="#applyModal">
-								<i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
-							</button>
+							@if($easyApply)
+								@if($isApplied)
+									<button type="button"
+											class="btn jp-btn-outline px-8 py-3 jp-easy-apply-btn"
+											data-job-id="{{ $jobId }}"
+											data-applied="true"
+											disabled>
+										<i class="ki-duotone ki-check-circle fs-3 me-2">
+											<span class="path1"></span><span class="path2"></span>
+										</i>
+										Applied
+									</button>
+								@else
+									<button type="button"
+											class="btn jp-btn-primary px-8 py-3 jp-easy-apply-btn"
+											data-job-id="{{ $jobId }}"
+											data-job-title="{{ $jobTitle }}"
+											data-company-name="{{ $companyName }}"
+											data-applied="false">
+										<i class="ki-duotone ki-flash fs-3 me-2">
+											<span class="path1"></span><span class="path2"></span>
+										</i>
+										Easy Apply
+									</button>
+								@endif
+							@else
+								<button type="button" class="btn jp-btn-primary px-8 py-3" data-bs-toggle="modal" data-bs-target="#applyModal">
+									<i class="ki-duotone ki-send fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>Apply Now
+								</button>
+							@endif
 						</div>
 					</div>
 
@@ -506,6 +593,7 @@
 		</div>
 	</div>
 </div>
+
 
 
 

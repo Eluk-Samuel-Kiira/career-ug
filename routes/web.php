@@ -44,6 +44,8 @@ Route::get('/jobs/location/{slug}', [LocationController::class, 'show'])->name('
 
 Route::get('/pages/{slug}', [HomeController::class, 'show'])->name('pages.show');
 
+Route::get('/pricing', [\App\Http\Controllers\Home\PricingController::class, 'index'])->name('pricing.index');
+
 // Direct routes for common pages (optional - redirects to slug-based routes)
 Route::get('pages/about', function () {
     return redirect()->route('pages.show', 'about');
