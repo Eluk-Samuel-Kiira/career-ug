@@ -18,6 +18,11 @@
         --jp-line: rgba(15,27,45,0.08);
     }
 
+    /* Page guard: no sideways scroll (clip keeps the CTA overhang visible) */
+    .jp-page{ overflow-x:clip; width:100%; max-width:100%; }
+    .jp-page *, .jp-page *::before, .jp-page *::after{ box-sizing:border-box; }
+    .jp-page img{ max-width:100%; }
+
     .jp-page-bg{
         background:var(--jp-bg-page);
         background-image:
@@ -26,22 +31,35 @@
         border-top:3px solid var(--jp-teal);
     }
 
-    .jp-job-grid .jp-job-col{ display:flex; }
-    .jp-job-row{ background:linear-gradient(180deg, #F1FAF8 0%, #FFFFFF 60%); border:1px solid var(--jp-line); border-radius:14px; padding:22px; transition:.2s; box-shadow:0 6px 18px rgba(11,28,46,0.06); width:100%; display:flex; flex-direction:column; }
+    /* Location header */
+    .jp-loc-title{ font-weight:800; color:var(--jp-ink); font-size:clamp(1.5rem, 6vw, 2.2rem); line-height:1.2; overflow-wrap:anywhere; }
+
+    /* Shared logo tile: logos are always shown whole (contain), never cropped */
+    .jp-logo-sq{ width:56px; height:56px; border-radius:12px; background:#fff; color:var(--jp-navy); border:1px solid var(--jp-line); display:flex; align-items:center; justify-content:center; font-weight:800; overflow:hidden; flex:0 0 auto; padding:5px; }
+    .jp-logo-sq img{ width:100%; height:100%; object-fit:contain; object-position:center; display:block; }
+
+    /* ===== Job cards ===== */
+    .jp-job-grid .jp-job-col{ display:flex; min-width:0; }
+    .jp-job-row{ background:linear-gradient(180deg, #F1FAF8 0%, #FFFFFF 60%); border:1px solid var(--jp-line); border-radius:14px; padding:20px; transition:.2s; box-shadow:0 6px 18px rgba(11,28,46,0.06); width:100%; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
     .jp-job-row:hover{ border-color:var(--jp-teal); box-shadow:0 14px 30px rgba(11,28,46,0.1); transform:translateY(-2px); }
-    .jp-job-row .title{ font-weight:700; color:var(--jp-ink); }
+    .jp-job-row .card-head{ display:flex; align-items:flex-start; gap:14px; min-width:0; }
+    .jp-job-row .card-title-wrap{ flex:1 1 auto; min-width:0; }
+    .jp-job-row .title{ font-weight:700; color:var(--jp-ink); line-height:1.3; overflow-wrap:anywhere; word-break:break-word; }
     .jp-job-row .title:hover{ color:var(--jp-teal); }
-    .jp-job-row .meta i{ color:#94A3B8; margin-right:5px; }
+    .jp-job-row .company{ overflow-wrap:anywhere; }
+    .jp-job-row .jp-salary{ display:block; margin-top:6px; overflow-wrap:anywhere; }
+    .jp-job-row .meta{ display:flex; flex-wrap:wrap; gap:6px 16px; min-width:0; }
+    .jp-job-row .meta > span{ display:inline-flex; align-items:center; min-width:0; max-width:100%; overflow-wrap:anywhere; }
+    .jp-job-row .meta i{ color:#94A3B8; margin-right:5px; flex:0 0 auto; }
+    .jp-job-row .card-foot{ margin-top:auto; padding-top:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
     .jp-salary{ color:var(--jp-teal); font-weight:800; }
 
-    .jp-logo-sq{ width:48px; height:48px; border-radius:12px; background:var(--jp-bg-soft); color:var(--jp-navy); border:1px solid var(--jp-line); display:flex; align-items:center; justify-content:center; font-weight:800; overflow:hidden; flex-shrink:0; }
-    .jp-logo-sq img{ width:100%; height:100%; object-fit:cover; }
     .jp-pill{ background:var(--jp-bg-soft); color:#3B5166; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid var(--jp-line); }
     .jp-pill-urgent{ background:#FEECEC; color:#C0392B; border-color:rgba(192,57,43,0.15); }
 
     .jp-empty-card{ background:#fff; border:1px dashed var(--jp-line); border-radius:16px; }
     .jp-sort-select{ border-radius:10px; }
-    .jp-breadcrumb{ font-size:.82rem; color:var(--jp-muted); }
+    .jp-breadcrumb{ font-size:.82rem; color:var(--jp-muted); overflow-wrap:anywhere; }
     .jp-breadcrumb a{ color:var(--jp-muted); text-decoration:none; }
     .jp-breadcrumb a:hover{ color:var(--jp-teal); }
     .jp-btn-primary{ background:var(--jp-gradient); border:none; color:#fff; font-weight:700; border-radius:10px; }
@@ -55,11 +73,33 @@
 
     .jp-chip{ display:inline-flex; align-items:center; gap:6px; background:#fff; color:#33475B; font-weight:700; font-size:.78rem; padding:6px 12px; border-radius:20px; border:1px solid var(--jp-line); text-decoration:none; }
     .jp-chip:hover{ background:var(--jp-bg-soft); color:var(--jp-teal); border-color:var(--jp-teal); }
-    
+
     .jp-filter-toggle{ width:34px; height:34px; border-radius:9px; border:1px solid var(--jp-line); background:var(--jp-bg-soft); color:var(--jp-teal); display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:800; line-height:1; }
     .jp-filter-toggle .icon-minus{ display:none; }
     .jp-filter-toggle[aria-expanded="true"] .icon-plus{ display:none; }
     .jp-filter-toggle[aria-expanded="true"] .icon-minus{ display:inline; }
+
+    .jp-pagination{ flex-wrap:wrap; justify-content:center; row-gap:6px; }
+
+    /* CTA banner */
+    .jp-cta-wrap{ position:relative; z-index:2; margin-top:2.5rem; margin-bottom:-5rem; }
+    .jp-cta-banner{ background:linear-gradient(90deg, #20AA3E 0%, #03A588 100%); border-radius:22px; padding:2rem; display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; box-shadow:0 20px 50px rgba(11,28,46,0.15); }
+    .jp-cta-banner .cta-text{ flex:1 1 320px; min-width:0; }
+    .jp-cta-banner .cta-actions{ display:flex; gap:12px; flex-wrap:wrap; flex:0 0 auto; }
+    @media (min-width: 992px){ .jp-cta-banner{ padding:3rem; } }
+
+    /* ===== Mobile ===== */
+    @media (max-width: 575.98px){
+        .jp-filter-card{ padding:18px; }
+        .jp-job-row{ padding:16px; }
+        .jp-job-row .card-head{ gap:12px; }
+        .jp-job-row .jp-logo-sq{ width:48px; height:48px; padding:4px; }
+        .jp-job-row .card-foot .btn{ width:100%; }
+        .jp-job-row .card-foot .pills{ width:100%; }
+        .jp-cta-banner{ padding:1.5rem 1.25rem; border-radius:18px; }
+        .jp-cta-banner .cta-actions{ width:100%; flex-direction:column; }
+        .jp-cta-banner .cta-actions .btn{ width:100%; }
+    }
 </style>
 @endpush
 
@@ -87,6 +127,7 @@
     };
 @endphp
 
+<div class="jp-page">
 <div class="jp-page-bg">
     <div class="container py-10 py-lg-12">
 
@@ -101,12 +142,12 @@
 
         <!-- Location Header -->
         <div class="mb-6">
-            <h1 class="display-6 fw-bold text-gray-900">Jobs in {{ $locationName }}</h1>
-            <p class="text-muted fs-5">{{ number_format($totalJobs) }} open position{{ $totalJobs > 1 ? 's' : '' }} in {{ $locationName }}, {{ country_name() }}</p>
+            <h1 class="jp-loc-title">Jobs in {{ $locationName }}</h1>
+            <p class="text-muted fs-5">{{ number_format($totalJobs) }} open position{{ $totalJobs != 1 ? 's' : '' }} in {{ $locationName }}, {{ country_name() }}</p>
         </div>
 
         <!-- Search and Filters -->
-        <div class="row g-6 g-lg-10">
+        <div class="row gy-6 gx-lg-10">
             <!-- Filter Sidebar -->
             <div class="col-lg-3">
                 <div class="jp-filter-card">
@@ -158,18 +199,18 @@
                             <div class="jp-filter-divider"></div>
                             <h6>Salary Range</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <input type="number" class="form-control form-control-sm" placeholder="Min" name="min_salary" value="{{ request('min_salary') }}" />
-                                <input type="number" class="form-control form-control-sm" placeholder="Max" name="max_salary" value="{{ request('max_salary') }}" />
+                                <input type="number" class="form-control form-control-sm" placeholder="Min" name="min_salary" value="{{ request('min_salary') }}" style="min-width:0;" />
+                                <input type="number" class="form-control form-control-sm" placeholder="Max" name="max_salary" value="{{ request('max_salary') }}" style="min-width:0;" />
                             </div>
 
                             <div class="jp-filter-divider"></div>
                             <div class="d-flex gap-2">
-                                <select name="sort" class="form-select form-select-sm">
+                                <select name="sort" class="form-select form-select-sm" style="min-width:0;">
                                     <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Newest</option>
                                     <option value="salary_high" {{ request('sort') === 'salary_high' ? 'selected' : '' }}>Highest Salary</option>
                                     <option value="salary_low" {{ request('sort') === 'salary_low' ? 'selected' : '' }}>Lowest Salary</option>
                                 </select>
-                                <button type="submit" class="btn jp-btn-primary btn-sm">Apply</button>
+                                <button type="submit" class="btn jp-btn-primary btn-sm flex-shrink-0">Apply</button>
                             </div>
 
                             <!-- Preserve location -->
@@ -201,48 +242,49 @@
                         @endphp
                         <div class="col-md-6 jp-job-col">
                             <div class="jp-job-row">
-                                <div class="d-flex gap-4">
-                                    <div class="jp-logo-sq flex-shrink-0">
+
+                                <!-- Header: logo, title, company, salary -->
+                                <div class="card-head">
+                                    <div class="jp-logo-sq">
                                         @if($companyLogo)
-                                            <img src="{{ $companyLogo }}" alt="{{ $jobCompanyName }}">
+                                            <img src="{{ $companyLogo }}" alt="{{ $jobCompanyName }}" loading="lazy">
                                         @else
                                             {{ $jobInitials($job) }}
                                         @endif
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
-                                            <div>
-                                                <a href="{{ route('jobs.show', $jobSlug) }}" class="title fs-5">{{ $jobTitle }}</a>
-                                                <div class="text-muted fs-7 mt-1">{{ $jobCompanyName }}</div>
-                                            </div>
-                                            <span class="jp-salary fs-6">{{ $jobSalary }}</span>
-                                        </div>
-                                        <div class="d-flex flex-wrap gap-4 mt-3 meta fs-8 text-muted">
-                                            <span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobLocation }}</span>
-                                            <span><i class="ki-duotone ki-briefcase fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobTypeName }}</span>
-                                            @if($postedAgo($job))
-                                                <span><i class="ki-duotone ki-calendar fs-6"><span class="path1"></span><span class="path2"></span></i>Posted {{ $postedAgo($job) }}</span>
-                                            @endif
-                                            @if(!empty($job['has_real_deadline']) && !empty($job['deadline']))
-                                                <span><i class="ki-duotone ki-timer fs-6"><span class="path1"></span><span class="path2"></span></i>Apply by {{ \Carbon\Carbon::parse($job['deadline'])->format('d M Y') }}</span>
-                                            @endif
-                                        </div>
-                                        <div class="d-flex align-items-center justify-content-between mt-4 flex-wrap gap-2">
-                                            <div class="d-flex gap-2 flex-wrap">
-                                                <span class="jp-pill">{{ $jobCategory }}</span>
-                                                @if($isUrgent)
-                                                    <span class="jp-pill jp-pill-urgent">Urgent</span>
-                                                @endif
-                                            </div>
-                                            <a href="{{ route('jobs.show', $jobSlug) }}" class="btn btn-sm btn-outline btn-outline-primary">View & Apply</a>
-                                        </div>
+                                    <div class="card-title-wrap">
+                                        <a href="{{ route('jobs.show', $jobSlug) }}" class="title fs-5 d-block">{{ $jobTitle }}</a>
+                                        <div class="company text-muted fs-7 mt-1">{{ $jobCompanyName }}</div>
+                                        <span class="jp-salary fs-6">{{ $jobSalary }}</span>
                                     </div>
+                                </div>
+
+                                <!-- Meta: full card width -->
+                                <div class="meta mt-3 fs-8 text-muted">
+                                    <span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobLocation }}</span>
+                                    <span><i class="ki-duotone ki-briefcase fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobTypeName }}</span>
+                                    @if($postedAgo($job))
+                                        <span><i class="ki-duotone ki-calendar fs-6"><span class="path1"></span><span class="path2"></span></i>Posted {{ $postedAgo($job) }}</span>
+                                    @endif
+                                    @if(!empty($job['has_real_deadline']) && !empty($job['deadline']))
+                                        <span><i class="ki-duotone ki-timer fs-6"><span class="path1"></span><span class="path2"></span></i>Apply by {{ \Carbon\Carbon::parse($job['deadline'])->format('d M Y') }}</span>
+                                    @endif
+                                </div>
+
+                                <div class="card-foot">
+                                    <div class="pills d-flex gap-2 flex-wrap">
+                                        <span class="jp-pill">{{ $jobCategory }}</span>
+                                        @if($isUrgent)
+                                            <span class="jp-pill jp-pill-urgent">Urgent</span>
+                                        @endif
+                                    </div>
+                                    <a href="{{ route('jobs.show', $jobSlug) }}" class="btn btn-sm btn-outline btn-outline-primary">View &amp; Apply</a>
                                 </div>
                             </div>
                         </div>
                     @empty
                         <div class="col-12">
-                            <div class="jp-empty-card text-center py-10">
+                            <div class="jp-empty-card text-center py-10 px-4">
                                 <i class="ki-duotone ki-file-deleted fs-3x text-muted d-block mb-3"><span class="path1"></span><span class="path2"></span></i>
                                 <p class="fw-semibold fs-5 mb-1">No jobs found in this location</p>
                                 <p class="text-muted">Try adjusting your filters or browse other locations.</p>
@@ -264,7 +306,7 @@
                 @endphp
                 <div class="d-flex justify-content-center mt-10">
                     <nav>
-                        <ul class="pagination">
+                        <ul class="pagination jp-pagination">
                             <li class="page-item {{ $current <= 1 ? 'disabled' : '' }}">
                                 <a class="page-link" href="{{ url()->current() }}?page={{ $current - 1 }}&{{ $queryParams }}">Prev</a>
                             </li>
@@ -296,28 +338,24 @@
             </div>
         </div>
     </div>
+
     <!-- CTA Banner -->
-    <div class="mt-10 mb-n20 position-relative z-index-2">
+    <div class="jp-cta-wrap">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-10 col-xl-12">  
-                    <div class="d-flex flex-stack flex-wrap flex-md-nowrap card-rounded shadow p-8 p-lg-12" style="background: linear-gradient(90deg, #20AA3E 0%, #03A588 100%);">
-                        <div class="my-2 me-5">
-                            <div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Looking for more opportunities?</div>
-                            <div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Browse thousands of jobs across {{ country_name() }} and find your next role.</div>
-                        </div>
-                        <div class="d-flex flex-column flex-sm-row gap-3 flex-shrink-0 my-2">
-                            <a href="{{ route('jobs.index') }}" class="btn btn-lg btn-light fw-bold">Browse All Jobs</a>
-                            <a href="{{ route('companies.index') }}" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">View Companies</a>
-                        </div>
-                    </div>
+            <div class="jp-cta-banner">
+                <div class="cta-text">
+                    <div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Looking for more opportunities?</div>
+                    <div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Browse thousands of jobs across {{ country_name() }} and find your next role.</div>
+                </div>
+                <div class="cta-actions">
+                    <a href="{{ route('jobs.index') }}" class="btn btn-lg btn-light fw-bold">Browse All Jobs</a>
+                    <a href="{{ route('companies.index') }}" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">View Companies</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-
+</div>{{-- /.jp-page --}}
 
 @endsection
 
@@ -333,6 +371,7 @@ function updateQueryParam(key, value) {
     return url.toString();
 }
 
+// Auto-submit the filter form whenever a filter changes
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
