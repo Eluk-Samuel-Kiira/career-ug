@@ -2,6 +2,18 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 	<!--begin::Head-->
 	<head>
+
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-B2WHJWRJ8H"></script>
+		<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-B2WHJWRJ8H');
+		</script>
+
+
 		<!-- Country Meta -->
 		<meta name="country-code" content="{{ country_code() }}" />
 		<meta name="country-name" content="{{ country_name() }}" />
