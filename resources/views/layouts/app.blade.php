@@ -13,6 +13,9 @@
 		gtag('config', 'G-B2WHJWRJ8H');
 		</script>
 
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724034659765109"
+     		crossorigin="anonymous"></script>
+
 
 		<!-- Country Meta -->
 		<meta name="country-code" content="{{ country_code() }}" />
