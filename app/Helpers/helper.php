@@ -97,38 +97,38 @@ if (!function_exists('all_countries')) {
 if (!function_exists('country_logo')) {
     function country_logo(): string
     {
-        $countryCode = country_name();
+        $countryCode = strtolower(country_name());
         $logoPath = "logos/{$countryCode}.png";
-        
+
         // Check if country-specific logo exists
         if (file_exists(public_path($logoPath))) {
             return asset($logoPath);
         }
-        
+
         // Fallback to default logo
-        return asset('assets/media/logos/australia.png');
+        return asset('logos/uganda.png');
     }
 }
 
 if (!function_exists('country_favicon')) {
     function country_favicon(): string
     {
-        $countryCode = country_name();
+        $countryCode = strtolower(country_name());
         $faviconPath = "logos/{$countryCode}.ico";
-        
+
         // Check if country-specific favicon exists
         if (file_exists(public_path($faviconPath))) {
             return asset($faviconPath);
         }
-        
+
         // Check for png favicon
         $faviconPngPath = "assets/media/logos/{$countryCode}.png";
         if (file_exists(public_path($faviconPngPath))) {
             return asset($faviconPngPath);
         }
-        
+
         // Fallback to default favicon
-        return asset('assets/media/logos/australia.ico');
+        return asset('logos/uganda.ico');
     }
 }
 

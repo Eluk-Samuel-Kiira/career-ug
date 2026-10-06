@@ -18,13 +18,19 @@
         --jp-line: rgba(15,27,45,0.08);
     }
 
+    /* Page guard: no sideways scroll (clip keeps the CTA overhang visible) */
+    .jp-page{ overflow-x:clip; width:100%; max-width:100%; }
+    .jp-page *, .jp-page *::before, .jp-page *::after{ box-sizing:border-box; }
+    .jp-page img{ max-width:100%; }
+
     /* Search band */
     .jp-search-band{ background: linear-gradient(120deg, #EAF7F5 0%, #E7F1FB 100%); border-bottom:1px solid var(--jp-line); }
-    .jp-search-band h1{ color:var(--jp-ink); font-weight:800; font-size:1.7rem; margin-bottom:.35rem; }
+    .jp-search-band h1{ color:var(--jp-ink); font-weight:800; font-size:clamp(1.4rem, 5vw, 1.7rem); margin-bottom:.35rem; }
     .jp-search-band p{ color:var(--jp-muted); margin-bottom:1.5rem; }
     .jp-search-box{ background:#fff; border-radius:14px; padding:8px; box-shadow:0 12px 30px rgba(11,28,46,0.08); border:1px solid var(--jp-line); }
-    .jp-search-box .form-control, .jp-search-box .form-select{ border:none; box-shadow:none; }
+    .jp-search-box .form-control, .jp-search-box .form-select{ border:none; box-shadow:none; min-width:0; }
     .jp-search-box .divider{ width:1px; background:var(--jp-line); }
+    .jp-search-box > div{ min-width:0; }
     .jp-btn-primary{ background:var(--jp-gradient); border:none; color:#fff; font-weight:700; border-radius:10px; }
     .jp-btn-primary:hover{ color:#fff; filter:brightness(1.06); }
 
@@ -44,29 +50,35 @@
     .jp-filter-card .form-check-label{ font-size:.9rem; color:#33475B; font-weight:500; }
     .jp-filter-divider{ border-top:1px solid var(--jp-line); margin:18px 0; }
 
-    /* Company cards */
-    .jp-company-grid .jp-company-col{ display:flex; }
+    /* ===== Company cards ===== */
+    .jp-company-grid .jp-company-col{ display:flex; min-width:0; }
     .jp-company-card{
         background:linear-gradient(180deg, #F1FAF8 0%, #FFFFFF 60%);
         border:1px solid var(--jp-line);
         border-radius:14px;
-        padding:22px;
+        padding:20px;
         transition:.2s;
         box-shadow:0 6px 18px rgba(11,28,46,0.06);
         width:100%;
+        min-width:0;
         display:flex;
         flex-direction:column;
+        overflow:hidden;
     }
     .jp-company-card:hover{
         border-color:var(--jp-teal);
         box-shadow:0 14px 30px rgba(11,28,46,0.1);
         transform:translateY(-2px);
     }
+
+    /* Header: logo | name + badges | job count */
+    .jp-company-card .card-head{ display:flex; align-items:flex-start; gap:14px; min-width:0; }
+    .jp-company-card .card-title-wrap{ flex:1 1 auto; min-width:0; }
     .jp-company-card .company-logo{
         width:72px;
         height:72px;
         border-radius:14px;
-        background:var(--jp-bg-soft);
+        background:#fff;
         border:1px solid var(--jp-line);
         display:flex;
         align-items:center;
@@ -74,13 +86,30 @@
         font-weight:800;
         font-size:1.3rem;
         overflow:hidden;
-        flex-shrink:0;
+        flex:0 0 auto;
+        padding:6px;
         color:var(--jp-navy);
     }
-    .jp-company-card .company-logo img{ width:100%; height:100%; object-fit:cover; }
-    .jp-company-card .company-name{ font-weight:700; color:var(--jp-ink); font-size:1.05rem; }
+    /* contain = the whole logo is always visible, scaled down to fit */
+    .jp-company-card .company-logo img{ width:100%; height:100%; object-fit:contain; object-position:center; display:block; }
+    .jp-company-card .company-name{ font-weight:700; color:var(--jp-ink); font-size:1.05rem; line-height:1.3; overflow-wrap:anywhere; word-break:break-word; }
     .jp-company-card .company-name:hover{ color:var(--jp-teal); }
-    .jp-company-card .company-meta i{ color:#94A3B8; margin-right:5px; }
+    .jp-company-card .job-count{
+        flex:0 0 auto;
+        text-align:center;
+        color:var(--jp-teal);
+        font-weight:700;
+        font-size:.9rem;
+        background:var(--jp-bg-soft);
+        border:1px solid var(--jp-line);
+        border-radius:10px;
+        padding:6px 10px;
+        line-height:1.1;
+        white-space:nowrap;
+    }
+    .jp-company-card .job-count .num{ display:block; font-size:1.05rem; }
+    .jp-company-card .job-count .lbl{ display:block; font-size:.7rem; color:var(--jp-muted); font-weight:600; margin-top:2px; }
+
     .jp-company-card .company-description{
         color:var(--jp-muted);
         font-size:.88rem;
@@ -89,12 +118,13 @@
         -webkit-line-clamp:2;
         -webkit-box-orient:vertical;
         overflow:hidden;
+        overflow-wrap:anywhere;
     }
-    .jp-company-card .job-count{
-        color:var(--jp-teal);
-        font-weight:700;
-        font-size:.9rem;
-    }
+    .jp-company-card .company-meta{ display:flex; flex-wrap:wrap; gap:6px 16px; min-width:0; }
+    .jp-company-card .company-meta > span{ display:inline-flex; align-items:center; min-width:0; max-width:100%; }
+    .jp-company-card .company-meta i{ color:#94A3B8; margin-right:5px; flex:0 0 auto; }
+    .jp-company-card .company-meta .meta-text{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .jp-company-card .card-foot{ margin-top:auto; padding-top:14px; display:flex; justify-content:flex-end; }
 
     /* Pill styles */
     .jp-pill{ background:var(--jp-bg-soft); color:#3B5166; font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; border:1px solid var(--jp-line); display:inline-flex; align-items:center; gap:4px; }
@@ -112,6 +142,29 @@
     .jp-filter-toggle[aria-expanded="true"] .icon-minus{ display:inline; }
 
     .jp-kicker{ color:var(--jp-teal); font-weight:800; letter-spacing:.06em; text-transform:uppercase; font-size:11.5px; }
+
+    .jp-pagination{ flex-wrap:wrap; justify-content:center; row-gap:6px; }
+
+    /* CTA banner */
+    .jp-cta-wrap{ position:relative; z-index:2; margin-top:2.5rem; margin-bottom:-5rem; }
+    .jp-cta-banner{ background:linear-gradient(90deg, #20AA3E 0%, #03A588 100%); border-radius:22px; padding:2rem; display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; box-shadow:0 20px 50px rgba(11,28,46,0.15); }
+    .jp-cta-banner .cta-text{ flex:1 1 320px; min-width:0; }
+    .jp-cta-banner .cta-actions{ display:flex; gap:12px; flex-wrap:wrap; flex:0 0 auto; }
+    @media (min-width: 992px){ .jp-cta-banner{ padding:3rem; } }
+
+    /* ===== Mobile ===== */
+    @media (max-width: 575.98px){
+        .jp-company-card{ padding:16px; }
+        .jp-company-card .card-head{ gap:12px; }
+        .jp-company-card .company-logo{ width:56px; height:56px; padding:5px; border-radius:12px; font-size:1.1rem; }
+        .jp-company-card .company-name{ font-size:1rem; }
+        .jp-company-card .job-count{ padding:5px 8px; }
+        .jp-company-card .card-foot .btn{ width:100%; }
+        .jp-filter-card{ padding:18px; }
+        .jp-cta-banner{ padding:1.5rem 1.25rem; border-radius:18px; }
+        .jp-cta-banner .cta-actions{ width:100%; flex-direction:column; }
+        .jp-cta-banner .cta-actions .btn{ width:100%; }
+    }
 </style>
 @endpush
 
@@ -133,6 +186,8 @@
         return substr($text, 0, $length) . '...';
     };
 @endphp
+
+<div class="jp-page">
 
 <!-- ====================== SEARCH BAND ====================== -->
 <div class="jp-search-band py-8 py-lg-10">
@@ -168,7 +223,7 @@
 <!-- ====================== LISTINGS ====================== -->
 <div class="jp-listing-bg">
     <div class="container py-10 py-lg-12">
-        <div class="row g-6 g-lg-10">
+        <div class="row gy-6 gx-lg-10">
 
             <!-- ====================== FILTERS SIDEBAR ====================== -->
             <div class="col-lg-3">
@@ -273,61 +328,63 @@
                             $isFeatured = $company['is_featured'] ?? false;
                             $isGold = $company['is_gold'] ?? false;
                             $website = $company['website'] ?? null;
+                            $websiteLabel = $website ? preg_replace('#^https?://(www\.)?#i', '', rtrim($website, '/')) : null;
                         @endphp
                         <div class="col-md-6 jp-company-col">
                             <div class="jp-company-card">
-                                <div class="d-flex gap-4">
-                                    <div class="company-logo flex-shrink-0">
+
+                                <!-- Header: logo, name + badges, job count -->
+                                <div class="card-head">
+                                    <div class="company-logo">
                                         @if($companyLogo)
-                                            <img src="{{ $companyLogo }}" alt="{{ $companyName }}">
+                                            <img src="{{ $companyLogo }}" alt="{{ $companyName }}" loading="lazy">
                                         @else
                                             {{ $getInitials($company) }}
                                         @endif
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
-                                            <div>
-                                                <a href="{{ route('companies.show', $companySlug) }}" class="company-name text-decoration-none d-block">
-                                                    {{ $companyName }}
-                                                </a>
-                                                <div class="d-flex flex-wrap gap-1 mt-1">
-                                                    @if($isVerified)
-                                                        <span class="jp-pill jp-pill-verified"><i class="ki-duotone ki-verify fs-7"><span class="path1"></span><span class="path2"></span></i>Verified</span>
-                                                    @endif
-                                                    @if($isFeatured)
-                                                        <span class="jp-pill jp-pill-featured"><i class="ki-duotone ki-star fs-7"><span class="path1"></span><span class="path2"></span></i>Featured</span>
-                                                    @endif
-                                                    @if($isGold)
-                                                        <span class="jp-pill jp-pill-gold"><i class="ki-duotone ki-crown fs-7"><span class="path1"></span><span class="path2"></span></i>Gold</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div class="job-count text-end">
-                                                <span class="fs-5">{{ $jobCount }}</span>
-                                                <span class="fs-8 text-muted d-block">jobs</span>
-                                            </div>
-                                        </div>
 
-                                        @if($description)
-                                            <div class="company-description mt-2">{!! $truncateDescription($description, 120) !!}</div>
-                                        @endif
-
-                                        <div class="d-flex flex-wrap gap-3 mt-3 company-meta fs-8 text-muted">
-                                            @if($industry)
-                                                <span><i class="ki-duotone ki-building-factory fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $industry }}</span>
+                                    <div class="card-title-wrap">
+                                        <a href="{{ route('companies.show', $companySlug) }}" class="company-name text-decoration-none d-block">
+                                            {{ $companyName }}
+                                        </a>
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            @if($isVerified)
+                                                <span class="jp-pill jp-pill-verified"><i class="ki-duotone ki-verify fs-7"><span class="path1"></span><span class="path2"></span></i>Verified</span>
                                             @endif
-                                            @if($location)
-                                                <span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $location }}</span>
+                                            @if($isFeatured)
+                                                <span class="jp-pill jp-pill-featured"><i class="ki-duotone ki-star fs-7"><span class="path1"></span><span class="path2"></span></i>Featured</span>
                                             @endif
-                                            @if($website)
-                                                <span><i class="ki-duotone ki-link fs-6"><span class="path1"></span><span class="path2"></span></i><a href="{{ $website }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted">{{ $website }}</a></span>
+                                            @if($isGold)
+                                                <span class="jp-pill jp-pill-gold"><i class="ki-duotone ki-crown fs-7"><span class="path1"></span><span class="path2"></span></i>Gold</span>
                                             @endif
-                                        </div>
-
-                                        <div class="d-flex align-items-center justify-content-end mt-3">
-                                            <a href="{{ route('companies.show', $companySlug) }}" class="btn btn-sm btn-outline btn-outline-primary">View Company</a>
                                         </div>
                                     </div>
+
+                                    <div class="job-count">
+                                        <span class="num">{{ $jobCount }}</span>
+                                        <span class="lbl">{{ $jobCount == 1 ? 'job' : 'jobs' }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Body: full card width -->
+                                @if($description)
+                                    <div class="company-description mt-3">{{ $truncateDescription($description, 120) }}</div>
+                                @endif
+
+                                <div class="company-meta mt-3 fs-8 text-muted">
+                                    @if($industry)
+                                        <span><i class="ki-duotone ki-building-factory fs-6"><span class="path1"></span><span class="path2"></span></i><span class="meta-text">{{ $industry }}</span></span>
+                                    @endif
+                                    @if($location)
+                                        <span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i><span class="meta-text">{{ $location }}</span></span>
+                                    @endif
+                                    @if($website)
+                                        <span><i class="ki-duotone ki-link fs-6"><span class="path1"></span><span class="path2"></span></i><a href="{{ $website }}" target="_blank" rel="noopener noreferrer" class="meta-text text-decoration-none text-muted" title="{{ $website }}">{{ $websiteLabel }}</a></span>
+                                    @endif
+                                </div>
+
+                                <div class="card-foot">
+                                    <a href="{{ route('companies.show', $companySlug) }}" class="btn btn-sm btn-outline btn-outline-primary">View Company</a>
                                 </div>
                             </div>
                         </div>
@@ -353,7 +410,7 @@
                 @endphp
                 <div class="d-flex justify-content-center mt-10">
                     <nav>
-                        <ul class="pagination">
+                        <ul class="pagination jp-pagination">
                             <li class="page-item {{ $current <= 1 ? 'disabled' : '' }}">
                                 <a class="page-link" href="{{ url()->current() }}?page={{ $current - 1 }}&{{ http_build_query(request()->except('page')) }}">Prev</a>
                             </li>
@@ -385,28 +442,25 @@
             </div>
         </div>
     </div>
+
     <!-- CTA Banner -->
-    <div class="mt-10 mb-n20 position-relative z-index-2">
+    <div class="jp-cta-wrap">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-10 col-xl-12">  
-                    <div class="d-flex flex-stack flex-wrap flex-md-nowrap card-rounded shadow p-8 p-lg-12" style="background: linear-gradient(90deg, #20AA3E 0%, #03A588 100%);">
-                        <div class="my-2 me-5">
-                            <div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Are you an employer?</div>
-                            <div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Post your jobs and connect with top talent in {{ country_name() }}.</div>
-                        </div>
-                        <div class="d-flex flex-column flex-sm-row gap-3 flex-shrink-0 my-2">
-                            <a href="{{ route('register') }}?as=employer" class="btn btn-lg btn-light fw-bold">Post a Job</a>
-                            <a href="{{ route('companies.index') }}" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">Browse Companies</a>
-                        </div>
-                    </div>
+            <div class="jp-cta-banner">
+                <div class="cta-text">
+                    <div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Are you an employer?</div>
+                    <div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Post your jobs and connect with top talent in {{ country_name() }}.</div>
+                </div>
+                <div class="cta-actions">
+                    <a href="{{ route('register') }}?as=employer" class="btn btn-lg btn-light fw-bold">Post a Job</a>
+                    <a href="{{ route('companies.index') }}" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">Browse Companies</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-
+</div>{{-- /.jp-page --}}
 
 @endsection
 
@@ -421,18 +475,5 @@ function updateQueryParam(key, value) {
     }
     return url.toString();
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const filterForm = document.getElementById('filterForm');
-    if (filterForm) {
-        // Auto-submit on checkbox change (optional - uncomment to enable)
-        // const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]');
-        // checkboxes.forEach(checkbox => {
-        //     checkbox.addEventListener('change', function() {
-        //         filterForm.submit();
-        //     });
-        // });
-    }
-});
 </script>
 @endpush

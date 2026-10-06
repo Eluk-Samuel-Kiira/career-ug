@@ -18,17 +18,23 @@
 		--jp-line: rgba(15,27,45,0.08);
 	}
 
-	/* Search band — pale, light background instead of the dark navy gradient */
+	/* Page guard: no sideways scroll (clip keeps the CTA overhang visible) */
+	.jp-page{ overflow-x:clip; width:100%; max-width:100%; }
+	.jp-page *, .jp-page *::before, .jp-page *::after{ box-sizing:border-box; }
+	.jp-page img{ max-width:100%; }
+
+	/* Search band */
 	.jp-search-band{ background: linear-gradient(120deg, #EAF7F5 0%, #E7F1FB 100%); border-bottom:1px solid var(--jp-line); }
-	.jp-search-band h1{ color:var(--jp-ink); font-weight:800; font-size:1.7rem; margin-bottom:.35rem; }
+	.jp-search-band h1{ color:var(--jp-ink); font-weight:800; font-size:clamp(1.4rem, 5vw, 1.7rem); margin-bottom:.35rem; }
 	.jp-search-band p{ color:var(--jp-muted); margin-bottom:1.5rem; }
 	.jp-search-box{ background:#fff; border-radius:14px; padding:8px; box-shadow:0 12px 30px rgba(11,28,46,0.08); border:1px solid var(--jp-line); }
-	.jp-search-box .form-control, .jp-search-box .form-select{ border:none; box-shadow:none; }
+	.jp-search-box .form-control, .jp-search-box .form-select{ border:none; box-shadow:none; min-width:0; }
+	.jp-search-box > div{ min-width:0; }
 	.jp-search-box .divider{ width:1px; background:var(--jp-line); }
 	.jp-btn-primary{ background:var(--jp-gradient); border:none; color:#fff; font-weight:700; border-radius:10px; }
 	.jp-btn-primary:hover{ color:#fff; filter:brightness(1.06); }
 
-	/* Page backdrop — clearly tinted so white cards actually stand out */
+	/* Page backdrop */
 	.jp-listing-bg{
 		background:var(--jp-bg-page);
 		background-image:
@@ -48,69 +54,89 @@
 
 	.jp-kicker{ color:var(--jp-teal); font-weight:800; letter-spacing:.06em; text-transform:uppercase; font-size:11.5px; }
 
-	/* ===== Featured jobs — one per line, navy blending into green ===== */
+	/* Shared logo tile: logos are always shown whole (contain), never cropped */
+	.jp-logo-sq{ width:56px; height:56px; border-radius:12px; background:#fff; color:var(--jp-navy); border:1px solid var(--jp-line); display:flex; align-items:center; justify-content:center; font-weight:800; overflow:hidden; flex:0 0 auto; padding:5px; }
+	.jp-logo-sq img{ width:100%; height:100%; object-fit:contain; object-position:center; display:block; }
+
+	/* ===== Featured jobs: one per line ===== */
 	.jp-featured-stack{ display:flex; flex-direction:column; gap:16px; }
 	.jp-featured-card{
 		background: linear-gradient(120deg, var(--jp-navy) 0%, var(--jp-navy-2) 45%, var(--jp-teal) 100%);
 		border-radius:16px; padding:22px 26px; position:relative; overflow:hidden;
-		display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+		display:flex; align-items:center; gap:16px 20px; flex-wrap:wrap; min-width:0;
 		box-shadow:0 16px 34px rgba(11,28,46,0.18);
 	}
 	.jp-featured-card::before{
 		content:""; position:absolute; inset:0;
 		background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-		background-size: 34px 34px; mask-image: linear-gradient(to right, black, transparent 70%); pointer-events:none;
+		background-size: 34px 34px; mask-image: linear-gradient(to right, black, transparent 70%); -webkit-mask-image: linear-gradient(to right, black, transparent 70%); pointer-events:none;
 	}
-	.jp-featured-card::after{
-		content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--jp-gradient);
-	}
-	/* Logo square on the dark featured card — plain white tile, no green glow */
-	.jp-featured-card .jp-logo-sq{
-		width:56px; height:56px; border-radius:14px; background:#fff; color:var(--jp-navy);
-		display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; flex-shrink:0;
-		box-shadow:0 4px 12px rgba(0,0,0,0.2); position:relative; z-index:1; overflow:hidden;
-	}
-	.jp-featured-card .jp-logo-sq img{ width:100%; height:100%; object-fit:cover; }
-	.jp-featured-card .title{ color:#fff; font-weight:800; font-size:1.08rem; }
+	.jp-featured-card::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--jp-gradient); }
+	.jp-featured-card .jp-logo-sq{ border:none; box-shadow:0 4px 12px rgba(0,0,0,0.2); position:relative; z-index:1; }
+	.jp-featured-card .title{ color:#fff; font-weight:800; font-size:1.08rem; overflow-wrap:anywhere; }
 	.jp-featured-card .title:hover{ color:#5EE29B; }
-	.jp-featured-card .sub{ color:#AFC0D2; font-size:.85rem; font-weight:600; }
-	.jp-featured-card .jp-salary{ color:#7CF0C2; font-weight:800; font-size:1.05rem; white-space:nowrap; }
-	.jp-featured-card .body{ flex:1 1 320px; min-width:0; position:relative; z-index:1; }
-	.jp-featured-card .side{ display:flex; align-items:center; gap:16px; flex-shrink:0; position:relative; z-index:1; margin-left:auto; }
+	.jp-featured-card .sub{ color:#AFC0D2; font-size:.85rem; font-weight:600; overflow-wrap:anywhere; }
+	.jp-featured-card .jp-salary{ color:#7CF0C2; font-weight:800; font-size:1.05rem; }
+	.jp-featured-card .body{ flex:1 1 220px; min-width:0; position:relative; z-index:1; }
+	.jp-featured-card .side{ display:flex; align-items:center; gap:16px; flex:0 1 auto; min-width:0; position:relative; z-index:1; margin-left:auto; }
 	.jp-pill-featured{ background:rgba(255,255,255,0.16); color:#fff; border:1px solid rgba(255,255,255,0.3); font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; padding:5px 12px; border-radius:20px; }
 
-	/* ===== Regular jobs — two per line ===== */
-	.jp-job-grid .jp-job-col{ display:flex; }
-	.jp-job-row{ background:linear-gradient(180deg, #F1FAF8 0%, #FFFFFF 60%); border:1px solid var(--jp-line); border-radius:14px; padding:22px; transition:.2s; box-shadow:0 6px 18px rgba(11,28,46,0.06); width:100%; display:flex; flex-direction:column; }
+	/* ===== Regular jobs: two per line ===== */
+	.jp-job-grid .jp-job-col{ display:flex; min-width:0; }
+	.jp-job-row{ background:linear-gradient(180deg, #F1FAF8 0%, #FFFFFF 60%); border:1px solid var(--jp-line); border-radius:14px; padding:20px; transition:.2s; box-shadow:0 6px 18px rgba(11,28,46,0.06); width:100%; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
 	.jp-job-row:hover{ border-color:var(--jp-teal); box-shadow:0 14px 30px rgba(11,28,46,0.1); transform:translateY(-2px); }
-	.jp-job-row .title{ font-weight:700; color:var(--jp-ink); }
+	.jp-job-row .card-head{ display:flex; align-items:flex-start; gap:14px; min-width:0; }
+	.jp-job-row .card-title-wrap{ flex:1 1 auto; min-width:0; }
+	.jp-job-row .title{ font-weight:700; color:var(--jp-ink); line-height:1.3; overflow-wrap:anywhere; word-break:break-word; }
 	.jp-job-row .title:hover{ color:var(--jp-teal); }
-	.jp-job-row .meta i{ color:#94A3B8; margin-right:5px; }
+	.jp-job-row .company{ overflow-wrap:anywhere; }
+	.jp-job-row .jp-salary{ display:block; margin-top:6px; overflow-wrap:anywhere; }
+	.jp-job-row .meta{ display:flex; flex-wrap:wrap; gap:6px 16px; min-width:0; }
+	.jp-job-row .meta > span{ display:inline-flex; align-items:center; min-width:0; max-width:100%; overflow-wrap:anywhere; }
+	.jp-job-row .meta i{ color:#94A3B8; margin-right:5px; flex:0 0 auto; }
+	.jp-job-row .card-foot{ margin-top:auto; padding-top:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
 	.jp-salary{ color:var(--jp-teal); font-weight:800; }
 	.jp-sort-select{ border-radius:10px; }
 
-	/* Plain, flat logo tile — no gradient shine */
-	.jp-logo-sq{ width:48px; height:48px; border-radius:12px; background:var(--jp-bg-soft); color:var(--jp-navy); border:1px solid var(--jp-line); display:flex; align-items:center; justify-content:center; font-weight:800; overflow:hidden; }
-	.jp-logo-sq img{ width:100%; height:100%; object-fit:cover; }
 	.jp-pill{ background:var(--jp-bg-soft); color:#3B5166; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid var(--jp-line); }
 	.jp-pill-urgent{ background:#FEECEC; color:#C0392B; border-color:rgba(192,57,43,0.15); }
 	.jp-pill-legacy{ background:#F1F3F5; color:#8A94A0; }
 
 	.jp-empty-card{ background:#fff; border:1px dashed var(--jp-line); border-radius:16px; }
+	.jp-pagination{ flex-wrap:wrap; justify-content:center; row-gap:6px; }
 
 	.jp-filter-toggle{ width:34px; height:34px; border-radius:9px; border:1px solid var(--jp-line); background:var(--jp-bg-soft); color:var(--jp-teal); display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:800; line-height:1; }
 	.jp-filter-toggle .icon-minus{ display:none; }
 	.jp-filter-toggle[aria-expanded="true"] .icon-plus{ display:none; }
 	.jp-filter-toggle[aria-expanded="true"] .icon-minus{ display:inline; }
+
+	/* CTA banner */
+	.jp-cta-wrap{ position:relative; z-index:2; margin-top:2.5rem; margin-bottom:-5rem; }
+	.jp-cta-banner{ background:linear-gradient(90deg, #20AA3E 0%, #03A588 100%); border-radius:22px; padding:2rem; display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; box-shadow:0 20px 50px rgba(11,28,46,0.15); }
+	.jp-cta-banner .cta-text{ flex:1 1 320px; min-width:0; }
+	.jp-cta-banner .cta-actions{ display:flex; gap:12px; flex-wrap:wrap; flex:0 0 auto; }
+	@media (min-width: 992px){ .jp-cta-banner{ padding:3rem; } }
+
+	/* ===== Mobile ===== */
+	@media (max-width: 575.98px){
+		.jp-filter-card{ padding:18px; }
+		.jp-featured-card{ padding:18px 18px 18px 22px; }
+		.jp-featured-card .side{ width:100%; justify-content:space-between; margin-left:0; }
+		.jp-job-row{ padding:16px; }
+		.jp-job-row .card-head{ gap:12px; }
+		.jp-job-row .jp-logo-sq{ width:48px; height:48px; padding:4px; }
+		.jp-job-row .card-foot .btn{ width:100%; }
+		.jp-job-row .card-foot .pills{ width:100%; }
+		.jp-cta-banner{ padding:1.5rem 1.25rem; border-radius:18px; }
+		.jp-cta-banner .cta-actions{ width:100%; flex-direction:column; }
+		.jp-cta-banner .cta-actions .btn{ width:100%; }
+	}
 </style>
 @endpush
 
 @section('content')
 
 @php
-    // Both the featured row and the main list read from the same real API shape now:
-    // job_title, company.name/logo, job_location.name, job_type.name, formatted_salary,
-    // job_category.name, published_at, is_legacy, has_real_deadline, deadline.
     $jobList = is_array($jobs) ? ($jobs['data'] ?? []) : [];
 
     $jobInitials = function ($job) {
@@ -128,6 +154,8 @@
         }
     };
 @endphp
+
+<div class="jp-page">
 
 <!-- ====================== SEARCH BAND ====================== -->
 <div class="jp-search-band py-8 py-lg-10">
@@ -163,7 +191,7 @@
 <!-- ====================== LISTINGS ====================== -->
 <div class="jp-listing-bg">
 	<div class="container py-10 py-lg-12">
-		<div class="row g-6 g-lg-10">
+		<div class="row gy-6 gx-lg-10">
 
 			<!-- ====================== FILTERS SIDEBAR ====================== -->
 			<div class="col-lg-3">
@@ -206,8 +234,8 @@
 							<div class="jp-filter-divider"></div>
 							<h6>Salary Range (AUD)</h6>
 							<div class="d-flex gap-2 mb-2">
-								<input type="number" class="form-control form-control-sm" placeholder="Min" name="min_salary" value="{{ request('min_salary') }}" />
-								<input type="number" class="form-control form-control-sm" placeholder="Max" name="max_salary" value="{{ request('max_salary') }}" />
+								<input type="number" class="form-control form-control-sm" placeholder="Min" name="min_salary" value="{{ request('min_salary') }}" style="min-width:0;" />
+								<input type="number" class="form-control form-control-sm" placeholder="Max" name="max_salary" value="{{ request('max_salary') }}" style="min-width:0;" />
 							</div>
 
 							<div class="jp-filter-divider"></div>
@@ -254,7 +282,7 @@
 						<div class="jp-featured-card">
 							<div class="jp-logo-sq">
 								@if(!empty($job['company']['logo']))
-									<img src="{{ $job['company']['logo'] }}" alt="{{ $job['company']['name'] ?? '' }}">
+									<img src="{{ $job['company']['logo'] }}" alt="{{ $job['company']['name'] ?? '' }}" loading="lazy">
 								@else
 									{{ $jobInitials($job) }}
 								@endif
@@ -270,7 +298,7 @@
 							<div class="side">
 								<span class="jp-pill-featured d-none d-sm-inline-block">Featured</span>
 								<div class="jp-salary">{{ $job['formatted_salary'] ?? 'Negotiable' }}</div>
-								<a href="{{ route('jobs.show', $job['slug'] ?? $job['id']) }}" class="btn btn-sm jp-btn-primary">View</a>
+								<a href="{{ route('jobs.show', $job['slug'] ?? $job['id']) }}" class="btn btn-sm jp-btn-primary flex-shrink-0">View</a>
 							</div>
 						</div>
 						@endforeach
@@ -288,7 +316,7 @@
 					</select>
 				</div>
 
-				<!-- Job Grid - No form wrapping it -->
+				<!-- Job Grid -->
 				<div class="row g-4 jp-job-grid">
 					@forelse($jobList as $job)
 						@php
@@ -303,42 +331,43 @@
 						@endphp
 						<div class="col-md-6 jp-job-col">
 							<div class="jp-job-row">
-								<div class="d-flex gap-4">
-									<div class="jp-logo-sq flex-shrink-0">
+
+								<!-- Header: logo, title, company, salary -->
+								<div class="card-head">
+									<div class="jp-logo-sq">
 										@if(!empty($job['company']['logo']))
-											<img src="{{ $job['company']['logo'] }}" alt="{{ $companyName }}">
+											<img src="{{ $job['company']['logo'] }}" alt="{{ $companyName }}" loading="lazy">
 										@else
 											{{ $jobInitials($job) }}
 										@endif
 									</div>
-									<div class="flex-grow-1">
-										<div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
-											<div>
-												<a href="{{ route('jobs.show', $slug) }}" class="title fs-5">{{ $title }}</a>
-												<div class="text-muted fs-7 mt-1">{{ $companyName }}</div>
-											</div>
-											<span class="jp-salary fs-6">{{ $salary }}</span>
-										</div>
-										<div class="d-flex flex-wrap gap-4 mt-3 meta fs-8 text-muted">
-											<span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $location }}</span>
-											<span><i class="ki-duotone ki-briefcase fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobTypeName }}</span>
-											@if($postedAgo($job))
-												<span><i class="ki-duotone ki-calendar fs-6"><span class="path1"></span><span class="path2"></span></i>Posted {{ $postedAgo($job) }}</span>
-											@endif
-											@if(!empty($job['has_real_deadline']) && !empty($job['deadline']))
-												<span><i class="ki-duotone ki-timer fs-6"><span class="path1"></span><span class="path2"></span></i>Apply by {{ \Carbon\Carbon::parse($job['deadline'])->format('d M Y') }}</span>
-											@endif
-										</div>
-										<div class="d-flex align-items-center justify-content-between mt-4 flex-wrap gap-2">
-											<div class="d-flex gap-2 flex-wrap">
-												<span class="jp-pill">{{ $category }}</span>
-												@if(!empty($job['is_urgent']))
-													<span class="jp-pill jp-pill-urgent">Urgent</span>
-												@endif
-											</div>
-											<a href="{{ route('jobs.show', $slug) }}" class="btn btn-sm btn-outline btn-outline-primary">View & Apply</a>
-										</div>
+									<div class="card-title-wrap">
+										<a href="{{ route('jobs.show', $slug) }}" class="title fs-5 d-block">{{ $title }}</a>
+										<div class="company text-muted fs-7 mt-1">{{ $companyName }}</div>
+										<span class="jp-salary fs-6">{{ $salary }}</span>
 									</div>
+								</div>
+
+								<!-- Meta: full card width -->
+								<div class="meta mt-3 fs-8 text-muted">
+									<span><i class="ki-duotone ki-geolocation fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $location }}</span>
+									<span><i class="ki-duotone ki-briefcase fs-6"><span class="path1"></span><span class="path2"></span></i>{{ $jobTypeName }}</span>
+									@if($postedAgo($job))
+										<span><i class="ki-duotone ki-calendar fs-6"><span class="path1"></span><span class="path2"></span></i>Posted {{ $postedAgo($job) }}</span>
+									@endif
+									@if(!empty($job['has_real_deadline']) && !empty($job['deadline']))
+										<span><i class="ki-duotone ki-timer fs-6"><span class="path1"></span><span class="path2"></span></i>Apply by {{ \Carbon\Carbon::parse($job['deadline'])->format('d M Y') }}</span>
+									@endif
+								</div>
+
+								<div class="card-foot">
+									<div class="pills d-flex gap-2 flex-wrap">
+										<span class="jp-pill">{{ $category }}</span>
+										@if(!empty($job['is_urgent']))
+											<span class="jp-pill jp-pill-urgent">Urgent</span>
+										@endif
+									</div>
+									<a href="{{ route('jobs.show', $slug) }}" class="btn btn-sm btn-outline btn-outline-primary">View &amp; Apply</a>
 								</div>
 							</div>
 						</div>
@@ -364,7 +393,7 @@
 				@endphp
 				<div class="d-flex justify-content-center mt-10">
 					<nav>
-						<ul class="pagination">
+						<ul class="pagination jp-pagination">
 							<li class="page-item {{ $current <= 1 ? 'disabled' : '' }}">
 								<a class="page-link" href="{{ url()->current() }}?page={{ $current - 1 }}&{{ http_build_query(request()->except('page')) }}">Prev</a>
 							</li>
@@ -396,27 +425,25 @@
 			</div>
 		</div>
 	</div>
-		
-	<div class="mt-10 mb-n20 position-relative z-index-2">
+
+	<!-- CTA Banner -->
+	<div class="jp-cta-wrap">
 		<div class="container">
-			<div class="row justify-content-center">
-				<div class="col-lg-10 col-xl-12">  
-					<div class="d-flex flex-stack flex-wrap flex-md-nowrap card-rounded shadow p-8 p-lg-12" style="background: linear-gradient(90deg, #20AA3E 0%, #03A588 100%);">
-						<div class="my-2 me-5">
-							<div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Ready to make your next move?</div>
-							<div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Join thousands of {{ country_citizens() }} hiring and getting hired faster with AI-powered matching.</div>
-						</div>
-						<div class="d-flex flex-column flex-sm-row gap-3 flex-shrink-0 my-2">
-							<a href="{{ route('register') }}?as=seeker" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">Find a Job</a>
-							<a href="{{ route('register') }}?as=employer" class="btn btn-lg btn-light fw-bold">Post a Job</a>
-						</div>
-					</div>
+			<div class="jp-cta-banner">
+				<div class="cta-text">
+					<div class="fs-1 fs-lg-2qx fw-bold text-white mb-2">Ready to make your next move?</div>
+					<div class="fs-6 fs-lg-5 text-white fw-semibold opacity-75">Join thousands of {{ country_citizens() }} hiring and getting hired faster with AI-powered matching.</div>
+				</div>
+				<div class="cta-actions">
+					<a href="{{ route('register') }}?as=seeker" class="btn btn-lg btn-outline border-2 btn-outline-white fw-bold">Find a Job</a>
+					<a href="{{ route('register') }}?as=employer" class="btn btn-lg btn-light fw-bold">Post a Job</a>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
 
+</div>{{-- /.jp-page --}}
 
 @endsection
 
@@ -431,19 +458,5 @@ function updateQueryParam(key, value) {
     }
     return url.toString();
 }
-
-// Auto-submit filter form when checkbox changes (optional)
-document.addEventListener('DOMContentLoaded', function() {
-    const filterForm = document.getElementById('filterForm');
-    if (filterForm) {
-        // You can enable auto-submit by uncommenting below
-        // const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]');
-        // checkboxes.forEach(checkbox => {
-        //     checkbox.addEventListener('change', function() {
-        //         filterForm.submit();
-        //     });
-        // });
-    }
-});
 </script>
 @endpush
