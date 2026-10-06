@@ -93,7 +93,9 @@
 	.jp-job-card{ border:1px solid var(--jp-line); border-radius:16px; padding:22px; background:#fff; height:100%; transition:.25s; min-width:0; }
 	.jp-job-card:hover{ transform:translateY(-3px); box-shadow:0 14px 30px rgba(11,28,46,0.08); }
 	.jp-job-card.featured{ border-left:4px solid var(--jp-green); }
-	.jp-logo-sq{ width:52px; height:52px; border-radius:12px; background:var(--jp-bg-soft); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--jp-teal); overflow:hidden; flex:0 0 auto; }
+	.jp-logo-sq{ width:56px; height:56px; border-radius:12px; background:#fff; border:1px solid var(--jp-line); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--jp-teal); overflow:hidden; flex:0 0 auto; padding:5px; }
+	/* contain = the whole logo is always visible, scaled down to fit (never cropped) */
+	.jp-logo-sq img{ width:100%; height:100%; object-fit:contain; object-position:center; display:block; }
 	.jp-pill{ background:var(--jp-bg-soft); color:#3B5166; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; }
 	.jp-pill-featured{ background:#E7F1FB; color:#1D6FCC; border:1px solid rgba(29,111,204,0.15); font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:4px; }
 
@@ -348,7 +350,7 @@
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div class="jp-logo-sq">
                                 @if($companyLogo)
-                                    <img src="{{ $companyLogo }}" alt="{{ $jobCompanyName }}" style="width:100%;height:100%;object-fit:cover;">
+                                    <img src="{{ $companyLogo }}" alt="{{ $jobCompanyName }} logo" loading="lazy">
                                 @else
                                     {{ $initials }}
                                 @endif
