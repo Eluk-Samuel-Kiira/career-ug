@@ -149,7 +149,13 @@
                         </div>
                         <div class="separator my-2"></div>
                         <div class="menu-item px-5">
-                            <a href="{{ route('profile.show') }}" class="menu-link px-5">My Profile</a>
+                            <a href="{{ route('profile.show') }}" class="menu-link px-5">
+                                <i class="ki-duotone ki-user fs-3 me-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                                My profile
+                            </a>
                         </div>
                         <div class="separator my-2"></div>
                         <div class="menu-item px-5">
@@ -170,14 +176,92 @@
                     </div>
                 </div>
 
-                {{-- Mobile menu toggle --}}
-                <div class="app-navbar-item d-lg-none ms-2 me-n2">
-                    <div class="btn btn-flex btn-icon btn-active-color-primary w-30px h-30px" id="kt_app_header_menu_toggle">
-                        <i class="ki-duotone ki-element-4 fs-1"><span class="path1"></span><span class="path2"></span></i>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
 </div>
+
+
+
+
+<style>
+/* ============================================================
+   USER DROPDOWN CARD ONLY — 20% smaller
+   Targets only the card inside #kt_header_user_menu_toggle.
+   Theme switcher and notification bell stay untouched.
+   ============================================================ */
+
+/* -------- Card container --------
+   Original: w-275px, py-4 (1rem top/bottom), fs-6 (~1rem)
+   20% smaller: width ~220px, py ~0.8rem, fs ~0.8rem            */
+#kt_header_user_menu_toggle .menu-sub-dropdown {
+    width: 220px !important;
+    min-width: 220px !important;
+    padding-top: 0.8rem !important;
+    padding-bottom: 0.8rem !important;
+    font-size: 0.8rem !important;
+}
+
+/* -------- Profile header row (avatar + name + email) -------- */
+#kt_header_user_menu_toggle .menu-sub-dropdown .menu-item.px-3 > .menu-content {
+    padding-left: 0.6rem !important;
+    padding-right: 0.6rem !important;
+}
+
+/* Avatar: was 50×50 → 40×40 */
+#kt_header_user_menu_toggle .menu-sub-dropdown .symbol.symbol-50px {
+    width: 40px !important;
+    height: 40px !important;
+    margin-right: 0.9rem !important;   /* was me-5 (~1.25rem) */
+}
+
+#kt_header_user_menu_toggle .menu-sub-dropdown .symbol.symbol-50px > img {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+}
+
+/* Name: was fs-5 (~1.15rem) → ~0.92rem */
+#kt_header_user_menu_toggle .menu-sub-dropdown .fs-5 {
+    font-size: 0.92rem !important;
+    line-height: 1.3 !important;
+}
+
+/* Email: was fs-7 (~0.85rem) → ~0.7rem */
+#kt_header_user_menu_toggle .menu-sub-dropdown .fs-7 {
+    font-size: 0.7rem !important;
+    line-height: 1.3 !important;
+}
+
+/* -------- Menu rows (My Profile link) -------- */
+#kt_header_user_menu_toggle .menu-sub-dropdown .menu-item.px-5 {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+}
+
+#kt_header_user_menu_toggle .menu-sub-dropdown .menu-link {
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.85rem !important;
+    line-height: 1.35 !important;
+    border-radius: 6px !important;
+}
+
+/* -------- Sign Out button (custom-styled, so we override inline too) -------- */
+#kt_header_user_menu_toggle .menu-sub-dropdown button.menu-link {
+    font-size: 0.85rem !important;
+    padding: 0.45rem 0.75rem !important;
+    gap: 7px !important;              /* was 8px */
+    border-radius: 6px !important;
+}
+
+/* Sign Out icon: was fs-3 (~1.35rem) → ~1.1rem */
+#kt_header_user_menu_toggle .menu-sub-dropdown button.menu-link .ki-duotone {
+    font-size: 1.1rem !important;
+}
+
+/* -------- Separators: was my-2 (~0.5rem each) → ~0.4rem -------- */
+#kt_header_user_menu_toggle .menu-sub-dropdown .separator.my-2 {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+}
+</style>
