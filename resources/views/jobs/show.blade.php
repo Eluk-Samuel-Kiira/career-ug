@@ -100,12 +100,22 @@
     ])));
 
     // Share image: company logo (absolute URL). Falls back to the site default.
-    $toAbsolute = function ($url) {
-        if (empty($url)) return null;
-        if (Str::startsWith($url, ['http://', 'https://'])) return $url;
-        if (Str::startsWith($url, '//')) return 'https:' . $url;
-        return url($url);
-    };
+	$toAbsolute = function ($url) {
+		if (empty($url)) return null;
+
+		// Already absolute → leave alone
+		if (Str::startsWith($url, ['http://', 'https://'])) return $url;
+		if (Str::startsWith($url, '//')) return 'https:' . $url;
+
+		// If it looks like a storage path already, use it as-is
+		if (Str::startsWith($url, ['storage/', '/storage/'])) {
+			return url(ltrim($url, '/'));
+		}
+
+		// Otherwise assume it's a storage-relative path
+		return url('storage/' . ltrim($url, '/'));
+	};
+	
     $shareImage   = $toAbsolute($companyLogo) ?: asset('assets/media/og-default.png');
     $shareHasLogo = !empty($companyLogo);
     $shareImageAlt = $shareHasLogo ? $companyName . ' logo' : $jobTitle . ' — ' . $companyName;

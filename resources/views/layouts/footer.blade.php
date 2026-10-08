@@ -42,8 +42,9 @@
 						<h3 style="color:#fff; font-weight:800; font-size:1.15rem; margin-bottom:6px;">Need a Custom Plan?</h3>
 						<p style="color:#AFC0D2; font-size:.9rem; margin-bottom:0; line-height:1.6;">
 							Email us at
-							<a href="mailto:stardenacareers@gmail.com" style="color:#7CF0C2; text-decoration:none; font-weight:700;">stardenacareers@gmail.com</a>
-							or call <a href="tel:+256754428612" style="color:#fff; text-decoration:none;">+256 754428612</a>
+							<a href="mailto:stardenacareers@gmail.com" style="color:#7CF0C2; text-decoration:none; font-weight:700;">stardenacareers@gmail.com</a><br>
+							
+							 or call <a href="tel:+256754428612" style="color:#fff; text-decoration:none;">+256 754428612</a>
 						</p>
 					</div>
 
