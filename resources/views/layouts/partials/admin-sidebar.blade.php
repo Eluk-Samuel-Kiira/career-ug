@@ -302,6 +302,18 @@
                         </div>
                     </div>
 
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('employer.hiring.*') ? 'active' : '' }}"
+                        href="{{ route('employer.hiring.index') }}">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-26 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Hiring Decision Engine</span>
+                        </a>
+                    </div>
+
                     {{-- Company Profile --}}
                     <div class="menu-item">
                         <a class="menu-link {{ request()->routeIs('employer.profile.*') ? 'active' : '' }}"
