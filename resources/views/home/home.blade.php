@@ -1,12 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Hire Top Talent & Find Your Next Job — AI-Powered Recruitment - Jobs in ' . country_name())
-@section('meta_description', country_name() . '\'s leading job portal. Job seekers get AI-matched roles, CV review and WhatsApp alerts. Employers post jobs, screen CVs with AI, and find verified blue-collar and casual talent in ' . country_name() . '.')
-@section('keywords', 'jobs in ' . strtolower(country_name()) . ', recruitment ' . strtolower(country_name()) . ', AI hiring, CV review, job posting, talent matching, blue-collar jobs, casual jobs, ' . strtolower(country_name()) . ' careers')
-@section('og_title', 'Hire Top Talent & Find Your Next Job — AI-Powered Recruitment - Jobs in ' . country_name())
-@section('og_description', country_name() . '\'s leading job portal. Job seekers get AI-matched roles, CV review and WhatsApp alerts. Employers post jobs, screen CVs with AI, and find verified blue-collar and casual talent.')
-@section('twitter_title', 'Hire Top Talent & Find Your Next Job — AI-Powered Recruitment - Jobs in ' . country_name())
-@section('twitter_description', country_name() . '\'s leading job portal. Job seekers get AI-matched roles, CV review and WhatsApp alerts. Employers post jobs, screen CVs with AI, and find verified blue-collar and casual talent.')
+@section('title', 'Hire Top Talent & Find Your Next Job — AI CV Shortlisting & Recruitment in ' . country_name())
+
+@section('meta_description', country_name() . '\'s leading AI-powered job portal. Employers get AI CV shortlisting, a full applicant tracking system, and verified talent. Job seekers get AI-matched roles, CV review, cover letters and WhatsApp job alerts.')
+
+@section('keywords', 'jobs in ' . strtolower(country_name()) . ', recruitment ' . strtolower(country_name()) . ', AI CV shortlisting, bulk CV screening, CV shortlisting software, ATS ' . strtolower(country_name()) . ', applicant tracking system, CV review, job posting, talent matching, blue-collar jobs, casual jobs, ' . strtolower(country_name()) . ' careers')
+
+@section('og_title', 'AI CV Shortlisting & Recruitment Platform in ' . country_name())
+
+@section('og_description', 'Screen hundreds of CVs in minutes with AI. Rank, score, and shortlist candidates against any job description — plus a full ATS and CV database for employers in ' . country_name() . '.')
+
+@section('twitter_title', 'AI CV Shortlisting & Recruitment in ' . country_name())
+
+@section('twitter_description', 'Screen hundreds of CVs in minutes with AI. Rank, score, and shortlist candidates against any job description — plus a full ATS for employers in ' . country_name() . '.')
 
 @push('styles')
 <style>
@@ -122,6 +128,57 @@
 		.jp-cta-banner .cta-actions .btn{ width:100%; }
 		.jp-job-card{ padding:18px; }
 	}
+
+
+	/* Shortlisting mock */
+	.jp-shortlist-mock{
+		background:#fff; border-radius:18px;
+		box-shadow:0 20px 50px rgba(11,28,46,0.10);
+		border:1px solid var(--jp-line);
+		overflow:hidden; max-width:520px; margin-left:auto;
+	}
+	.mock-head{
+		background:linear-gradient(180deg,#F1FAF8 0%, #FFFFFF 100%);
+		border-bottom:1px solid var(--jp-line);
+		padding:16px 20px;
+	}
+	.mock-avatar{
+		width:40px; height:40px; border-radius:10px;
+		background:var(--jp-gradient); color:#fff;
+		display:flex; align-items:center; justify-content:center;
+		font-weight:800; font-size:0.9rem;
+	}
+	.mock-body{ padding:8px 12px 16px; }
+	.mock-row{
+		display:flex; align-items:center; gap:12px;
+		padding:12px 10px;
+		border-radius:10px;
+		transition:background .15s;
+	}
+	.mock-row + .mock-row{ margin-top:2px; }
+	.mock-row.top{ background:#F1FAF8; }
+	.mock-rank{
+		width:24px; height:24px; border-radius:50%;
+		background:var(--jp-bg-soft); color:var(--jp-muted);
+		display:flex; align-items:center; justify-content:center;
+		font-weight:700; font-size:0.78rem; flex-shrink:0;
+	}
+	.mock-row.top .mock-rank{ background:var(--jp-gradient); color:#fff; }
+	.mock-score{
+		width:44px; height:32px; border-radius:8px;
+		display:flex; align-items:center; justify-content:center;
+		font-weight:800; font-size:0.9rem;
+		flex-shrink:0;
+	}
+	.mock-score.success{ background:#E9F9EF; color:#1E9E4C; }
+	.mock-score.primary{ background:#E7F1FB; color:#1D6FCC; }
+	.mock-score.warning{ background:#FFF6E0; color:#B8860B; }
+	.mock-score.danger{ background:#FEECEC; color:#C0392B; }
+	.min-w-0{ min-width:0; }
+
+	@media (max-width: 991.98px){
+		.jp-shortlist-mock{ margin-left:0; margin-top:8px; }
+	}
 </style>
 @endpush
 
@@ -231,16 +288,50 @@
 
 		<div class="col-lg-6">
 			<div class="jp-audience employers">
-				<div class="icon-badge"><i class="ki-duotone ki-briefcase fs-1"><span class="path1"></span><span class="path2"></span></i></div>
-				<h3 class="fw-bold fs-2 mb-2" style="color: white;">For Employers</h3>
-				<p class="mb-0" style="color:#B9C6D6;">Run your entire hiring process on one platform, with AI-ranked candidates and a verified talent pool.</p>
+				<div class="icon-badge">
+					<i class="ki-duotone ki-briefcase fs-1"><span class="path1"></span><span class="path2"></span></i>
+				</div>
+				<h3 class="fw-bold fs-2 mb-2" style="color:white;">For Employers</h3>
+				<p class="mb-0" style="color:#B9C6D6;">
+					Run your entire hiring process on one platform, with AI-ranked candidates and a verified talent pool.
+				</p>
 				<ul class="jp-check-list">
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>A complete ATS in one place: post the job, collect CVs, run AI CV scans to filter qualified candidates, invite them to interview, shortlist, and select the best hire</span></li>
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>No need to run adverts. Tap into thousands of ready CVs, filter by any category, and hire the best talent</span></li>
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>Post a job and let thousands of job seekers come to you</span></li>
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>Browse trending and top-rated CVs</span></li>
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>Access verified blue-collar and casual workers</span></li>
-					<li><i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i> <span>Message candidates directly on WhatsApp</span></li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>
+							<strong>AI CV Shortlisting Engine.</strong>
+							Upload hundreds of CVs and your job description. Get a ranked shortlist with scores,
+							matched skills, gaps, and red flags in minutes — before you read a single CV.
+						</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>
+							<strong>Complete ATS in one place.</strong>
+							Post the job, collect CVs, run AI scans to filter qualified candidates,
+							invite them to interview, shortlist, and select the best hire.
+						</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>No need to run adverts. Tap into thousands of ready CVs, filter by any category, and hire the best talent.</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>Post a job and let thousands of job seekers come to you.</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>Browse trending and top-rated CVs.</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>Access verified blue-collar and casual workers.</span>
+					</li>
+					<li>
+						<i class="ki-duotone ki-check-circle fs-3"><span class="path1"></span><span class="path2"></span></i>
+						<span>Message candidates directly on WhatsApp.</span>
+					</li>
 				</ul>
 				<a href="{{ route('register') }}?as=employer" class="btn btn-light fw-bold">Post Your First Job</a>
 			</div>
@@ -257,32 +348,39 @@
 			<p class="jp-sub">Professional writing services powered by AI and reviewed for quality.</p>
 		</div>
 		<div class="row gy-4 gx-4 gx-lg-5">
-			<div class="col-6 col-lg-3">
+			<div class="col-6 col-md-4 col-lg-3">
 				<div class="jp-service">
 					<div class="icon-sq"><i class="ki-duotone ki-search-list fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
 					<h5 class="fw-bold mb-2">CV Review</h5>
 					<p class="text-muted fs-7 mb-0">An honest, detailed assessment of your CV's strengths and gaps from our experts.</p>
 				</div>
 			</div>
-			<div class="col-6 col-lg-3">
+			<div class="col-6 col-md-4 col-lg-3">
 				<div class="jp-service">
 					<div class="icon-sq"><i class="ki-duotone ki-pencil fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
 					<h5 class="fw-bold mb-2">CV Revamp</h5>
 					<p class="text-muted fs-7 mb-0">A professionally rewritten CV, formatted to get past employer screening.</p>
 				</div>
 			</div>
-			<div class="col-6 col-lg-3">
+			<div class="col-6 col-md-4 col-lg-3">
 				<div class="jp-service">
 					<div class="icon-sq"><i class="ki-duotone ki-document fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
 					<h5 class="fw-bold mb-2">Cover Letters</h5>
 					<p class="text-muted fs-7 mb-0">Cover and application letters generated and tailored to each role you apply for.</p>
 				</div>
 			</div>
-			<div class="col-6 col-lg-3">
+			<div class="col-6 col-md-4 col-lg-3">
 				<div class="jp-service">
 					<div class="icon-sq"><i class="ki-duotone ki-rocket fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
 					<h5 class="fw-bold mb-2">Easy Apply</h5>
 					<p class="text-muted fs-7 mb-0">Apply to any listing in one tap using your saved profile and CV.</p>
+				</div>
+			</div>
+			<div class="col-6 col-md-4 col-lg-3">
+				<div class="jp-service">
+					<div class="icon-sq"><i class="ki-duotone ki-filter fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
+					<h5 class="fw-bold mb-2">AI CV Shortlisting</h5>
+					<p class="text-muted fs-7 mb-0">Upload hundreds of CVs and get a ranked shortlist in minutes — for employers on any paid plan.</p>
 				</div>
 			</div>
 		</div>
@@ -313,6 +411,134 @@
 			<p class="text-muted fs-7 px-lg-4">Apply, interview, shortlist and hire, with updates pushed to WhatsApp.</p>
 		</div>
 	</div>
+</div>
+
+
+
+<!-- ====================== CV SHORTLISTING (SEO) ====================== -->
+<div class="container py-15 py-lg-20">
+    <div class="row g-8 g-lg-12 align-items-center">
+        <div class="col-lg-6">
+            <div class="jp-kicker mb-2">For Employers</div>
+            <h2 class="jp-h2 mb-4">
+                AI CV Shortlisting — screen hundreds of CVs in minutes, not days
+            </h2>
+            <p class="jp-sub mb-5">
+                Upload a folder of CVs, paste in the job description, and get a ranked shortlist of
+                the best-fit candidates for the role. Each CV is scored, summarised, and annotated with
+                matched skills, missing skills, strengths, and red flags — so you can call the right
+                people for interview without reading a single document first.
+            </p>
+
+            <div class="row g-4 mb-6">
+                <div class="col-sm-6">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="ki-duotone ki-rocket fs-2x" style="color:var(--jp-teal);">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold mb-1">Minutes, not days</div>
+                            <div class="text-muted fs-7">A 200-CV folder is screened in the time it takes to make coffee.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="ki-duotone ki-check-circle fs-2x" style="color:var(--jp-teal);">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold mb-1">Ranked by fit</div>
+                            <div class="text-muted fs-7">Score 0–100 with a clear verdict: strong yes, maybe, or no.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="ki-duotone ki-information-5 fs-2x" style="color:var(--jp-teal);">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold mb-1">Reasons, not just numbers</div>
+                            <div class="text-muted fs-7">Strengths, gaps, missing skills, and red flags on every candidate.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="ki-duotone ki-file-down fs-2x" style="color:var(--jp-teal);">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold mb-1">Export and share</div>
+                            <div class="text-muted fs-7">Download the shortlist as CSV for your hiring manager.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{{ route('register') }}?as=employer" class="btn jp-btn-primary">
+                Start Shortlisting
+                <i class="ki-duotone ki-arrow-right fs-4 ms-1"><span class="path1"></span><span class="path2"></span></i>
+            </a>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="jp-shortlist-mock">
+                <div class="mock-head">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="mock-avatar">JD</div>
+                        <div>
+                            <div class="fw-bold">Senior Accountant — October 2026</div>
+                            <div class="text-muted fs-8">42 CVs uploaded · screened in 3m 12s</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mock-body">
+                    <div class="mock-row top">
+                        <div class="mock-rank">1</div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold">Grace Nakato</div>
+                            <div class="text-muted fs-8">8 years · CPA(U) · Kampala</div>
+                        </div>
+                        <div class="mock-score success">94</div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="mock-rank">2</div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold">Peter Ochieng</div>
+                            <div class="text-muted fs-8">6 years · ACCA · Entebbe</div>
+                        </div>
+                        <div class="mock-score success">88</div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="mock-rank">3</div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold">Sarah Auma</div>
+                            <div class="text-muted fs-8">5 years · BBA Accounting · Gulu</div>
+                        </div>
+                        <div class="mock-score primary">76</div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="mock-rank">4</div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold">Daniel Mwangi</div>
+                            <div class="text-muted fs-8">3 years · BCom · Nairobi</div>
+                        </div>
+                        <div class="mock-score warning">58</div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="mock-rank">5</div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold">Rose Kirabo</div>
+                            <div class="text-muted fs-8">1 year · Diploma · Mbarara</div>
+                        </div>
+                        <div class="mock-score danger">34</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ====================== FEATURED JOBS ====================== -->
@@ -398,6 +624,7 @@
         </div>
     </div>
 </div>
+
 
 </div>{{-- /.jp-page --}}
 @endsection

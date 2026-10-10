@@ -102,7 +102,7 @@ Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(fu
 });
 
 
-use App\Http\Controllers\Employer\AnalyticsController;
+use App\Http\Controllers\Employer\{ AnalyticsController, HiringController };
 
 Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(function () {
 
@@ -131,4 +131,16 @@ Route::middleware(['auth.web'])->prefix('letters')->name('letters.')->group(func
     Route::post('/{uuid}/pay',    [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
     Route::get('/{uuid}/download',[\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
     Route::delete('/{uuid}',      [\App\Http\Controllers\Seeker\LetterController::class, 'destroy'])->name('destroy');
+});
+
+Route::middleware(['auth.web'])->prefix('employer/hiring')->name('employer.hiring.')->group(function () {
+    Route::get('/',              [HiringController::class, 'index'])->name('index');
+    Route::get('/create',        [HiringController::class, 'create'])->name('create');
+    Route::get('/my-job-posts',  [HiringController::class, 'myJobPosts'])->name('my-job-posts'); 
+    Route::post('/',             [HiringController::class, 'store'])->name('store');
+    Route::get('/{uuid}',        [HiringController::class, 'show'])->name('show');
+    Route::get('/{uuid}/status', [HiringController::class, 'status'])->name('status');
+    Route::get('/{uuid}/results',[HiringController::class, 'results'])->name('results');
+    Route::get('/{uuid}/export', [HiringController::class, 'export'])->name('export');
+    Route::delete('/{uuid}',     [HiringController::class, 'destroy'])->name('destroy');
 });
