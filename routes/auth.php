@@ -144,3 +144,8 @@ Route::middleware(['auth.web'])->prefix('employer/hiring')->name('employer.hirin
     Route::get('/{uuid}/export', [HiringController::class, 'export'])->name('export');
     Route::delete('/{uuid}',     [HiringController::class, 'destroy'])->name('destroy');
 });
+
+
+Route::middleware(['auth.web'])->prefix('auto-apply')->name('auto-apply.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'index'])->name('index');
+});

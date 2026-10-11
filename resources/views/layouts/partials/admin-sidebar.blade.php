@@ -179,6 +179,18 @@
                         </div>
                     </div>
 
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('auto-apply.*') ? 'active' : '' }}"
+                        href="{{ route('auto-apply.index') }}">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-26 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Auto Apply</span>
+                        </a>
+                    </div>
+
                     {{-- My Applications --}}
                     <div class="menu-item">
                         <a class="menu-link {{ request()->routeIs('jobs.applied') ? 'active' : '' }}" href="{{ route('jobs.applied') }}">

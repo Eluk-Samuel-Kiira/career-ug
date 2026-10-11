@@ -78,11 +78,9 @@
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Active Jobs</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['active_jobs'] }}</span>
-                            @if($stats['job_limit'] !== null)
-                                <span class="text-muted fs-8">
-                                    {{ $stats['job_slots_remaining'] }} of {{ $stats['job_limit'] }} slots left
-                                </span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['active_jobs'] ?? 0 }}</span>
+                            @if(($stats['job_limit'] ?? null) !== null)
+                                <span class="text-muted fs-8">{{ $stats['job_slots_remaining'] ?? 0 }} of {{ $stats['job_limit'] }} slots left</span>
                             @else
                                 <span class="text-muted fs-8">Unlimited slots</span>
                             @endif
@@ -91,7 +89,7 @@
                 </div>
             </div>
 
-            {{-- Applications This Month --}}
+            {{-- Applications --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -104,8 +102,8 @@
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Applications This Month</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['applications_this_month'] }}</span>
-                            @if($stats['applications_today'] > 0)
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['applications_this_month'] ?? 0 }}</span>
+                            @if(!empty($stats['applications_today']))
                                 <span class="text-success fs-8">+{{ $stats['applications_today'] }} today</span>
                             @endif
                         </div>
@@ -113,43 +111,105 @@
                 </div>
             </div>
 
-            {{-- Pending Action --}}
-            <div class="col-xl-3 col-md-6">
-                <div class="card card-flush h-100">
-                    <div class="card-body d-flex align-items-center py-6">
-                        <div class="symbol symbol-50px me-5">
-                            <span class="symbol-label bg-light-warning">
-                                <i class="ki-duotone ki-time fs-2x text-warning">
-                                    <span class="path1"></span><span class="path2"></span>
-                                </i>
-                            </span>
-                        </div>
-                        <div class="d-flex flex-column">
-                            <span class="fw-semibold text-gray-600 fs-7">New (Unscreened)</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['new_applications'] }}</span>
-                            <span class="text-muted fs-8">{{ $stats['shortlisted'] }} shortlisted</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Profile Completion --}}
+            {{-- AI Shortlisted --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
                         <div class="symbol symbol-50px me-5">
                             <span class="symbol-label bg-light-info">
-                                <i class="ki-duotone ki-check-circle fs-2x text-info">
+                                <i class="ki-duotone ki-abstract-26 fs-2x text-info">
                                     <span class="path1"></span><span class="path2"></span>
                                 </i>
                             </span>
                         </div>
-                        <div class="d-flex flex-column flex-grow-1">
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">AI Shortlisted</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['ai_shortlisted'] ?? 0 }}</span>
+                            <span class="text-muted fs-8">
+                                {{ $stats['ai_screened'] ?? 0 }} screened · {{ $stats['new_applications'] ?? 0 }} new
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- CV Shortlisting Runs --}}
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-warning">
+                                <i class="ki-duotone ki-rocket fs-2x text-warning">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">CV Runs</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['screening_runs'] ?? 0 }}</span>
+                            <span class="text-muted fs-8">
+                                {{ number_format($stats['cvs_screened'] ?? 0) }} CVs screened
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Second row: relays, shortlisted, profile --}}
+        <div class="row g-5 g-xl-8 mb-6">
+            <div class="col-xl-4 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-danger">
+                                <i class="ki-duotone ki-flash fs-2x text-danger">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Auto-Apply Relays</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['auto_apply_relays'] ?? 0 }}</span>
+                            <span class="text-muted fs-8">seekers notified to apply directly</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-primary">
+                                <i class="ki-duotone ki-star fs-2x text-primary">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Shortlisted / Interview</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['shortlisted'] ?? 0 }}</span>
+                            <span class="text-muted fs-8">candidates in your pipeline</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-{{ !empty($stats['is_verified']) ? 'success' : 'warning' }}">
+                                <i class="ki-duotone ki-shield-tick fs-2x text-{{ !empty($stats['is_verified']) ? 'success' : 'warning' }}">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Profile</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['profile_completion'] }}%</span>
-                            <div class="progress h-4px mt-2" style="min-width:80px;">
-                                <div class="progress-bar bg-info" style="width: {{ $stats['profile_completion'] }}%"></div>
-                            </div>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['profile_completion'] ?? 0 }}%</span>
+                            <span class="text-muted fs-8">
+                                {{ $stats['tier_label'] ?? 'Starter tier' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -185,12 +245,12 @@
                 </a>
             </div>
         @endif
-
     @else
         {{-- ══════════════════════════════════════════════════════ --}}
         {{-- SEEKER STATS                                           --}}
         {{-- ══════════════════════════════════════════════════════ --}}
         <div class="row g-5 g-xl-8 mb-6">
+            {{-- Applications --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -203,12 +263,49 @@
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Applications</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['applied_count'] }}</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['applied_count'] ?? 0 }}</span>
+                            @if(!empty($stats['auto_applied_count']))
+                                <span class="text-info fs-8">
+                                    <i class="ki-duotone ki-rocket fs-7 me-1">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                    {{ $stats['auto_applied_count'] }} auto-applied
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
 
+            {{-- AI Match Score --}}
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-info">
+                                <i class="ki-duotone ki-abstract-26 fs-2x text-info">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Avg. AI Match</span>
+                            <span class="fw-bold fs-2x text-gray-900">
+                                {{ $stats['avg_ai_score'] !== null ? $stats['avg_ai_score'] . '%' : '—' }}
+                            </span>
+                            @if(!empty($stats['ai_screened_count']))
+                                <span class="text-muted fs-8">
+                                    {{ $stats['ai_screened_count'] }} of your applications screened
+                                </span>
+                            @else
+                                <span class="text-muted fs-8">Not yet screened</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Interviews --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -221,12 +318,42 @@
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Interviews</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['interview_count'] }}</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['interview_count'] ?? 0 }}</span>
+                            @if(!empty($stats['strong_yes_count']))
+                                <span class="text-success fs-8">
+                                    {{ $stats['strong_yes_count'] }} strong matches
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
 
+            {{-- Action Required (relays pending) --}}
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100 {{ !empty($stats['relay_pending_count']) ? 'bg-light-warning' : '' }}">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-{{ !empty($stats['relay_pending_count']) ? 'warning' : 'secondary' }}">
+                                <i class="ki-duotone ki-flash fs-2x text-{{ !empty($stats['relay_pending_count']) ? 'warning' : 'muted' }}">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Action Needed</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['relay_pending_count'] ?? 0 }}</span>
+                            <span class="text-muted fs-8">
+                                {{ !empty($stats['relay_pending_count']) ? 'jobs to apply for today' : 'nothing pending' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Second row: hired, saved, profile, cv --}}
+        <div class="row g-5 g-xl-8 mb-6">
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -239,25 +366,61 @@
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Hired</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['hired_count'] }}</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['hired_count'] ?? 0 }}</span>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
                         <div class="symbol symbol-50px me-5">
-                            <span class="symbol-label bg-light-info">
-                                <i class="ki-duotone ki-bookmark fs-2x text-info">
+                            <span class="symbol-label bg-light-primary">
+                                <i class="ki-duotone ki-bookmark fs-2x text-primary">
                                     <span class="path1"></span><span class="path2"></span>
                                 </i>
                             </span>
                         </div>
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Saved Jobs</span>
-                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['saved_count'] }}</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['saved_count'] ?? 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-info">
+                                <i class="ki-duotone ki-file fs-2x text-info">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">CVs Uploaded</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['cv_count'] ?? 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-{{ !empty($stats['is_profile_complete']) ? 'success' : 'warning' }}">
+                                <i class="ki-duotone ki-{{ !empty($stats['is_profile_complete']) ? 'check-circle' : 'information-5' }} fs-2x text-{{ !empty($stats['is_profile_complete']) ? 'success' : 'warning' }}">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Profile</span>
+                            <span class="fw-bold fs-2x text-gray-900">{{ $stats['profile_completion'] ?? 0 }}%</span>
+                            <span class="text-muted fs-8">
+                                {{ !empty($stats['is_profile_complete']) ? 'Complete' : 'Needs work' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -355,7 +518,7 @@
                         @else
                             <div class="col-6">
                                 <a href="{{ route('jobs.index') }}" class="btn btn-light-primary w-100 py-4">
-                                    <i class="ki-duotone ki-search fs-2x mb-2 d-block">
+                                    <i class="ki-duotone ki-rocket fs-2x mb-2 d-block">
                                         <span class="path1"></span><span class="path2"></span>
                                     </i>
                                     <span class="fw-bold">Find Jobs</span>
