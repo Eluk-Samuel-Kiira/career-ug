@@ -6,7 +6,9 @@
 @section('content')
 
 @if($needsOnboarding ?? false)
-    {{-- Onboarding nudge --}}
+    {{-- ══════════════════════════════════════════════════════ --}}
+    {{-- ONBOARDING NUDGE                                       --}}
+    {{-- ══════════════════════════════════════════════════════ --}}
     <div class="card card-flush py-15">
         <div class="card-body text-center">
             <i class="ki-duotone ki-rocket fs-3x text-primary mb-4 d-block">
@@ -60,12 +62,237 @@
         </div>
     </div>
 
+    {{-- ══════════════════════════════════════════════════════ --}}
+    {{-- SUBSCRIPTION WIDGET                                    --}}
+    {{-- ══════════════════════════════════════════════════════ --}}
+    @php
+        $sub       = $subscription ?? null;
+        $pricing   = $pricingUrl ?? route('pricing.index');
+    @endphp
+
+    @if(!empty($sub))
+        @php
+            $subStatus      = $sub['status'] ?? 'active';
+            $subIsActive    = $sub['is_active'] ?? false;
+            $subCancelAtEnd = !empty($sub['cancel_at_period_end']);
+            $subTone = match (true) {
+                $subStatus === 'past_due'      => 'danger',
+                $subStatus === 'trialing'      => 'info',
+                $subCancelAtEnd                => 'warning',
+                $subIsActive                   => 'success',
+                default                        => 'secondary',
+            };
+            $subIcon = match (true) {
+                $subStatus === 'past_due'      => 'ki-information-5',
+                $subStatus === 'trialing'      => 'ki-time',
+                $subCancelAtEnd                => 'ki-information-5',
+                $subIsActive                   => 'ki-check-circle',
+                default                        => 'ki-information-5',
+            };
+            $recentPayments = $sub['recent_payments'] ?? [];
+        @endphp
+
+        <div class="card card-flush bg-light-{{ $subTone }} mb-6">
+            <div class="card-body py-6">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="symbol symbol-50px">
+                            <span class="symbol-label bg-white">
+                                <i class="ki-duotone {{ $subIcon }} fs-2x text-{{ $subTone }}">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-5 text-gray-900">
+                                {{ $sub['service_name'] ?? 'Subscription' }}
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-3 mt-1">
+                                <span class="badge badge-light-{{ $subTone }}">
+                                    {{ $sub['status_label'] ?? ucfirst($subStatus) }}
+                                </span>
+                                <span class="text-muted fs-7">
+                                    {{ $sub['amount_formatted'] ?? '' }}
+                                    @if(($sub['interval'] ?? null) && $sub['interval'] !== 'one_time')
+                                        / {{ $sub['interval'] }}
+                                    @endif
+                                </span>
+                                @if(!empty($sub['current_period_end']))
+                                    <span class="text-muted fs-7">
+                                        <i class="ki-duotone ki-calendar fs-6 me-1">
+                                            <span class="path1"></span><span class="path2"></span>
+                                        </i>
+                                        Renews {{ \Carbon\Carbon::parse($sub['current_period_end'])->format('M d, Y') }}
+                                        @if(isset($sub['days_remaining']) && $sub['days_remaining'] !== null)
+                                            ({{ $sub['days_remaining'] }} days left)
+                                        @endif
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ $pricing }}" class="btn btn-sm btn-light-{{ $subTone }}">
+                            <i class="ki-duotone ki-dollar fs-4 me-1">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            Manage Plan
+                        </a>
+                        <button type="button" class="btn btn-sm btn-light"
+                                data-bs-toggle="modal" data-bs-target="#kt_payments_modal">
+                            <i class="ki-duotone ki-file-down fs-4 me-1">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            Payments ({{ count($recentPayments) }})
+                        </button>
+                    </div>
+                </div>
+
+                @if($subStatus === 'past_due')
+                    <div class="alert alert-light-danger d-flex align-items-center mt-4 mb-0">
+                        <i class="ki-duotone ki-information-5 fs-2x me-3">
+                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                        </i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Your last payment did not go through.</div>
+                            <div class="text-muted fs-7">Update your payment method or choose a plan again to keep your features active.</div>
+                        </div>
+                        <a href="{{ $pricing }}" class="btn btn-sm btn-danger">Pay Now</a>
+                    </div>
+                @endif
+
+                @if($subStatus === 'trialing' && !empty($sub['trial_ends_at']))
+                    <div class="alert alert-light-info d-flex align-items-center mt-4 mb-0">
+                        <i class="ki-duotone ki-time fs-2x me-3">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold">Trial ends {{ \Carbon\Carbon::parse($sub['trial_ends_at'])->format('M d, Y') }}.</div>
+                            <div class="text-muted fs-7">Choose a plan before then to keep your access.</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($subCancelAtEnd)
+                    <div class="alert alert-light-warning d-flex align-items-center mt-4 mb-0">
+                        <i class="ki-duotone ki-information-5 fs-2x me-3">
+                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                        </i>
+                        <div>
+                            <div class="fw-bold">Your subscription will end soon.</div>
+                            <div class="text-muted fs-7">
+                                Access continues until
+                                {{ !empty($sub['current_period_end']) ? \Carbon\Carbon::parse($sub['current_period_end'])->format('M d, Y') : 'end of period' }}.
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Payments modal --}}
+        <div class="modal fade" id="kt_payments_modal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="fw-bold mb-0">Payment History</h3>
+                        <button type="button" class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                            <i class="ki-duotone ki-cross fs-1">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @if(empty($recentPayments))
+                            <div class="text-center py-8 text-muted">
+                                <i class="ki-duotone ki-information-5 fs-3x text-muted mb-3 d-block">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                                <p class="mb-0">No payment records yet.</p>
+                            </div>
+                        @else
+                            <div class="d-flex flex-column gap-3">
+                                @foreach($recentPayments as $p)
+                                    @php
+                                        $pColor = match($p['status'] ?? '') {
+                                            'succeeded' => 'success',
+                                            'pending'   => 'info',
+                                            'failed'    => 'danger',
+                                            'refunded'  => 'warning',
+                                            default     => 'secondary',
+                                        };
+                                    @endphp
+                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                        <div>
+                                            <div class="fw-bold">{{ $p['amount_formatted'] ?? '' }}</div>
+                                            <div class="text-muted fs-8">
+                                                @if(!empty($p['paid_at']))
+                                                    Paid {{ \Carbon\Carbon::parse($p['paid_at'])->format('M d, Y H:i') }}
+                                                @elseif(!empty($p['created_at']))
+                                                    Attempted {{ \Carbon\Carbon::parse($p['created_at'])->format('M d, Y H:i') }}
+                                                @endif
+                                            </div>
+                                            @if(!empty($p['failure_reason']))
+                                                <div class="text-danger fs-8">{{ $p['failure_reason'] }}</div>
+                                            @endif
+                                        </div>
+                                        <span class="badge badge-light-{{ $pColor }}">
+                                            {{ $p['status_label'] ?? ucfirst($p['status'] ?? '') }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ $pricing }}" class="btn btn-primary btn-sm">View Plans</a>
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- No active subscription --}}
+        <div class="card card-flush bg-light-primary mb-6">
+            <div class="card-body py-6">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="symbol symbol-50px">
+                            <span class="symbol-label bg-white">
+                                <i class="ki-duotone ki-rocket fs-2x text-primary">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-5 text-gray-900">Unlock more with a plan</div>
+                            <div class="text-muted fs-7">
+                                @if($role === 'employer')
+                                    Get AI CV shortlisting, more job slots, and priority placement.
+                                @else
+                                    Get instant job alerts, a featured profile, and let our AI apply to jobs for you.
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ $pricing }}" class="btn btn-primary">
+                        <i class="ki-duotone ki-dollar fs-4 me-1">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        See Pricing
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════════ --}}
+    {{-- ROLE-SPECIFIC STATS                                    --}}
+    {{-- ══════════════════════════════════════════════════════ --}}
     @if($role === 'employer')
-        {{-- ══════════════════════════════════════════════════════ --}}
-        {{-- EMPLOYER STATS                                         --}}
-        {{-- ══════════════════════════════════════════════════════ --}}
+        {{-- Employer: first row --}}
         <div class="row g-5 g-xl-8 mb-6">
-            {{-- Active Jobs --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -89,7 +316,6 @@
                 </div>
             </div>
 
-            {{-- Applications --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -111,7 +337,6 @@
                 </div>
             </div>
 
-            {{-- AI Shortlisted --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -133,7 +358,6 @@
                 </div>
             </div>
 
-            {{-- CV Shortlisting Runs --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -156,7 +380,7 @@
             </div>
         </div>
 
-        {{-- Second row: relays, shortlisted, profile --}}
+        {{-- Employer: second row --}}
         <div class="row g-5 g-xl-8 mb-6">
             <div class="col-xl-4 col-md-6">
                 <div class="card card-flush h-100">
@@ -217,23 +441,23 @@
         </div>
 
         {{-- Compliance banner --}}
-        @if($stats['compliance_status'] !== 'verified')
-            <div class="alert alert-light-{{ $stats['compliance_status'] === 'rejected' ? 'danger' : ($stats['compliance_status'] === 'submitted' ? 'info' : 'warning') }} d-flex align-items-center mb-6">
+        @if(($stats['compliance_status'] ?? 'incomplete') !== 'verified')
+            <div class="alert alert-light-{{ ($stats['compliance_status'] ?? 'incomplete') === 'rejected' ? 'danger' : (($stats['compliance_status'] ?? 'incomplete') === 'submitted' ? 'info' : 'warning') }} d-flex align-items-center mb-6">
                 <i class="ki-duotone ki-shield-tick fs-2x me-4">
                     <span class="path1"></span><span class="path2"></span>
                 </i>
                 <div class="flex-grow-1">
                     <div class="fw-bold">
-                        @if($stats['compliance_status'] === 'submitted')
+                        @if(($stats['compliance_status'] ?? 'incomplete') === 'submitted')
                             Compliance under review
-                        @elseif($stats['compliance_status'] === 'rejected')
+                        @elseif(($stats['compliance_status'] ?? 'incomplete') === 'rejected')
                             Compliance rejected — needs attention
                         @else
                             Complete your compliance documents
                         @endif
                     </div>
                     <div class="text-muted fs-7">
-                        @if($stats['compliance_status'] === 'submitted')
+                        @if(($stats['compliance_status'] ?? 'incomplete') === 'submitted')
                             Our team is reviewing your documents. We'll notify you shortly.
                         @else
                             Upload your compliance documents to unlock the Verified badge and more job slots.
@@ -245,12 +469,10 @@
                 </a>
             </div>
         @endif
+
     @else
-        {{-- ══════════════════════════════════════════════════════ --}}
-        {{-- SEEKER STATS                                           --}}
-        {{-- ══════════════════════════════════════════════════════ --}}
+        {{-- Seeker: first row --}}
         <div class="row g-5 g-xl-8 mb-6">
-            {{-- Applications --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -277,7 +499,6 @@
                 </div>
             </div>
 
-            {{-- AI Match Score --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -291,7 +512,7 @@
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Avg. AI Match</span>
                             <span class="fw-bold fs-2x text-gray-900">
-                                {{ $stats['avg_ai_score'] !== null ? $stats['avg_ai_score'] . '%' : '—' }}
+                                {{ ($stats['avg_ai_score'] ?? null) !== null ? $stats['avg_ai_score'] . '%' : '—' }}
                             </span>
                             @if(!empty($stats['ai_screened_count']))
                                 <span class="text-muted fs-8">
@@ -305,7 +526,6 @@
                 </div>
             </div>
 
-            {{-- Interviews --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
                     <div class="card-body d-flex align-items-center py-6">
@@ -329,7 +549,6 @@
                 </div>
             </div>
 
-            {{-- Action Required (relays pending) --}}
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100 {{ !empty($stats['relay_pending_count']) ? 'bg-light-warning' : '' }}">
                     <div class="card-body d-flex align-items-center py-6">
@@ -352,7 +571,7 @@
             </div>
         </div>
 
-        {{-- Second row: hired, saved, profile, cv --}}
+        {{-- Seeker: second row --}}
         <div class="row g-5 g-xl-8 mb-6">
             <div class="col-xl-3 col-md-6">
                 <div class="card card-flush h-100">
@@ -432,7 +651,6 @@
     {{-- RECENT ACTIVITY + QUICK ACTIONS                        --}}
     {{-- ══════════════════════════════════════════════════════ --}}
     <div class="row g-6">
-        {{-- Recent Activity --}}
         <div class="col-xl-7">
             <div class="card card-flush h-100">
                 <div class="card-header">
@@ -474,7 +692,6 @@
             </div>
         </div>
 
-        {{-- Quick Actions --}}
         <div class="col-xl-5">
             <div class="card card-flush h-100">
                 <div class="card-header">

@@ -149,3 +149,12 @@ Route::middleware(['auth.web'])->prefix('employer/hiring')->name('employer.hirin
 Route::middleware(['auth.web'])->prefix('auto-apply')->name('auto-apply.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'index'])->name('index');
 });
+
+Route::middleware(['auth.web'])->prefix('subscription')->name('subscription.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Seeker\SubscriptionController::class, 'index'])->name('index');
+});
+
+Route::middleware(['auth.web'])->prefix('alerts/log')->name('alert.log.')->group(function () {
+    Route::get('/',     [\App\Http\Controllers\Seeker\AlertLogController::class, 'index'])->name('index');
+    Route::get('/data', [\App\Http\Controllers\Seeker\AlertLogController::class, 'data'])->name('data');
+});
