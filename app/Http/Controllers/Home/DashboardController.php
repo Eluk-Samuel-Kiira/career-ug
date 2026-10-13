@@ -21,20 +21,25 @@ class DashboardController extends Controller
         $role = $user['role'] ?? 'job_seeker';
         $isEmployer = $role === 'employer';
 
-        // Single API call — hit the right endpoint based on role
         $endpoint = $isEmployer ? 'dashboard/employer' : 'dashboard/seeker';
         $response = $this->countryService->api($endpoint, [], 'GET', 0, false);
 
         $needsOnboarding = $response['needsOnboarding'] ?? true;
         $stats           = $response['stats'] ?? null;
         $recentActivity  = $response['recentActivity'] ?? [];
+        $subscription    = $response['subscription'] ?? null;
+
+        // The pricing page is public on the proxy.
+        $pricingUrl = route('pricing.index');
 
         return view('dashboard.index', compact(
             'user',
             'role',
             'needsOnboarding',
             'stats',
-            'recentActivity'
+            'recentActivity',
+            'subscription',
+            'pricingUrl',
         ));
     }
 }

@@ -200,4 +200,4 @@
     if (badge) badge.textContent = document.querySelectorAll('.delete-run-btn').length;
 })();
 </script>
-@endpush
+@endpush    

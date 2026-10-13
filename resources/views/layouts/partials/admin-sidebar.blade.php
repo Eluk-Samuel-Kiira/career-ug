@@ -144,7 +144,7 @@
                     </div>
 
                     {{-- Job Alerts --}}
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion  {{ request()->routeIs('alert.preferences*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion  {{ request()->routeIs('alert.preferences*', 'alert.log.*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-notification-2 fs-2">
@@ -164,19 +164,27 @@
                                     <span class="menu-title">Alert Preferences</span>
                                 </a>
                             </div>
+                            {{-- WhatsApp Alerts --}}
                             <div class="menu-item">
-                                <a class="menu-link" href="#">
+                                <a class="menu-link {{ request()->routeIs('alert.log.*') ? 'active' : '' }}"
+                                href="{{ route('alert.log.index') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">WhatsApp Alerts</span>
-                                </a>
-                            </div>
-                            <div class="menu-item">
-                                <a class="menu-link" href="#">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Email Alerts</span>
+                                    <span class="menu-title">WhatsApp Alerts Log</span>
                                 </a>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('auto-apply.*') ? 'active' : '' }}"
+                        href="{{ route('auto-apply.index') }}">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-26 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Auto Apply</span>
+                        </a>
                     </div>
 
                     {{-- My Applications --}}
@@ -205,17 +213,17 @@
                         </a>
                     </div>
 
-                    {{-- Plan Paid --}}
+                    {{-- Subscription & Payments --}}
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}"
+                        href="{{ route('subscription.index') }}">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-dollar fs-2">
                                     <span class="path1"></span>
                                     <span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Premium Plan</span>
-                            <span class="badge badge-light-success ms-2">Upgrade</span>
+                            <span class="menu-title">Subscription &amp; Payments</span>
                         </a>
                     </div>
 
@@ -366,17 +374,17 @@
                         </a>
                     </div>
 
-                    {{-- Plan Paid --}}
+                    {{-- Subscription & Payments --}}
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}"
+                        href="{{ route('subscription.index') }}">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-dollar fs-2">
                                     <span class="path1"></span>
                                     <span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Subscription Plan</span>
-                            <span class="badge badge-light-success ms-2">Upgrade</span>
+                            <span class="menu-title">Subscription &amp; Payments</span>
                         </a>
                     </div>
 
