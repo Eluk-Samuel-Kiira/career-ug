@@ -203,6 +203,84 @@
         $skills = collect(array_map('trim', explode(',', strip_tags($job['skills']))))
             ->filter(fn ($s) => $s !== '')->values();
     }
+
+    /* ---------------------------------------------------------------
+     | 5. Job FAQs: our own block, built only from this job's real data.
+     |    Shown below the employer's text, never mixed into it.
+     * --------------------------------------------------------------- */
+    $faqs = [];
+
+    $faqs[] = [
+        'q' => 'What is the ' . $jobTitle . ' job at ' . $companyName . '?',
+        'a' => $companyName . ' is hiring a ' . $jobTitle . ($location ? ' in ' . $location : '') . '. It is a '
+             . strtolower($jobTypeName) . ' position'
+             . ($category ? ' in the ' . $category . ' field' : '')
+             . ($industry ? ' within the ' . $industry . ' sector' : '') . '.',
+    ];
+
+    if ($location) {
+        $faqs[] = [
+            'q' => 'Where is this ' . $jobTitle . ' job based?',
+            'a' => 'The job is based in ' . $location . ' (' . country_name() . ').',
+        ];
+    }
+
+    if ($experienceLevel || $educationLevel) {
+        $who = array_filter([
+            $experienceLevel ? $experienceLevel . ' level experience' : null,
+            $educationLevel ? 'education at ' . $educationLevel . ' level' : null,
+        ]);
+        $faqs[] = [
+            'q' => 'Who can apply for this ' . $jobTitle . ' job?',
+            'a' => 'The advert points to ' . implode(' and ', $who) . '. The Qualifications and Responsibilities sections above give the full requirements.',
+        ];
+    }
+
+    $faqs[] = [
+        'q' => 'What is the salary for this job?',
+        'a' => $hasSalary ? 'The advertised pay is ' . $salary . '.' : 'The employer has not stated a salary in the advert, so pay is to be discussed.',
+    ];
+
+    if ($hasRealDeadline && $daysLeft !== null) {
+        $faqs[] = [
+            'q' => 'What is the deadline to apply?',
+            'a' => $daysLeft < 0
+                ? 'The deadline was ' . $deadlineLabel . ', so applications may already be closed.'
+                : 'Applications close on ' . $deadlineLabel . '.',
+        ];
+    } else {
+        $faqs[] = [
+            'q' => 'What is the deadline to apply?',
+            'a' => 'The advert does not give a closing date, so apply as soon as you can.',
+        ];
+    }
+
+    $methods = array_filter([
+        $applyUrl ? 'online through the application link' : null,
+        $emails ? 'by email' : null,
+        ($phones && $hasWhatsapp) ? 'on WhatsApp' : null,
+        ($phones && $hasPhoneCall) ? 'by phone' : null,
+    ]);
+    $faqs[] = [
+        'q' => 'How do I apply for this job?',
+        'a' => ($methods ? 'You can apply ' . implode(', ', $methods) . '. ' : '')
+             . 'The full instructions are in the How to Apply section of this page.',
+    ];
+
+    $faqs[] = [
+        'q' => 'Do I have to pay to apply for this job?',
+        'a' => 'No. Do not pay money for this job advert or for any part of the recruitment process. Anyone who asks you to pay is not to be trusted.',
+    ];
+
+    $faqLd = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(fn ($f) => [
+            '@type' => 'Question',
+            'name' => $f['q'],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
+        ], $faqs),
+    ];
 @endphp
 
 @section('title', $seoTitle)
@@ -313,6 +391,14 @@
 	.jp-prose pre{ max-width:100%; overflow-x:auto; white-space:pre-wrap; }
 	.jp-prose table{ display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; margin-bottom:1em; }
 	.jp-prose table td, .jp-prose table th{ border:1px solid var(--jp-line); padding:8px 10px; font-size:.9rem; }
+
+	/* Job FAQs */
+	.jp-faq-item + .jp-faq-item{ margin-top:16px; padding-top:16px; border-top:1px solid var(--jp-line); }
+	.jp-faq-q{ font-size:.95rem; font-weight:700; color:var(--jp-ink); margin:0 0 4px; }
+	.jp-faq-a{ margin:0; color:#33475B; font-size:.92rem; line-height:1.65; overflow-wrap:anywhere; }
+	.jp-more-links{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+	.jp-more-links a{ font-size:.82rem; font-weight:700; color:var(--jp-teal); text-decoration:none; background:var(--jp-bg-soft); border:1px solid var(--jp-line); border-radius:8px; padding:6px 12px; }
+	.jp-more-links a:hover{ border-color:var(--jp-teal); }
 
 	/* Sidebar */
 	.jp-sidebar-card{ background:#fff; border:1px solid var(--jp-line); border-radius:16px; padding:24px; box-shadow:0 6px 18px rgba(11,28,46,0.05); min-width:0; }
@@ -550,6 +636,29 @@
 					</div>
 					@endif
 
+					<div class="jp-content-card" id="job-faq">
+						<h2>
+							<i class="ki-duotone ki-question-2 fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+							Quick answers about this job
+						</h2>
+						@foreach($faqs as $faq)
+							<div class="jp-faq-item">
+								<h3 class="jp-faq-q">{{ $faq['q'] }}</h3>
+								<p class="jp-faq-a">{{ $faq['a'] }}</p>
+							</div>
+						@endforeach
+
+						<div class="jp-more-links">
+							@if($category)
+								<a href="{{ route('jobs.index') }}?category_id={{ $job['job_category']['id'] ?? '' }}">More {{ $category }} jobs</a>
+							@endif
+							@if($companySlug)
+								<a href="{{ route('companies.show', $companySlug) }}">More jobs at {{ $companyName }}</a>
+							@endif
+							<a href="{{ route('jobs.index') }}">All jobs in {{ country_name() }}</a>
+						</div>
+					</div>
+
 					<div class="jp-content-card" id="apply">
 						<h2><i class="ki-duotone ki-send fs-3"><span class="path1"></span><span class="path2"></span></i>How to Apply</h2>
 
@@ -754,6 +863,7 @@
 {{-- Structured data for search engines --}}
 <script type="application/ld+json">{!! json_encode($jobPosting, $jsonFlags) !!}</script>
 <script type="application/ld+json">{!! json_encode($breadcrumbLd, $jsonFlags) !!}</script>
+<script type="application/ld+json">{!! json_encode($faqLd, $jsonFlags) !!}</script>
 
 @endsection
 
