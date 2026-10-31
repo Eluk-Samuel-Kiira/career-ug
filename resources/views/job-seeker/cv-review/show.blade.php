@@ -544,6 +544,120 @@
         </div>
     </div>
 </div>
+
+{{-- Payment Modal --}}
+<div class="modal fade" id="paymentModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h3 class="fw-bold mb-0">Complete Payment</h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-icon-primary"
+                        data-bs-dismiss="modal" id="paymentModalClose">
+                    <i class="ki-duotone ki-cross fs-1">
+                        <span class="path1"></span><span class="path2"></span>
+                    </i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                {{-- Amount summary --}}
+                <div class="bg-light-primary rounded p-4 mb-5 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted fs-8">You're paying for</div>
+                        <div class="fw-bold fs-5">CV Rewrite</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted fs-8">Amount</div>
+                        <div class="fw-bold fs-4 text-primary" id="pm_amount">—</div>
+                    </div>
+                </div>
+
+                {{-- Method picker --}}
+                <label class="fw-semibold fs-7 mb-2">Pay with</label>
+                <div class="d-flex flex-column gap-2 mb-5">
+                    <label class="d-flex align-items-center gap-3 p-3 border rounded cursor-pointer pm-method-option">
+                        <input type="radio" name="pm_method" value="mobile_money" class="form-check-input mt-0" checked>
+                        <i class="ki-duotone ki-phone fs-2 text-primary">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-7">Mobile Money</div>
+                            <div class="text-muted fs-8">MTN or Airtel — you'll receive a prompt on your phone</div>
+                        </div>
+                    </label>
+
+                    <label class="d-flex align-items-center gap-3 p-3 border rounded cursor-pointer pm-method-option">
+                        <input type="radio" name="pm_method" value="card" class="form-check-input mt-0">
+                        <i class="ki-duotone ki-credit-cart fs-2 text-success">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-7">Card</div>
+                            <div class="text-muted fs-8">Visa or Mastercard — you'll be redirected to a secure page</div>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Phone input (mobile money only) --}}
+                <div id="pm_phone_wrap" class="mb-4">
+                    <label class="fw-semibold fs-7 mb-2">Mobile Money Number</label>
+                    <input type="tel"
+                           id="pm_phone"
+                           class="form-control form-control-lg"
+                           placeholder="+256 754 428 612"
+                           autocomplete="tel">
+                    <div class="text-muted fs-8 mt-1">
+                        Use the number registered with MTN or Airtel Money.
+                    </div>
+                </div>
+
+                {{-- Credit / balance warning (changes per method) --}}
+                <div class="alert alert-light-warning d-flex align-items-start mb-0" id="pm_warning">
+                    <i class="ki-duotone ki-information-5 fs-3 text-warning me-2 mt-1">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    </i>
+                    <div class="fs-7" id="pm_warning_text">
+                        <strong>Make sure you have enough mobile money credit.</strong>
+                        Your balance must cover the amount above before you can approve the PIN prompt.
+                        If the payment fails, contact support.
+                    </div>
+                </div>
+
+                {{-- Error message --}}
+                <div id="pm_error" class="alert alert-light-danger mt-4 mb-0 d-none"></div>
+            </div>
+
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="pm_submit_btn">
+                    <span class="indicator-label">
+                        <i class="ki-duotone ki-lock fs-3 me-2">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Pay Now
+                    </span>
+                    <span class="indicator-progress">
+                        Processing... <span class="spinner-border spinner-border-sm ms-2"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .pm-method-option {
+        transition: border-color .15s ease, background .15s ease;
+    }
+    .pm-method-option:hover {
+        border-color: var(--bs-primary) !important;
+        background: var(--bs-light-primary);
+    }
+    .pm-method-option:has(input:checked) {
+        border-color: var(--bs-primary) !important;
+        background: var(--bs-light-primary);
+    }
+</style>
 @endsection
 
 @push('scripts')
@@ -626,34 +740,225 @@ document.getElementById('answersForm')?.addEventListener('submit', function (e) 
 // ─────────────────────────────────────────────────────────────
 // PAYMENT
 // ─────────────────────────────────────────────────────────────
-document.getElementById('payBtn')?.addEventListener('click', function () {
-    const btn = this;
-    window.showButtonSpinner(btn);
+(function () {
+    const payBtn = document.getElementById('payBtn');
+    if (!payBtn) return;
 
-    fetch(`/cv-review/${UUID}/pay`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
-            } else {
-                window.showToast(
-                    'success',
-                    'Payment initialized. Reference: ' + (data.payment_reference || 'N/A'),
-                    'Ready'
-                );
-                setTimeout(() => location.reload(), 2000);
-            }
+    const modalEl     = document.getElementById('paymentModal');
+    const modal       = new bootstrap.Modal(modalEl);
+    const phoneWrap   = document.getElementById('pm_phone_wrap');
+    const phoneInput  = document.getElementById('pm_phone');
+    const methodRadios= document.querySelectorAll('input[name="pm_method"]');
+    const submitBtn   = document.getElementById('pm_submit_btn');
+    const amountEl    = document.getElementById('pm_amount');
+    const errorEl     = document.getElementById('pm_error');
+    const closeBtn    = document.getElementById('paymentModalClose');
+
+    const warningText = document.getElementById('pm_warning_text');
+
+    function setWarningText(method) {
+        if (!warningText) return;
+
+        if (method === 'card') {
+            warningText.innerHTML = `
+                <strong>Have your card details ready.</strong>
+                You will be redirected to a secure payment page to complete the transaction.
+                Make sure the card supports online payments and has sufficient funds.
+                If the payment fails, contact support.
+            `;
         } else {
-            window.showToast('error', data.message || 'Payment init failed', 'Error');
+            warningText.innerHTML = `
+                <strong>Make sure you have enough mobile money credit.</strong>
+                Your balance must cover the amount above before you can approve the PIN prompt.
+                If the payment fails, contact support.
+            `;
         }
-    })
-    .catch(() => window.showToast('error', 'Payment init failed', 'Error'))
-    .finally(() => window.hideButtonSpinner(btn));
-});
+    }
+
+    // Show/hide the phone field based on chosen method
+    function syncMethod() {
+        const method = document.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
+        phoneWrap.classList.toggle('d-none', method === 'card');
+        errorEl.classList.add('d-none');
+        errorEl.textContent = '';
+        setWarningText(method);
+    }
+    methodRadios.forEach(r => r.addEventListener('change', syncMethod));
+
+    // Open the modal
+    payBtn.addEventListener('click', () => {
+        modal.show();
+        syncMethod();
+        // Focus the phone input if mobile money is selected
+        setTimeout(() => {
+            if (phoneWrap && !phoneWrap.classList.contains('d-none')) {
+                phoneInput.focus();
+            }
+        }, 300);
+    });
+
+    // Submit from within the modal
+    submitBtn.addEventListener('click', async () => {
+        const method = document.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
+        const phone = phoneInput.value.replace(/[^\d+]/g, '').trim();
+
+        if (method === 'mobile_money') {
+            if (!phone) {
+                showError('Please enter your mobile money number.');
+                return;
+            }
+            if (!/^\+\d{9,15}$/.test(phone)) {
+                showError('That phone number does not look right. Use the format +256 754 428 612.');
+                return;
+            }
+        }
+
+        // Visual loading state on the submit button
+        submitBtn.setAttribute('data-kt-indicator', 'on');
+        submitBtn.disabled = true;
+        errorEl.classList.add('d-none');
+
+        try {
+            const res = await fetch(`/cv-review/${UUID}/pay`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    phone: method === 'mobile_money' ? phone : null,
+                    method,
+                }),
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                const msg = data.message || 'Payment could not be started.';
+
+                // If MarzPay rejected the phone number, focus and highlight that field
+                if (/phone number/i.test(msg) && !phoneWrap.classList.contains('d-none')) {
+                    phoneInput.classList.add('is-invalid');
+                    phoneInput.focus();
+                    phoneInput.addEventListener('input', () => phoneInput.classList.remove('is-invalid'), { once: true });
+                }
+
+                showError(msg);
+                submitBtn.removeAttribute('data-kt-indicator');
+                submitBtn.disabled = false;
+                return;
+            }
+
+            // Show the amount from the response, in case the server updated it
+            if (data.amount_formatted) {
+                amountEl.textContent = data.amount_formatted;
+            }
+
+            if (data.is_free) {
+                modal.hide();
+                window.showToast('success', data.message, 'Free');
+                setTimeout(() => location.reload(), 1500);
+                return;
+            }
+
+            if (data.redirect_url) {
+                // Card flow — leave the modal open while the browser navigates
+                window.location.href = data.redirect_url;
+                return;
+            }
+
+            // Mobile money — modal stays open, show "check your phone" and poll
+            showInfo(
+                'A payment prompt has been sent to your phone. Enter your PIN to complete payment. ' +
+                'Please make sure you have enough mobile money credit.'
+            );
+
+            // Swap the Pay Now button to a disabled state while polling
+            submitBtn.removeAttribute('data-kt-indicator');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Waiting for confirmation...';
+
+            let polls = 0;
+            const maxPolls = 40;  // ~2 minutes at 3s intervals
+
+            const poll = setInterval(async () => {
+                polls++;
+                try {
+                    const r  = await fetch(`/cv-review/${UUID}`, {
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    const b = await r.json();
+                    const status = b.request?.status;
+
+                    if (status && status !== 'awaiting_payment') {
+                        clearInterval(poll);
+                        modal.hide();
+                        window.showToast('success', 'Payment confirmed. Welcome aboard.', 'Success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else if (polls >= maxPolls) {
+                        clearInterval(poll);
+                        showError(
+                            'We have not received the confirmation yet. ' +
+                            'If you were charged, the payment will appear shortly. ' +
+                            'Refresh this page in a moment.'
+                        );
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = payButtonHTML();
+                    }
+                } catch (e) {
+                    // network blip — keep polling
+                }
+            }, 3000);
+
+        } catch (e) {
+            showError('Something went wrong: ' + e.message);
+            submitBtn.removeAttribute('data-kt-indicator');
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Reset the modal when closed
+    closeBtn.addEventListener('click', () => {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('data-kt-indicator');
+        submitBtn.innerHTML = payButtonHTML();
+        errorEl.classList.add('d-none');
+    });
+
+    // Helpers
+    function showError(msg) {
+        errorEl.className = 'alert alert-light-danger mt-4 mb-0';
+        errorEl.textContent = msg;
+        errorEl.classList.remove('d-none');
+    }
+
+    function showInfo(msg) {
+        errorEl.className = 'alert alert-light-info mt-4 mb-0';
+        errorEl.textContent = msg;
+        errorEl.classList.remove('d-none');
+    }
+
+    function payButtonHTML() {
+        return '<i class="ki-duotone ki-lock fs-3 me-2"><span class="path1"></span><span class="path2"></span></i> Pay Now';
+    }
+
+    // Populate the amount when the modal opens — pull from the page or fetch
+    document.getElementById('payBtn')?.addEventListener('click', async () => {
+        // You likely already have the price rendered on the page
+        const existingAmount = document.getElementById('pm_amount')?.textContent;
+        if (!existingAmount || existingAmount === '—') {
+            // Fallback: hit the quote endpoint to get the amount
+            try {
+                const r = await fetch(`/cv-review/${UUID}`, { headers: { 'Accept': 'application/json' } });
+                const b = await r.json();
+                const formatted = b?.request?.formatted_amount || '—';
+                amountEl.textContent = formatted;
+            } catch (e) {
+                amountEl.textContent = '—';
+            }
+        }
+    });
+})();
 
 // ─────────────────────────────────────────────────────────────
 // REVISION MODAL
