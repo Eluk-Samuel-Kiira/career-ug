@@ -299,5 +299,27 @@ class CountryService
             ->timeout(120)
             ->send($method, $url, ['query' => $params]);
     }
+
+    public function getSupportEmail(): string
+    {
+        return config('app.country_support_email', 'admin@stardencareersug.com');
+    }
+
+    public function getSupportPhone(): string
+    {
+        return config('app.country_support_phone', '+256 754428612');
+    }
+
+    public function getSupportPhoneDigits(): string
+    {
+        $digits = config('app.country_support_phone_digits');
+
+        // Fallback: derive from the display phone if the digits key is missing
+        if (empty($digits)) {
+            $digits = preg_replace('/[^0-9]/', '', $this->getSupportPhone());
+        }
+
+        return $digits;
+    }
     
 }

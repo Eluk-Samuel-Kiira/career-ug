@@ -147,4 +147,25 @@ if (!function_exists('country_favicon_path')) {
 }
 
 
+if (!function_exists('support_email')) {
+    function support_email(): string
+    {
+        return app(\App\Services\CountryService::class)->getSupportEmail();
+    }
+}
+
+if (!function_exists('support_phone')) {
+    function support_phone(): string
+    {
+        return app(\App\Services\CountryService::class)->getSupportPhone();
+    }
+}
+
+if (!function_exists('support_phone_digits')) {
+    function support_phone_digits(): string
+    {
+        return app(\App\Services\CountryService::class)->getSupportPhoneDigits();
+    }
+}
+
 

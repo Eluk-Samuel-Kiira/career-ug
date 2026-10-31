@@ -20,9 +20,9 @@ class ArtisanCommandController extends Controller
         'view:clear'           => 'Clear compiled views',
         'optimize:clear'       => 'Clear all cached data',
         'optimize'             => 'Cache config, routes & views',
-        'queue:restart'        => 'Restart queue workers',
+        // 'queue:restart'        => 'Restart queue workers',
         // 'migrate'              => 'Run database migrations (forced in production)',
-        'migrate:status'       => 'Show migration status',
+        // 'migrate:status'       => 'Show migration status',
         // 'db:seed'              => 'Seed the database',
     ];
 

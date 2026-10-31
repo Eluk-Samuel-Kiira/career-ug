@@ -138,5 +138,8 @@ return [
     'country_capital' => env('COUNTRY_CAPITAL', ''),
     'country_citizens' => env('COUNTRY_CITIZENS', ''),
     'country_domain' => env('COUNTRY_DOMAIN', ''),
+    'country_support_email'        => env('COUNTRY_SUPPORT_EMAIL', 'admin@stardencareersug.com'),
+    'country_support_phone'        => env('COUNTRY_SUPPORT_PHONE', '+256 754428612'),
+    'country_support_phone_digits' => env('COUNTRY_SUPPORT_PHONE_DIGITS', '256754428612'),
 
 ];
