@@ -305,6 +305,46 @@
 			}
 		</style>
 
+		<style>
+			/* ─── WhatsApp Float ──────────────────────────────────── */
+			.jp-wa-float {
+				position: fixed;
+				bottom: 24px;
+				right: 24px;
+				z-index: 1040;
+				width: 48px;
+				height: 48px;
+				border-radius: 50%;
+				background: #25D366;
+				color: #fff;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+				transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+				text-decoration: none;
+			}
+			.jp-wa-float--left {
+				left: 24px;
+				right: auto;
+			}
+			.jp-wa-float svg {
+				width: 24px;
+				height: 24px;
+				display: block;
+			}
+			.jp-wa-float:hover {
+				color: #fff;
+				background: #1ebe5b;
+				transform: translateY(-3px) scale(1.04);
+				box-shadow: 0 12px 26px rgba(37, 211, 102, 0.45), 0 4px 10px rgba(0, 0, 0, 0.18);
+			}
+			.jp-wa-float:active {
+				transform: translateY(-1px) scale(0.98);
+			}
+		</style>
+
+
 	</head>
 	<!--end::Head-->
 
@@ -355,6 +395,17 @@
 				</i>
 			</div>
 			<!--end::Scrolltop-->
+
+			<!--begin::WhatsApp Float-->
+			<a href="{{ route('social-media.featured') }}"
+			class="jp-wa-float jp-wa-float--left"
+			title="Connect with us on social media"
+			aria-label="Open our social media page">
+				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+					<path d="M17.6 6.32A8.86 8.86 0 0 0 12.02 3.5c-4.87 0-8.83 3.94-8.83 8.79 0 1.55.41 3.06 1.19 4.39L3.2 21l4.44-1.16a8.9 8.9 0 0 0 4.37 1.12h.01c4.87 0 8.83-3.94 8.83-8.79a8.7 8.7 0 0 0-2.25-5.85Zm-5.58 13.5h-.01c-1.36 0-2.7-.36-3.86-1.05l-.28-.16-2.87.75.77-2.79-.18-.29a7.3 7.3 0 0 1-1.13-3.9c0-4.03 3.3-7.32 7.36-7.32a7.3 7.3 0 0 1 5.2 2.15 7.24 7.24 0 0 1 2.16 5.17c0 4.03-3.3 7.32-7.36 7.32Zm4.03-5.48c-.22-.11-1.3-.64-1.5-.71-.2-.07-.35-.11-.5.11s-.58.71-.71.86-.26.16-.48.05a6.03 6.03 0 0 1-1.77-1.09 6.6 6.6 0 0 1-1.22-1.52c-.13-.22 0-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.6.28-.2.22-.79.77-.79 1.87 0 1.1.81 2.17.92 2.32.11.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.3-.53 1.49-1.04.18-.51.18-.94.13-1.03-.05-.09-.2-.15-.42-.26Z"/>
+				</svg>
+			</a>
+			<!--end::WhatsApp Float-->
 		</div>
 		<!--end::Root-->
 

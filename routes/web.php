@@ -66,8 +66,10 @@ Route::get('pages/terms-conditions', function () {
 
 Route::get('/social-media', [HomeController::class, 'byCountry'])
     ->name('social-media.index');
+
 Route::get('/social-media/featured', [HomeController::class, 'featured'])
     ->name('social-media.featured');
+    
 Route::get('/social-media/{countryCode}', [HomeController::class, 'byCountry'])
     ->name('social-media.by-country');
 
