@@ -222,7 +222,11 @@
                     $progress = $step > 0 ? round(($step / $totalSteps) * 100) : 0;
 
                     // Is this something the seeker needs to act on?
-                    $needsAction = in_array($r['status'], ['ai_reviewed', 'awaiting_payment'], true);
+                    $needsAction   = in_array($r['status'], ['ai_reviewed', 'awaiting_payment'], true);
+                    $hasAnswers    = !empty($r['has_answers'] ?? $r['seeker_gap_answers']);
+                    $showPayNow    = $r['status'] === 'awaiting_payment' && $hasAnswers;
+                    $showFillGaps  = $r['status'] === 'ai_reviewed' || ($r['status'] === 'awaiting_payment' && !$hasAnswers);
+
 
                     // ⬅️ NEW: Can this request be deleted?
                     // Blocked once work has started — protects the audit trail.
@@ -364,17 +368,15 @@
                                     </i>
                                 </a>
 
-                                @if($needsAction && $r['status'] === 'awaiting_payment')
-                                    <a href="{{ route('cv-review.show', $r['uuid']) }}"
-                                       class="btn btn-sm btn-warning">
+                                @if($showPayNow)
+                                    <a href="{{ route('cv-review.show', $r['uuid']) }}" class="btn btn-sm btn-warning">
                                         <i class="ki-duotone ki-dollar fs-4 me-1">
                                             <span class="path1"></span><span class="path2"></span>
                                         </i>
-                                        Pay Now
+                                        Pay Now — {{ $r['formatted_amount'] }}
                                     </a>
-                                @elseif($needsAction && $r['status'] === 'ai_reviewed')
-                                    <a href="{{ route('cv-review.show', $r['uuid']) }}"
-                                       class="btn btn-sm btn-primary">
+                                @elseif($showFillGaps)
+                                    <a href="{{ route('cv-review.show', $r['uuid']) }}" class="btn btn-sm btn-primary">
                                         Fill In The Gaps
                                         <i class="ki-duotone ki-right fs-4 ms-1">
                                             <span class="path1"></span><span class="path2"></span>

@@ -156,34 +156,125 @@
         </div>
     </div>
 
-    {{-- Timeline --}}
+    {{-- Timeline — horizontal on md+, vertical on mobile --}}
     <div class="card card-flush mb-6">
-        <div class="card-header"><h3 class="card-title">Progress</h3></div>
-        <div class="card-body">
-            <div class="d-flex justify-content-between position-relative" style="overflow-x:auto;">
-                @foreach($timeline as $key => $step)
-                    @php
-                        $idx = array_search($key, $statusOrder);
-                        $done = $idx < $currentIdx || $status === 'completed';
-                        $active = $idx === $currentIdx;
-                    @endphp
-                    <div class="text-center flex-fill position-relative" style="min-width:120px;">
-                        <div class="symbol symbol-40px symbol-circle mx-auto
-                            {{ $done ? 'bg-success' : ($active ? 'bg-primary' : 'bg-light-secondary') }}"
-                             style="z-index:2;position:relative;">
-                            @if($done)
-                                <i class="ki-duotone ki-check text-white fs-3"><span class="path1"></span><span class="path2"></span></i>
-                            @elseif($active)
-                                <i class="ki-duotone ki-time text-white fs-3"><span class="path1"></span><span class="path2"></span></i>
-                            @else
-                                <span class="text-muted fw-bold">{{ $idx + 1 }}</span>
-                            @endif
-                        </div>
-                        <div class="fw-bold mt-2 fs-7">{{ $step[0] }}</div>
-                        <div class="text-muted fs-8 px-2">{{ $step[1] }}</div>
-                    </div>
-                @endforeach
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="ki-duotone ki-time fs-2 me-2 text-gray-600">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Progress
+            </h3>
+            <div class="card-toolbar">
+                <span class="badge badge-light-{{ $msg['color'] ?? 'secondary' }} fs-7">
+                    {{ $timeline[$status][0] ?? ucfirst($status) }}
+                </span>
             </div>
+        </div>
+        <div class="card-body py-6">
+
+            {{-- ─────────── MOBILE: vertical timeline ─────────── --}}
+            <div class="d-md-none">
+                <div class="timeline timeline-border-dashed">
+                    @foreach($timeline as $key => $step)
+                        @php
+                            $idx     = array_search($key, $statusOrder);
+                            $done    = $idx < $currentIdx || $status === 'completed';
+                            $active  = $idx === $currentIdx;
+                            $pending = !$done && !$active;
+
+                            $iconBg   = $done ? 'bg-light-success'
+                                    : ($active ? 'bg-light-primary' : 'bg-light-secondary');
+                            $iconText = $done ? 'text-success'
+                                    : ($active ? 'text-primary' : 'text-gray-500');
+                            $label    = $done ? 'text-success'
+                                    : ($active ? 'text-primary' : 'text-gray-500');
+                        @endphp
+
+                        <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-icon">
+                                <span class="symbol symbol-30px">
+                                    <span class="symbol-label {{ $iconBg }}">
+                                        @if($done)
+                                            <i class="ki-duotone ki-check fs-6 {{ $iconText }}"></i>
+                                        @elseif($active)
+                                            <span class="bullet bullet-dot bg-primary"></span>
+                                        @else
+                                            <span class="fs-8 fw-bold {{ $iconText }}">{{ $idx + 1 }}</span>
+                                        @endif
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="timeline-content mb-5 {{ $pending ? 'opacity-75' : '' }}">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold fs-7 {{ $label }}">{{ $step[0] }}</div>
+                                        <div class="text-muted fs-8 mt-1">{{ $step[1] }}</div>
+                                    </div>
+                                    @if($done)
+                                        <span class="badge badge-light-success fs-9 flex-shrink-0">Done</span>
+                                    @elseif($active)
+                                        <span class="badge badge-light-primary fs-9 flex-shrink-0">Current</span>
+                                    @else
+                                        <span class="badge badge-light-secondary fs-9 flex-shrink-0">Pending</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- ─────────── DESKTOP: horizontal rail ─────────── --}}
+            <div class="d-none d-md-block">
+                <div class="d-flex justify-content-between align-items-start position-relative">
+                    @foreach($timeline as $key => $step)
+                        @php
+                            $idx     = array_search($key, $statusOrder);
+                            $done    = $idx < $currentIdx || $status === 'completed';
+                            $active  = $idx === $currentIdx;
+                            $pending = !$done && !$active;
+
+                            $iconBg   = $done ? 'bg-light-success'
+                                    : ($active ? 'bg-light-primary' : 'bg-light-secondary');
+                            $iconText = $done ? 'text-success'
+                                    : ($active ? 'text-primary' : 'text-gray-500');
+                            $label    = $done ? 'text-success'
+                                    : ($active ? 'text-primary' : 'text-gray-500');
+                        @endphp
+
+                        <div class="d-flex flex-column align-items-center flex-fill position-relative px-2">
+                            @if(!$loop->last)
+                                <div class="position-absolute"
+                                    style="top:17px; left:calc(50% + 20px); right:calc(-50% + 20px);
+                                            border-top:2px dashed {{ $done ? '#50cd89' : '#e4e6ef' }};
+                                            z-index:0;"></div>
+                            @endif
+
+                            <span class="symbol symbol-35px" style="z-index:1;">
+                                <span class="symbol-label {{ $iconBg }} border border-2 border-white">
+                                    @if($done)
+                                        <i class="ki-duotone ki-check fs-4 {{ $iconText }}"></i>
+                                    @elseif($active)
+                                        <span class="bullet bullet-dot bg-primary"></span>
+                                    @else
+                                        <span class="fs-8 fw-bold {{ $iconText }}">{{ $idx + 1 }}</span>
+                                    @endif
+                                </span>
+                            </span>
+
+                            <div class="text-center mt-3 {{ $pending ? 'opacity-75' : '' }}">
+                                <div class="fw-semibold fs-8 {{ $label }}">{{ $step[0] }}</div>
+                                <div class="text-muted fs-9 mt-1 px-1" style="line-height:1.2;">
+                                    {{ $step[1] }}
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -210,7 +301,8 @@
             @endif
 
             @if(!empty($r['ai_gap_review']['sections']))
-                <div class="table-responsive">
+                {{-- Desktop: real table --}}
+                <div class="d-none d-md-block table-responsive">
                     <table class="table align-middle">
                         <thead>
                             <tr class="text-muted fw-bold fs-7 text-uppercase">
@@ -225,9 +317,12 @@
                                 <tr>
                                     <td class="fw-semibold">{{ $sec['section'] ?? '—' }}</td>
                                     <td>
-                                        @if($s === 'ok')        <span class="badge badge-light-success">✅ OK</span>
-                                        @elseif($s === 'weak')  <span class="badge badge-light-warning">⚠️ Weak</span>
-                                        @else                   <span class="badge badge-light-danger">❌ Missing</span>
+                                        @if($s === 'ok')
+                                            <span class="badge badge-light-success">✅ OK</span>
+                                        @elseif($s === 'weak')
+                                            <span class="badge badge-light-warning">⚠️ Weak</span>
+                                        @else
+                                            <span class="badge badge-light-danger">❌ Missing</span>
                                         @endif
                                     </td>
                                     <td class="text-muted">{{ $sec['note'] ?? '' }}</td>
@@ -236,14 +331,42 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Mobile: stacked cards --}}
+                <div class="d-md-none d-flex flex-column gap-3">
+                    @foreach($r['ai_gap_review']['sections'] as $sec)
+                        @php
+                            $s = $sec['status'] ?? '';
+                            $border = $s === 'ok' ? 'border-success'
+                                    : ($s === 'weak' ? 'border-warning' : 'border-danger');
+                        @endphp
+                        <div class="border {{ $border }} border-dashed rounded p-4 bg-light-{{ $s === 'ok' ? 'success' : ($s === 'weak' ? 'warning' : 'danger') }} bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="fw-bold fs-6 text-gray-800">
+                                    {{ $sec['section'] ?? '—' }}
+                                </div>
+                                @if($s === 'ok')
+                                    <span class="badge badge-light-success fs-8 flex-shrink-0">OK</span>
+                                @elseif($s === 'weak')
+                                    <span class="badge badge-light-warning fs-8 flex-shrink-0">Weak</span>
+                                @else
+                                    <span class="badge badge-light-danger fs-8 flex-shrink-0">Missing</span>
+                                @endif
+                            </div>
+                            @if(!empty($sec['note']))
+                                <div class="text-muted fs-7">{{ $sec['note'] }}</div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
             @endif
 
             @if(!empty($missingFields))
                 <div class="mt-5">
-                    <div class="fw-bold mb-2">We noticed these are missing:</div>
+                    <div class="fw-bold mb-2 fs-7 text-gray-700">We noticed these are missing:</div>
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($missingFields as $mf)
-                            <span class="badge badge-light-danger">{{ $mf }}</span>
+                            <span class="badge badge-light-danger fs-8">{{ $mf }}</span>
                         @endforeach
                     </div>
                 </div>
@@ -332,7 +455,12 @@
                 Our expert will rewrite your CV within
                 {{ $r['sla_due_at'] ? 'the SLA window' : '24 hours' }}.
             </p>
-            <div class="fs-2x fw-bold text-primary mb-5">{{ $r['formatted_amount'] }}</div>
+            @if(!empty($r['next_service_price']['formatted']))
+                <div class="text-muted fs-7 mb-1">{{ $r['next_service_name'] ?? 'CV Rewrite' }}</div>
+                <div class="fs-2x fw-bold text-primary mb-5">{{ $r['next_service_price']['formatted'] }}</div>
+            @else
+                <div class="fs-2x fw-bold text-primary mb-5">{{ $r['formatted_amount'] }}</div>
+            @endif
             <button class="btn btn-success btn-lg px-10" id="payBtn">
                 <span class="indicator-label">
                     <i class="ki-duotone ki-lock fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>
