@@ -366,7 +366,10 @@
                     <div class="fw-bold mb-2 fs-7 text-gray-700">We noticed these are missing:</div>
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($missingFields as $mf)
-                            <span class="badge badge-light-danger fs-8">{{ $mf }}</span>
+                            <span class="badge badge-light-danger fs-8 text-wrap text-start"
+                                style="max-width:100%; white-space:normal; word-break:break-word;">
+                                {{ $mf }}
+                            </span>
                         @endforeach
                     </div>
                 </div>
