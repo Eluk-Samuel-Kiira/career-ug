@@ -180,7 +180,10 @@ class CvReviewController extends Controller
 
         $response = $this->countryService->api(
             "cv-review/{$uuid}/pay",
-            [],
+            [
+                'phone'  => $request->input('phone'),
+                'method' => $request->input('method', 'mobile_money'),
+            ],
             'POST',
             0,
             false
@@ -193,7 +196,6 @@ class CvReviewController extends Controller
             ]);
         }
 
-        // No gateway URL (dev mode) — just acknowledge
         return response()->json($response);
     }
 
