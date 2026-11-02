@@ -123,13 +123,23 @@ Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(fu
 
 
 Route::middleware(['auth.web'])->prefix('letters')->name('letters.')->group(function () {
+    // ── List / create ─────────────────────────────────────────
     Route::get('/',               [\App\Http\Controllers\Seeker\LetterController::class, 'index'])->name('index');
     Route::get('/create',         [\App\Http\Controllers\Seeker\LetterController::class, 'create'])->name('create');
     Route::post('/',              [\App\Http\Controllers\Seeker\LetterController::class, 'store'])->name('store');
     Route::get('/search-jobs',    [\App\Http\Controllers\Seeker\LetterController::class, 'searchJobs'])->name('search-jobs');
+
+    // ── Specific {uuid} sub-routes (BEFORE the wildcard) ──────
+    Route::get('/{uuid}/status',     [\App\Http\Controllers\Seeker\LetterController::class, 'status'])->name('status');
+    Route::get('/{uuid}/download',   [\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
+    Route::post('/{uuid}/pay',       [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
+    Route::post('/{uuid}/update',    [\App\Http\Controllers\Seeker\LetterController::class, 'updateInputs'])->name('update');
+    Route::post('/{uuid}/regenerate',[\App\Http\Controllers\Seeker\LetterController::class, 'regenerate'])->name('regenerate');
+    Route::post('/{uuid}/save-edited',  [\App\Http\Controllers\Seeker\LetterController::class, 'saveEdited'])->name('save-edited');
+    Route::post('/{uuid}/reset-edited', [\App\Http\Controllers\Seeker\LetterController::class, 'resetEdited'])->name('reset-edited');
+
+    // ── Wildcard LAST ─────────────────────────────────────────
     Route::get('/{uuid}',         [\App\Http\Controllers\Seeker\LetterController::class, 'show'])->name('show');
-    Route::post('/{uuid}/pay',    [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
-    Route::get('/{uuid}/download',[\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
     Route::delete('/{uuid}',      [\App\Http\Controllers\Seeker\LetterController::class, 'destroy'])->name('destroy');
 });
 

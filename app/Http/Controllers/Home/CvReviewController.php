@@ -57,9 +57,18 @@ class CvReviewController extends Controller
         }
 
         $quoteResponse = $this->countryService->api('cv-review/quote', [], 'GET', 0, false);
-        if (!($quoteResponse['success'] ?? false)) {
-            return redirect()->route('cv-review.index')
-                ->with('error', $quoteResponse['message'] ?? 'Service unavailable in your country.');
+
+        // If the quote isn't available, bounce the user back to the index
+        // with a flash message instead of letting the Blade blow up.
+        if (
+            !is_array($quoteResponse)
+            || !($quoteResponse['success'] ?? false)
+            || !($quoteResponse['available'] ?? false)
+            || !isset($quoteResponse['service'], $quoteResponse['price'])
+        ) {
+            return redirect()
+                ->route('cv-review.index')
+                ->with('error', $quoteResponse['message'] ?? 'CV Review is currently unavailable in your region.');
         }
 
         $cvResponse = $this->countryService->api('auth/user/cv', [], 'GET', 0, false);

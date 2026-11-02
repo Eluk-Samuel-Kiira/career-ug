@@ -252,21 +252,28 @@
                         {{-- Row 1: Title + Status --}}
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
                             <div class="flex-grow-1 min-w-250px">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="fw-bold fs-5">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-1">
+                                    {{-- LEFT: service name --}}
+                                    <div class="fw-bold fs-5">
                                         {{ $r['service_name'] ?? 'CV Review' }}
-                                    </span>
-                                    <span class="badge badge-light-{{ $metaRow['color'] }} fs-7">
-                                        {{ $metaRow['label'] }}
-                                    </span>
-                                    @if($needsAction)
-                                        <span class="badge badge-warning fs-7">
-                                            <i class="ki-duotone ki-information-5 fs-6 me-1">
-                                                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                                            </i>
-                                            Action Needed
+                                    </div>
+
+                                    {{-- RIGHT: badges stacked vertically --}}
+                                    <div class="d-flex flex-column align-items-end gap-1">
+                                        <span class="badge badge-light-{{ $metaRow['color'] }} fs-7">
+                                            {{ $metaRow['label'] }}
                                         </span>
-                                    @endif
+
+                                        @if($needsAction)
+                                            <span class="badge badge-warning fs-7 text-wrap text-start"
+                                                style="max-width:100%; white-space:normal; word-break:break-word;">
+                                                <i class="ki-duotone ki-information-5 fs-6 me-1">
+                                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                </i>
+                                                Action Needed
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="text-muted fs-7">
                                     #{{ substr($r['uuid'], 0, 8) }}
