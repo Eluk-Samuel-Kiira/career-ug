@@ -242,13 +242,64 @@ class LetterController extends Controller
             abort($response->status(), 'Letter not ready');
         }
 
-        $filename = 'letter-' . $uuid . '.pdf';
+        // Pass through the upstream filename if the main app set one.
+        // Fall back to a safe default if the header is missing or unparseable.
+        $filename = $this->extractFilenameFromDisposition(
+            $response->header('Content-Disposition')
+        ) ?: ('letter-' . $uuid . '.pdf');
 
         return response()->streamDownload(function () use ($response) {
             echo $response->body();
         }, $filename, [
             'Content-Type' => $response->header('Content-Type') ?: 'application/pdf',
         ]);
+    }
+
+    /**
+     * Parse "attachment; filename=..." or "attachment; filename*=UTF-8''..."
+     * from a Content-Disposition header.
+     */
+    protected function extractFilenameFromDisposition(?string $header): ?string
+    {
+        if (empty($header)) return null;
+
+        // RFC 5987: filename*=UTF-8''stella-mirembe_cover-letter_...
+        if (preg_match("/filename\*\s*=\s*UTF-8''([^;]+)/i", $header, $m)) {
+            $decoded = rawurldecode(trim($m[1], '"\''));
+            if ($decoded !== '') return $this->sanitizeFilename($decoded);
+        }
+
+        // Plain: filename="stella-mirembe_cover-letter_....pdf"
+        if (preg_match('/filename\s*=\s*"?([^";]+)"?/i', $header, $m)) {
+            $raw = trim($m[1]);
+            if ($raw !== '') return $this->sanitizeFilename($raw);
+        }
+
+        return null;
+    }
+
+    /**
+     * Block path traversal, control chars, and reserved names.
+     */
+    protected function sanitizeFilename(string $name): string
+    {
+        // Strip any path components
+        $name = basename($name);
+
+        // Drop control chars and characters that are illegal on Windows
+        $name = preg_replace('/[\x00-\x1F\x7F<>:"\/\\\\|?*]+/', '', $name);
+
+        // Trim, cap length (255 bytes is the usual filesystem limit)
+        $name = trim($name);
+        if ($name === '' || $name === '.' || $name === '..') {
+            return 'letter.pdf';
+        }
+
+        if (!str_ends_with(strtolower($name), '.pdf')) {
+            $name .= '.pdf';
+        }
+
+        return mb_substr($name, 0, 200) . '.pdf';
     }
 
     public function destroy($uuid)

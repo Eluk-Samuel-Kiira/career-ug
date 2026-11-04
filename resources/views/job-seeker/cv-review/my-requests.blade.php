@@ -78,6 +78,34 @@
             'color' => 'danger',
             'next'  => null,
         ],
+        'paid_ai' => [
+            'step'  => 4,
+            'label' => 'Paid — AI',
+            'where' => 'Payment received. AI is rewriting your CV.',
+            'color' => 'info',
+            'next'  => 'Ready in under a minute.',
+        ],
+        'paid_human' => [
+            'step'  => 4,
+            'label' => 'Paid — HR Expert',
+            'where' => 'Payment received. An HR expert is being assigned.',
+            'color' => 'primary',
+            'next'  => 'Delivered within 12–24 hours.',
+        ],
+        'generating' => [
+            'step'  => 5,
+            'label' => 'Generating',
+            'where' => 'AI is writing your CV now.',
+            'color' => 'primary',
+            'next'  => 'Ready in under a minute.',
+        ],
+        'generated' => [
+            'step'  => 6,
+            'label' => 'Generated',
+            'where' => 'Your rewritten CV is ready.',
+            'color' => 'success',
+            'next'  => 'Download or edit it, then click Done.',
+        ],
     ];
 @endphp
 
@@ -355,13 +383,13 @@
                                         Original CV
                                     </a>
                                 @endif
-                                @if(!empty($r['delivered_cv_url']))
-                                    <a href="{{ $r['delivered_cv_url'] }}" target="_blank"
-                                       class="btn btn-sm btn-light-success">
+                                @if(($r['rewrite_mode'] ?? null) === 'ai' && ($r['rewrite_is_ready'] ?? false))
+                                    <a href="{{ route('cv-review.rewrite.download', $r['uuid']) }}"
+                                    class="btn btn-sm btn-light-success">
                                         <i class="ki-duotone ki-file-down fs-4 me-1">
                                             <span class="path1"></span><span class="path2"></span>
                                         </i>
-                                        Download Revised CV
+                                        Download AI CV
                                     </a>
                                 @endif
                             </div>

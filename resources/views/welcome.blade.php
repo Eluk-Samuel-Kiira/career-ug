@@ -1,3 +1,98 @@
+<?php
+// ─────────────────────────────────────────────────────────────
+// Simulate a MarzPay webhook for a deposit
+//
+// USAGE (tinker):
+//   $depositRef = '3f5a32cc-...';
+//   $status = 'completed';  // or 'failed'
+//   include base_path('webhook-test.php');
+//
+// Or paste this whole thing into tinker and edit the two vars at the top.
+// ─────────────────────────────────────────────────────────────
+
+$depositRef = '134a1246-9448-424e-a782-275fcf7e42bb';   
+$status     = 'completed';                   
+
+$deposit = \App\Models\Deposit::withTrashed()
+    ->where('deposit_ref', $depositRef)
+    ->first();
+
+if (!$deposit) {
+    echo "❌ Deposit not found: {$depositRef}\n";
+    return;
+}
+
+if ($deposit->trashed()) {
+    $deposit->restore();
+    echo "⚠️  Restored soft-deleted deposit\n";
+}
+
+if ($deposit->status === $status) {
+    echo "⏭️  Deposit is already '{$status}' — nothing to do.\n";
+    return;
+}
+
+$payload = [
+    'event_type' => 'collection.completed',
+    'transaction' => [
+        'reference'    => $deposit->deposit_ref,
+        'status'       => $status === 'completed' ? 'completed' : 'failed',
+        'amount'       => ['raw' => (float) $deposit->currency->fromCents($deposit->amount)],
+        'charge'       => ['raw' => 0],
+        'net_amount'   => ['raw' => (float) $deposit->currency->fromCents($deposit->amount)],
+        'description'  => $status === 'completed' ? 'Payment successful (test)' : 'Payment failed (test)',
+    ],
+    'collection' => [
+        'provider_transaction_id' => 'TEST-' . strtoupper(\Illuminate\Support\Str::random(10)),
+        'failure_reason'          => $status === 'failed' ? 'Insufficient funds (test)' : null,
+    ],
+];
+
+echo "📋 Simulating webhook\n";
+echo "   Deposit: {$deposit->deposit_ref}\n";
+echo "   Purpose: {$deposit->purpose_type} / {$deposit->purpose_reference}\n";
+echo "   Amount:  {$deposit->amount} cents\n";
+echo "   Target:  {$status}\n";
+echo "   Current: {$deposit->status}\n";
+echo "\n";
+
+// Directly call the controller as if the webhook hit it
+$request = \Illuminate\Http\Request::create(
+    '/api/payments/marzpay/webhook',
+    'POST',
+    $payload
+);
+
+$controller = app(\App\Http\Controllers\Api\Payment\MarzPayWebhookController::class);
+$response   = $controller->handle($request);
+
+echo "✅ Webhook returned: " . $response->getStatusCode() . " — " . $response->getContent() . "\n";
+
+// Re-fetch to confirm
+$deposit = $deposit->fresh();
+echo "\n📊 After:\n";
+echo "   Deposit status: {$deposit->status}\n";
+
+if ($deposit->purpose_type === 'cv_review') {
+    $cv = \App\Models\Service\CvReviewRequest::where('uuid', $deposit->purpose_reference)->first();
+    if ($cv) {
+        echo "   CV status:    {$cv->status}\n";
+        echo "   Rewrite mode: " . ($cv->rewrite_mode ?? '—') . "\n";
+        echo "   Payment ref:  " . ($cv->payment_reference ?? '—') . "\n";
+    }
+}
+
+if ($deposit->purpose_type === 'cover_letter') {
+    $letter = \App\Models\Service\LetterRequest::where('uuid', $deposit->purpose_reference)->first();
+    if ($letter) {
+        echo "   Letter status: {$letter->status}\n";
+    }
+}
+
+
+
+
+
 use App\Models\Deposit;
 use App\Models\Currency;
 use App\Models\PaymentSource;
@@ -8,7 +103,7 @@ use App\Services\Payment\PaymentTransactionService;
 use Illuminate\Support\Str;
 
 // ── Pick the letter you want to "pay for" ─────────────────────
-$letter = LetterRequest::where('uuid', '6c6503e2-1e91-450d-972d-b45c09181d7a')->firstOrFail();
+$letter = LetterRequest::where('uuid', '65a6899d-ae6b-422b-beef-d5661513f817')->firstOrFail();
 // Or: $letter = LetterRequest::find(2);
 
 // Skip if it's already been paid properly

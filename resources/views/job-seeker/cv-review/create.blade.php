@@ -290,14 +290,14 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 if (typeof window.showToast === 'function') {
-                    window.showToast('success', data.message, 'Success');
+                    window.showToast('success', data.message || 'CV received. Starting AI review…', 'Success');
                 }
                 const uuid = data.request?.uuid;
                 setTimeout(() => {
                     window.location.href = uuid
-                        ? '{{ url('cv-review') }}/' + uuid
+                        ? '{{ url('cv-review') }}/' + uuid + '?auto_review=1'
                         : '{{ route('cv-review.index') }}';
-                }, 1000);
+                }, 900);
             } else {
                 const msg = data.errors
                     ? Object.values(data.errors).flat().join('\n')
