@@ -45,6 +45,8 @@ Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
     Route::get('/new', [CvReviewController::class, 'create'])->name('cv-review.create');
     Route::get('/my', [CvReviewController::class, 'myRequests'])->name('cv-review.my');
     Route::post('/', [CvReviewController::class, 'store'])->name('cv-review.store');
+    
+    Route::get('/{uuid}/status', [CvReviewController::class, 'status'])->name('cv-review.status');
     Route::get('/{uuid}', [CvReviewController::class, 'show'])->name('cv-review.show');
     Route::post('/{uuid}/answers', [CvReviewController::class, 'submitAnswers'])->name('cv-review.answers');
     Route::post('/{uuid}/pay', [CvReviewController::class, 'pay'])->name('cv-review.pay');
