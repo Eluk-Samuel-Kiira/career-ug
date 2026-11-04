@@ -29,6 +29,13 @@
             'color' => 'info',
             'next'  => 'Answer the gap questions to unlock payment.',
         ],
+        'failed' => [
+            'step'  => 4,
+            'label' => 'Failed',
+            'where' => 'Generation failed. Your payment is safe.',
+            'color' => 'danger',
+            'next'  => 'Click the letter to retry.',
+        ],
         'awaiting_payment' => [
             'step'  => 3,
             'label' => 'Awaiting Payment',
@@ -416,6 +423,16 @@
                                         <i class="ki-duotone ki-right fs-4 ms-1">
                                             <span class="path1"></span><span class="path2"></span>
                                         </i>
+                                    </a>
+                                @endif
+
+                                @if(($r['status'] ?? '') === 'failed' && ($r['rewrite_mode'] ?? null) === 'ai')
+                                    <a href="{{ route('cv-review.show', $r['uuid']) }}"
+                                    class="btn btn-sm btn-warning w-100 w-sm-auto">
+                                        <i class="ki-duotone ki-arrows-circle fs-4 me-1">
+                                            <span class="path1"></span><span class="path2"></span>
+                                        </i>
+                                        Try Again
                                     </a>
                                 @endif
 

@@ -126,6 +126,70 @@
         @include('job-seeker.cv-review._ai-rewrite', ['r' => $r])
     @endif
 
+        {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- AI Rewrite FAILED — show retry card                       --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    @if(
+        $status === 'failed'
+        && ($r['rewrite_mode'] ?? null) === 'ai'
+        && !empty($r['rewrite_error_message'])
+    )
+        <div class="card card-flush mb-6 border border-danger border-2">
+            <div class="card-header bg-light-danger">
+                <h3 class="card-title">
+                    <i class="ki-duotone ki-information-5 fs-2 me-2 text-danger">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    </i>
+                    We couldn't finish writing your CV
+                </h3>
+            </div>
+            <div class="card-body text-center py-10">
+
+                <p class="text-gray-700 fs-6 mb-3 mx-auto" style="max-width: 560px;">
+                    Something went wrong while generating your CV. Your payment is safe.
+                    You can try again below — most failures are temporary.
+                </p>
+
+                <div class="alert alert-light-warning d-inline-block text-start fs-7 mb-5 mx-auto"
+                     style="max-width: 640px;">
+                    <strong>Why it failed:</strong>
+                    <span class="text-break">{{ $r['rewrite_error_message'] }}</span>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                    <button type="button"
+                            class="btn btn-warning btn-lg px-8"
+                            id="retryGenerationBtn"
+                            data-uuid="{{ $r['uuid'] }}">
+                        <span class="indicator-label">
+                            <i class="ki-duotone ki-arrows-circle fs-3 me-2">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            Try Again
+                        </span>
+                        <span class="indicator-progress">
+                            Starting…
+                            <span class="spinner-border spinner-border-sm ms-2"></span>
+                        </span>
+                    </button>
+
+                    @if(($r['rewrite_regeneration_count'] ?? 0) < ($r['rewrite_max_regenerations'] ?? 2))
+                        <span class="text-muted fs-8 align-self-center">
+                            {{ ($r['rewrite_max_regenerations'] ?? 2) - ($r['rewrite_regeneration_count'] ?? 0) }}
+                            {{ Str::plural('retry', ($r['rewrite_max_regenerations'] ?? 2) - ($r['rewrite_regeneration_count'] ?? 0)) }}
+                            remaining
+                        </span>
+                    @endif
+                </div>
+
+                <div class="text-muted fs-8 mt-4">
+                    If it keeps failing, contact support with reference
+                    <strong>#{{ substr($r['uuid'], 0, 8) }}</strong>.
+                </div>
+            </div>
+        </div>
+    @endif
+
 
     {{-- ========================================================= --}}
     {{-- SAVED ANSWERS (visible after answers are submitted)     --}}
@@ -178,23 +242,30 @@
             'submitted' => [
                 'icon'  => 'ki-time',
                 'color' => 'info',
-                'title' => "We've received your CV",
-                'body'  => "Sit back and relax — our HR experts are taking a first look at your CV and will be in touch shortly. You'll see the full CV gap review right here on this page.",
-                'eta'   => 'Usually within a few minutes',
+                'title' => "Your CV has been received",
+                'body'  => "Nothing is happening yet — you're in control. Scroll to the bottom of this page and click “Run Free AI Review” to see your gap analysis. It takes about 30 seconds and costs nothing. After that, you choose how to proceed: let our AI tool rewrite your CV instantly, or let a senior HR expert do it manually.",
+                'eta'   => 'Action required from you',
+            ],
+            'failed' => [
+                'icon'  => 'ki-information-5',
+                'color' => 'danger',
+                'title' => "We couldn't finish your CV",
+                'body'  => "Something went wrong during generation. Your payment is safe — you can try again below at no extra cost.",
+                'eta'   => null,
             ],
             'ai_reviewed' => [
                 'icon'  => 'ki-message-text-2',
                 'color' => 'info',
-                'title' => "Your free AI gap review is ready",
-                'body'  => "Read through what the AI found and answer the gaps we've flagged. That's all we need from you to move forward.",
-                'eta'   => 'Takes about 2 minutes',
+                'title' => "Your CV has been reviewed",
+                'body'  => "Our reviewer has gone through your CV and flagged a few gaps. Read what they found below, then answer the short questions so we can move forward.",
+                'eta'   => 'About 2 minutes',
             ],
             'awaiting_payment' => [
                 'icon'  => 'ki-dollar',
                 'color' => 'warning',
                 'title' => "Almost there — one step to go",
-                'body'  => "Your answers are saved. Choose how you want your CV rewritten — instantly with our AI tool, or carefully by a senior HR expert — then complete the payment to get started.",
-                'eta'   => "Instant (AI) or 12–24 hours (HR expert)",
+                'body'  => "Your answers are saved. Choose how you want your CV rewritten — instantly with our CV Rewriter tool, or carefully by a senior HR expert — then complete the payment to get started.",
+                'eta'   => "Instant (CV Rewriter) or 12–24 hours (HR expert)",
             ],
             'paid_ai' => [
                 'icon'  => 'ki-robot',
@@ -455,7 +526,7 @@
         <div class="card-header">
             <h3 class="card-title">
                 <i class="ki-duotone ki-robot fs-2 me-2"><span class="path1"></span><span class="path2"></span></i>
-                AI Gap Review (Free)
+                Feedback From Our Reviewer (Free)
             </h3>
             <div class="card-toolbar">
                 <div class="text-center">
@@ -552,31 +623,51 @@
     {{-- ACTION CARDS by status                                   --}}
     {{-- ========================================================= --}}
 
-    {{-- STEP 2 — SUBMITTED: run AI review --}}
+    {{-- STEP 2 — SUBMITTED: action required from the user --}}
     @if($status === 'submitted')
-    <div class="card card-flush mb-6 border border-info">
-        <div class="card-body text-center py-10">
-            <i class="ki-duotone ki-robot fs-3x text-info mb-3 d-block">
+    <div class="card card-flush mb-6 border border-info border-2">
+        <div class="card-body text-center py-10 py-md-15">
+
+            <i class="ki-duotone ki-rocket fs-3x fs-md-5x text-info mb-4 d-block">
                 <span class="path1"></span><span class="path2"></span>
             </i>
-            <h3 class="fw-bold mb-2">Analyse Your CV Now</h3>
-            <p class="text-muted mb-5">
-                Run a free AI review to find every gap in your CV, then answer
-                a few short questions so our rewrite can be exact.
+
+            <h2 class="fw-bold mb-3 fs-3">
+                Your CV is in. Now let's find the gaps.
+            </h2>
+
+            <p class="text-gray-700 fs-6 mb-2 mx-auto" style="max-width: 560px;">
+                Click the button below to run the free AI review.
+                We'll scan your CV against the job you're targeting and list
+                every missing fact, weak line, and inconsistent date.
             </p>
-            <button type="button" class="btn btn-info btn-lg px-8" id="runAiReviewBtn"
+            <p class="text-muted fs-7 mb-6">
+                Takes about 30 seconds &middot; Free &middot; No payment yet
+            </p>
+
+            <button type="button"
+                    class="btn btn-info btn-lg px-10"
+                    id="runAiReviewBtn"
                     data-uuid="{{ $r['uuid'] }}">
                 <span class="indicator-label">
                     <i class="ki-duotone ki-magnifier fs-3 me-2">
                         <span class="path1"></span><span class="path2"></span>
                     </i>
-                    Run Free AI Review
+                    Run Free AI Review Now
                 </span>
                 <span class="indicator-progress">
-                    Analysing (up to 30s)...
+                    Analysing your CV (up to 30s)...
                     <span class="spinner-border spinner-border-sm ms-2"></span>
                 </span>
             </button>
+
+            <div class="text-muted fs-8 mt-4">
+                <i class="ki-duotone ki-information-5 fs-7 me-1">
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                </i>
+                You'll see the results on this same page. Nothing is charged until
+                you choose to rewrite.
+            </div>
         </div>
     </div>
     @endif
@@ -594,7 +685,7 @@
         </div>
         <div class="card-body">
             <p class="text-muted mb-4">
-                The AI found <strong>{{ count($missingFields) }}</strong>
+                The Reviewer found <strong>{{ count($missingFields) }}</strong>
                 {{ Str::plural('gap', count($missingFields)) }}. Answer every field below to unlock payment.
                 <span class="text-danger">All fields are required.</span>
             </p>
@@ -652,8 +743,8 @@
                         <input type="radio" name="rewrite_mode" value="ai" class="d-none" checked>
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <div class="fw-bold fs-4">Let the Tool Do It</div>
-                                <div class="text-muted fs-7">AI-generated in 30&ndash;60 seconds</div>
+                                <div class="fw-bold fs-4">Let the Rewriter Tool Do It</div>
+                                <div class="text-muted fs-7">CV Generated in 30&ndash;60 seconds</div>
                             </div>
                             <i class="ki-duotone ki-rocket fs-2x text-primary">
                                 <span class="path1"></span><span class="path2"></span>
@@ -1589,28 +1680,86 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
             showInfo('A prompt has been sent to your phone. Enter your PIN.');
             submitBtn.removeAttribute('data-kt-indicator');
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Waiting...';
+            // ── Poll a LIGHTWEIGHT status endpoint every 3s ──────
+            // The dedicated /cv-review/{uuid}/status route returns
+            // just { status, is_paid, ... } from the proxy — not HTML,
+            // not the full JSON. Reliable and cheap.
+            showInfo(
+                'A payment prompt has been sent to your phone. Enter your PIN to complete payment. ' +
+                'Waiting for confirmation…'
+            );
 
-            let polls = 0;
+            submitBtn.removeAttribute('data-kt-indicator');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2"></span>Waiting for payment…';
+
+            const startedAt = Date.now();
+            const POLL_MS   = 3000;
+            const MAX_MS    = 5 * 60 * 1000;   // 5-minute hard ceiling
+
             const poll = setInterval(async () => {
-                if (++polls >= 40) {
+                // Timeout → stop spinning, show a clear message
+                if (Date.now() - startedAt > MAX_MS) {
                     clearInterval(poll);
-                    showError('No confirmation yet. Refresh in a moment.');
+                    showError(
+                        'We have not received the confirmation yet. ' +
+                        'If you were charged, the payment will appear shortly. ' +
+                        'Refresh this page in a moment.'
+                    );
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = payButtonHTML();
                     return;
                 }
+
                 try {
-                    const r = await fetch(`/cv-review/${UUID}`, { headers: { 'Accept': 'application/json' } });
-                    const b = await r.json();
-                    const st = b.request?.status;
-                    if (st && st !== 'awaiting_payment') {
-                        clearInterval(poll);
-                        modal.hide();
-                        window.showToast?.('success', 'Payment confirmed.', 'Success');
-                        setTimeout(() => location.reload(), 800);
+                    const r = await fetch(`{{ url('cv-review') }}/${UUID}/status`, {
+                        headers: { 'Accept': 'application/json' },
+                        // bypass any aggressive cache
+                        cache: 'no-store',
+                    });
+
+                    if (!r.ok) {
+                        // 401/404/500 — keep polling until timeout
+                        return;
                     }
-                } catch {}
-            }, 3000);
+
+                    const b = await r.json();
+                    const current = b?.status;
+
+                    // Still waiting on the user's PIN / webhook
+                    if (!current || current === 'awaiting_payment') {
+                        return;
+                    }
+
+                    // ── State changed → stop polling, close modal ──
+                    clearInterval(poll);
+                    modal.hide();
+
+                    // Success states: paid_ai, paid_human, paid, generating,
+                    // generated, completed → redirect to the letter page
+                    if (current === 'failed' || current === 'cancelled') {
+                        window.showToast?.(
+                            'error',
+                            'Payment was received but the request could not continue. Opening the page…',
+                            'Notice'
+                        );
+                    } else {
+                        window.showToast?.(
+                            'success',
+                            'Payment confirmed. Loading your CV…',
+                            'Success'
+                        );
+                    }
+
+                    setTimeout(() => {
+                        window.location.href = `{{ url('cv-review') }}/${UUID}`;
+                    }, 700);
+
+                } catch (e) {
+                    // Network blip — keep polling
+                }
+            }, POLL_MS);
         } catch (e) {
             showError('Something went wrong: ' + e.message);
             submitBtn.removeAttribute('data-kt-indicator');
@@ -2047,6 +2196,46 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
             }
         });
     })();
+
+        // ── Retry generation after failure ─────────────────────────
+    document.getElementById('retryGenerationBtn')?.addEventListener('click', async function () {
+        const ok = await confirmAction({
+            title:    'Retry writing your CV?',
+            message:  'We\'ll start a fresh attempt. Your original payment is still valid.',
+            okText:   'Try Again',
+            okClass:  'btn-warning',
+            icon:     'ki-arrows-circle',
+            iconClass:'text-warning',
+        });
+        if (!ok) return;
+
+        const btn = this;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/regenerate`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.showToast?.('success', 'Retrying generation…', 'Started');
+                // Reset poll counter and reload so the spinner state kicks in
+                sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
+                setTimeout(() => location.reload(), 700);
+            } else {
+                window.showToast?.('error', data.message || 'Could not retry.', 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        } catch (e) {
+            window.showToast?.('error', 'Network error.', 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+        }
+    });
 
 })();
 </script>

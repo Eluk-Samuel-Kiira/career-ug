@@ -158,6 +158,32 @@ class CvReviewController extends Controller
         ]);
     }
 
+    public function status($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $response = $this->countryService->api("cv-review/{$uuid}", [], 'GET', 0, false);
+
+        if (!($response['success'] ?? false)) {
+            return response()->json(['success' => false, 'status' => null], 200);
+        }
+
+        $request = $response['request'] ?? [];
+
+        return response()->json([
+            'success'        => true,
+            'status'         => $request['status']                    ?? null,
+            'is_paid'        => $request['is_paid']                   ?? false,
+            'payment_ref'    => $request['payment_reference']         ?? null,
+            'paid_at'        => $request['paid_at']                   ?? null,
+            'rewrite_mode'   => $request['rewrite_mode']              ?? null,
+            'rewrite_ready'  => $request['rewrite_is_ready']          ?? false,
+            'error_message'  => $request['rewrite_error_message']     ?? null,
+        ]);
+    }
+
     /**
      * Submit answers to the AI gap questions (AJAX).
      */
