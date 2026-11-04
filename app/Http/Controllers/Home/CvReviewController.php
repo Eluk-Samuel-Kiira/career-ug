@@ -57,9 +57,18 @@ class CvReviewController extends Controller
         }
 
         $quoteResponse = $this->countryService->api('cv-review/quote', [], 'GET', 0, false);
-        if (!($quoteResponse['success'] ?? false)) {
-            return redirect()->route('cv-review.index')
-                ->with('error', $quoteResponse['message'] ?? 'Service unavailable in your country.');
+
+        // If the quote isn't available, bounce the user back to the index
+        // with a flash message instead of letting the Blade blow up.
+        if (
+            !is_array($quoteResponse)
+            || !($quoteResponse['success'] ?? false)
+            || !($quoteResponse['available'] ?? false)
+            || !isset($quoteResponse['service'], $quoteResponse['price'])
+        ) {
+            return redirect()
+                ->route('cv-review.index')
+                ->with('error', $quoteResponse['message'] ?? 'CV Review is currently unavailable in your region.');
         }
 
         $cvResponse = $this->countryService->api('auth/user/cv', [], 'GET', 0, false);
@@ -307,5 +316,149 @@ class CvReviewController extends Controller
         }
     }
 
+    public function runAiReview($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $response = $this->countryService->api(
+            "cv-review/{$uuid}/run-ai-review",
+            [],
+            'POST',
+            0,
+            false
+        );
+
+        return response()->json($response);
+    }
+
+    public function completeRewrite($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false], 401);
+        }
+        $data = $this->countryService->api(
+            "cv-review/{$uuid}/rewrite/complete",
+            [],
+            'POST',
+            0,
+            false
+        );
+        return response()->json($data);
+    }
+
+    public function showRewrite($uuid)
+    {
+        if (!Session::has('user')) return response()->json(['success' => false], 401);
+
+        $data = $this->countryService->api("cv-review/{$uuid}/rewrite", [], 'GET', 0, false);
+        return response()->json($data);
+    }
+
+    public function regenerateRewrite($uuid)
+    {
+        if (!Session::has('user')) return response()->json(['success' => false], 401);
+
+        $data = $this->countryService->api("cv-review/{$uuid}/rewrite/regenerate", [], 'POST', 0, false);
+        return response()->json($data);
+    }
+
+    public function saveRewrite(Request $request, $uuid)
+    {
+        if (!Session::has('user')) return response()->json(['success' => false], 401);
+
+        $data = $this->countryService->api(
+            "cv-review/{$uuid}/rewrite/save",
+            ['content' => $request->input('content')],
+            'POST',
+            0,
+            false
+        );
+        return response()->json($data);
+    }
+
+    public function resetRewrite($uuid)
+    {
+        if (!Session::has('user')) return response()->json(['success' => false], 401);
+
+        $data = $this->countryService->api("cv-review/{$uuid}/rewrite/reset", [], 'POST', 0, false);
+        return response()->json($data);
+    }
+
+    public function downloadRewrite($uuid)
+    {
+        if (!Session::has('user')) abort(401);
+
+        $response = $this->countryService->stream("cv-review/{$uuid}/rewrite/download");
+        if (!$response->successful()) abort($response->status(), 'Not ready');
+
+        $filename = $this->extractFilenameFromDisposition(
+            $response->header('Content-Disposition')
+        ) ?: ('cv-' . $uuid . '.pdf');
+
+        return response()->streamDownload(function () use ($response) {
+            echo $response->body();
+        }, $filename, [
+            'Content-Type' => $response->header('Content-Type') ?: 'application/pdf',
+        ]);
+    }
+
+    public function rewriteStatus($uuid)
+    {
+        if (!Session::has('user')) return response()->json(['success' => false], 401);
+
+        $data = $this->countryService->api("cv-review/{$uuid}/rewrite", [], 'GET', 0, false);
+        if (!($data['success'] ?? false)) {
+            return response()->json(['success' => false], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'status'            => $data['data']['status'] ?? null,
+                'is_ready'          => $data['data']['is_ready'] ?? false,
+                'can_regenerate'    => $data['data']['can_regenerate'] ?? false,
+                'error_message'     => $data['data']['error_message'] ?? null,
+            ],
+        ]);
+    }
+
+    protected function extractFilenameFromDisposition(?string $header): ?string
+    {
+        if (empty($header)) {
+            return null;
+        }
+
+        // RFC 5987 form: filename*=UTF-8''my_file.pdf
+        if (preg_match("/filename\*\s*=\s*UTF-8''([^;]+)/i", $header, $m)) {
+            $decoded = rawurldecode(trim($m[1], "\\'\""));
+            if ($decoded !== '') {
+                return $this->sanitizeFilename($decoded);
+            }
+        }
+
+        // Plain form: filename="my_file.pdf" or filename=my_file.pdf
+        if (preg_match('/filename\s*=\s*"?([^";]+)"?/i', $header, $m)) {
+            $raw = trim($m[1]);
+            if ($raw !== '') {
+                return $this->sanitizeFilename($raw);
+            }
+        }
+
+        return null;
+    }
+
+    protected function sanitizeFilename(string $name): string
+    {
+        $name = basename($name);
+        $name = preg_replace('/[\x00-\x1F\x7F<>:"\/\\\\|?*]+/', '', $name);
+        $name = trim($name);
+
+        if ($name === '' || $name === '.' || $name === '..') return 'cv.pdf';
+        if (!str_ends_with(strtolower($name), '.pdf')) $name .= '.pdf';
+
+        return mb_substr($name, 0, 200) . '.pdf';
+    }
 
 }

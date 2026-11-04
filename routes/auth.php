@@ -50,6 +50,20 @@ Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
     Route::post('/{uuid}/pay', [CvReviewController::class, 'pay'])->name('cv-review.pay');
     Route::post('/{uuid}/revision', [CvReviewController::class, 'requestRevision'])->name('cv-review.revision');
     Route::delete('/{uuid}', [CvReviewController::class, 'destroy'])->name('cv-review.destroy');
+
+    Route::get('/{uuid}/rewrite',              [CvReviewController::class, 'showRewrite'])->name('cv-review.rewrite.show');
+    Route::post('/{uuid}/rewrite/regenerate',  [CvReviewController::class, 'regenerateRewrite'])->name('cv-review.rewrite.regenerate');
+    Route::post('/{uuid}/rewrite/save',        [CvReviewController::class, 'saveRewrite'])->name('cv-review.rewrite.save');
+    Route::post('/{uuid}/rewrite/reset',       [CvReviewController::class, 'resetRewrite'])->name('cv-review.rewrite.reset');
+    Route::get('/{uuid}/rewrite/download',     [CvReviewController::class, 'downloadRewrite'])->name('cv-review.rewrite.download');
+    Route::get('/{uuid}/rewrite/status',       [CvReviewController::class, 'rewriteStatus'])->name('cv-review.rewrite.status');
+    Route::post('/{uuid}/run-ai-review', [CvReviewController::class, 'runAiReview'])
+        ->name('cv-review.run-ai-review');
+
+    
+    Route::post('/{uuid}/rewrite/complete', [CvReviewController::class, 'completeRewrite'])
+        ->name('cv-review.rewrite.complete');
+
 });
 
 
@@ -123,13 +137,23 @@ Route::middleware(['auth.web'])->prefix('employer')->name('employer.')->group(fu
 
 
 Route::middleware(['auth.web'])->prefix('letters')->name('letters.')->group(function () {
+    // ── List / create ─────────────────────────────────────────
     Route::get('/',               [\App\Http\Controllers\Seeker\LetterController::class, 'index'])->name('index');
     Route::get('/create',         [\App\Http\Controllers\Seeker\LetterController::class, 'create'])->name('create');
     Route::post('/',              [\App\Http\Controllers\Seeker\LetterController::class, 'store'])->name('store');
     Route::get('/search-jobs',    [\App\Http\Controllers\Seeker\LetterController::class, 'searchJobs'])->name('search-jobs');
+
+    // ── Specific {uuid} sub-routes (BEFORE the wildcard) ──────
+    Route::get('/{uuid}/status',     [\App\Http\Controllers\Seeker\LetterController::class, 'status'])->name('status');
+    Route::get('/{uuid}/download',   [\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
+    Route::post('/{uuid}/pay',       [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
+    Route::post('/{uuid}/update',    [\App\Http\Controllers\Seeker\LetterController::class, 'updateInputs'])->name('update');
+    Route::post('/{uuid}/regenerate',[\App\Http\Controllers\Seeker\LetterController::class, 'regenerate'])->name('regenerate');
+    Route::post('/{uuid}/save-edited',  [\App\Http\Controllers\Seeker\LetterController::class, 'saveEdited'])->name('save-edited');
+    Route::post('/{uuid}/reset-edited', [\App\Http\Controllers\Seeker\LetterController::class, 'resetEdited'])->name('reset-edited');
+
+    // ── Wildcard LAST ─────────────────────────────────────────
     Route::get('/{uuid}',         [\App\Http\Controllers\Seeker\LetterController::class, 'show'])->name('show');
-    Route::post('/{uuid}/pay',    [\App\Http\Controllers\Seeker\LetterController::class, 'pay'])->name('pay');
-    Route::get('/{uuid}/download',[\App\Http\Controllers\Seeker\LetterController::class, 'download'])->name('download');
     Route::delete('/{uuid}',      [\App\Http\Controllers\Seeker\LetterController::class, 'destroy'])->name('destroy');
 });
 

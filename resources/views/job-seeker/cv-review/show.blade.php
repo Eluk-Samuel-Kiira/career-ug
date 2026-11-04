@@ -12,21 +12,162 @@
     $revisionHistory = $r['revision_history'] ?? [];
     $lastRevision = !empty($revisionHistory) ? end($revisionHistory) : null;
 
-    $timeline = [
-        'submitted'          => ['Uploaded',         'Your CV has been received.'],
-        'ai_reviewed'        => ['CV Reviewed',      'Free gap review is ready below.'],
-        'awaiting_payment'   => ['Awaiting Payment', 'Complete payment to unlock the professional rewrite.'],
-        'paid'               => ['Paid',             'Payment received. Assigning your reviewer.'],
-        'in_progress'        => ['In Progress',      'A career expert is rewriting your CV.'],
-        'delivered'          => ['Delivered',        'Your revised CV is ready.'],
-        'revision_requested' => ['Revision',         'We are working on your revision.'],
-        'completed'          => ['Completed',        'All done. 🎉'],
+    // ── Answer / action state ─────────────────────────────────
+    $hasAnswers   = !empty($answers);
+    $isEditMode   = $status === 'awaiting_payment' && $hasAnswers;
+    $needsAction  = in_array($status, ['ai_reviewed', 'awaiting_payment'], true);
+    $showPayNow   = $status === 'awaiting_payment' && $hasAnswers;
+    $showFillGaps = $status === 'ai_reviewed'
+                 || ($status === 'awaiting_payment' && !$hasAnswers);
+
+    $canDelete = !in_array($status, [
+        'paid', 'paid_ai', 'paid_human', 'in_progress',
+        'delivered', 'revision_requested', 'completed',
+    ], true);
+
+    $deleteBlockReason = match($status) {
+        'paid', 'paid_ai', 'paid_human' => 'Cannot delete — payment already received',
+        'in_progress'                   => 'Cannot delete — work has started',
+        'delivered'                     => 'Cannot delete — CV has been delivered',
+        'revision_requested'            => 'Cannot delete — a revision is in progress',
+        'completed'                     => 'Cannot delete — request is complete',
+        default                         => 'Cannot delete',
+    };
+
+    // ── Timeline (split by rewrite mode) ──────────────────────
+    $isAi    = ($r['rewrite_mode'] ?? null) === 'ai';
+    $isHuman = ($r['rewrite_mode'] ?? null) === 'human';
+
+    $baseTimeline = [
+        'submitted'        => ['Uploaded',         'Your CV has been received.'],
+        'ai_reviewed'      => ['CV Reviewed',      'Free gap review is ready below.'],
+        'awaiting_payment' => ['Awaiting Payment', 'Complete payment to unlock the rewrite.'],
     ];
+
+    $aiSteps = [
+        'paid_ai'    => ['Paid',       'Payment received. Generating your CV...'],
+        'generating' => ['Generating', 'AI is writing your CV now.'],
+        'generated'  => ['Generated',  'Your rewritten CV is ready.'],
+        'completed'  => ['Completed',  'All done. 🎉'],
+    ];
+
+    $humanSteps = [
+        'paid_human'         => ['Paid',        'Payment received. Assigning your HR expert...'],
+        'in_progress'        => ['In Progress', 'A career expert is working on your CV.'],
+        'delivered'          => ['Delivered',   'Your revised CV is ready.'],
+        'revision_requested' => ['Revision',    'We are working on your revision.'],
+        'completed'          => ['Completed',   'All done. 🎉'],
+    ];
+
+    if ($isAi) {
+        $timeline = array_merge($baseTimeline, $aiSteps);
+    } elseif ($isHuman) {
+        $timeline = array_merge($baseTimeline, $humanSteps);
+    } else {
+        // Pre-payment — only show the first 3 steps
+        $timeline = $baseTimeline;
+    }
+
+    // Cancelled is universal — append if it isn't already there
+    if (!isset($timeline['cancelled'])) {
+        $timeline['cancelled'] = ['Cancelled', 'This request was cancelled.'];
+    }
+
+    // Legacy: 'paid' status used by old HR-flow records → treat as paid_human
+    if ($status === 'paid' && $isHuman) {
+        $status = 'paid_human';
+    }
+
     $statusOrder = array_keys($timeline);
-    $currentIdx = array_search($status, $statusOrder);
+    $currentIdx  = array_search($status, $statusOrder);
+    if ($currentIdx === false) {
+        $currentIdx = 0;
+    }
+
+    $isGeneratingNow = in_array($r['status'], ['paid_ai', 'generating'], true)
+        && ($r['rewrite_mode'] ?? null) === 'ai'
+        && empty($r['rewrite_error_message']);
+
 @endphp
 
 <div class="container py-6">
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- GENERATING VIEW — full-page overlay, hides everything else  --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    @if($isGeneratingNow)
+        <div id="aiRewriteSection" data-uuid="{{ $r['uuid'] }}">
+            <div class="card card-flush">
+                <div class="card-body text-center py-15" style="min-height: 60vh;">
+                    <div class="spinner-border text-primary mb-4" style="width:4rem;height:4rem;"></div>
+                    <h2 class="fw-bold mb-2">Writing your CV…</h2>
+                    <p class="text-muted mb-1">
+                        Our AI is drafting your rewritten CV. Every line is being built
+                        from your original CV and the answers you provided.
+                    </p>
+                    <p class="text-muted fs-7 mb-5">
+                        <i class="ki-duotone ki-time fs-6 me-1">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Usually 30–60 seconds
+                    </p>
+                    <div class="text-muted fs-8">
+                        This page will update automatically. You can safely leave it open.
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+
+
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- AI Rewrite viewer — FIRST when ready (user sees result)   --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    @if($r['rewrite_is_ready'] ?? false)
+        @include('job-seeker.cv-review._ai-rewrite', ['r' => $r])
+    @endif
+
+
+    {{-- ========================================================= --}}
+    {{-- SAVED ANSWERS (visible after answers are submitted)     --}}
+    {{-- ========================================================= --}}
+    @if($hasAnswers)
+    <div class="card card-flush mb-6" id="savedAnswersCard">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="ki-duotone ki-notepad-edit fs-2 me-2">
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                </i>
+                Your Answers
+                <span class="badge badge-light-success ms-2">{{ count($answers) }}</span>
+            </h3>
+            <div class="card-toolbar">
+                @if(in_array($status, ['ai_reviewed', 'awaiting_payment'], true))
+                    <button type="button" class="btn btn-sm btn-light-primary open-answers-btn">
+                        <i class="ki-duotone ki-pencil fs-4 me-1">
+                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                        </i>
+                        Edit Answers
+                    </button>
+                @endif
+            </div>
+        </div>
+        <div class="card-body pt-0">
+            <div class="row g-3">
+                @foreach($answers as $q => $a)
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <div class="fw-semibold text-muted fs-8 mb-1"
+                                style="word-break:break-word;">
+                                {{ $q }}
+                            </div>
+                            <div class="fs-7 text-gray-800" style="white-space:pre-wrap;">{{ $a ?: '—' }}</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 
     @php
         /**
@@ -35,67 +176,95 @@
         */
         $reassurance = [
             'submitted' => [
-                'icon'    => 'ki-time',
-                'color'   => 'info',
-                'title'   => "We've received your CV",
-                'body'    => "Sit back and relax — our HR experts are taking a first look at your CV and will be in touch shortly. You'll see the full CV gap review right here on this page.",
-                'eta'     => 'Usually within a few minutes',
+                'icon'  => 'ki-time',
+                'color' => 'info',
+                'title' => "We've received your CV",
+                'body'  => "Sit back and relax — our HR experts are taking a first look at your CV and will be in touch shortly. You'll see the full CV gap review right here on this page.",
+                'eta'   => 'Usually within a few minutes',
             ],
             'ai_reviewed' => [
-                'icon'    => 'ki-message-text-2',
-                'color'   => 'info',
-                'title'   => "Your free AI gap review is ready",
-                'body'    => "Read through what the AI found and answer the gaps we've flagged. That's all we need from you to get our human experts started.",
-                'eta'     => 'Takes about 2 minutes',
+                'icon'  => 'ki-message-text-2',
+                'color' => 'info',
+                'title' => "Your free AI gap review is ready",
+                'body'  => "Read through what the AI found and answer the gaps we've flagged. That's all we need from you to move forward.",
+                'eta'   => 'Takes about 2 minutes',
             ],
             'awaiting_payment' => [
-                'icon'    => 'ki-dollar',
-                'color'   => 'warning',
-                'title'   => "Almost there — one step to go",
-                'body'    => "Your answers are locked in. Complete the payment and our HR team will begin a careful, human rewrite of your CV with the help of AI — and a lot of expertise.",
-                'eta'     => "Then we'll deliver within 12–24 hours",
+                'icon'  => 'ki-dollar',
+                'color' => 'warning',
+                'title' => "Almost there — one step to go",
+                'body'  => "Your answers are saved. Choose how you want your CV rewritten — instantly with our AI tool, or carefully by a senior HR expert — then complete the payment to get started.",
+                'eta'   => "Instant (AI) or 12–24 hours (HR expert)",
+            ],
+            'paid_ai' => [
+                'icon'  => 'ki-robot',
+                'color' => 'primary',
+                'title' => "Payment received — generating your CV",
+                'body'  => "Thank you! Our AI is rewriting your CV right now. This usually takes under a minute, and the page will update automatically when it's ready.",
+                'eta'   => 'Usually 30–60 seconds',
+            ],
+            'paid_human' => [
+                'icon'  => 'ki-user-tick',
+                'color' => 'primary',
+                'title' => "Payment received — an HR expert is being assigned",
+                'body'  => "Thank you! Your payment is confirmed and we're matching your CV to a senior HR expert. You'll see an update here the moment they start.",
+                'eta'   => 'Assignment usually within 1 hour',
+            ],
+            'generating' => [
+                'icon'  => 'ki-arrows-circle',
+                'color' => 'primary',
+                'title' => "Writing your CV…",
+                'body'  => "Our AI is drafting your rewritten CV. Every line is being built from your original CV and the answers you provided.",
+                'eta'   => 'Usually 30–60 seconds',
+            ],
+            'generated' => [
+                'icon'  => 'ki-check-circle',
+                'color' => 'success',
+                'title' => "Your rewritten CV is ready 🎉",
+                'body'  => "Read it, edit it if you like, or download the PDF. You can regenerate up to 2 more times if you want a fresh version.",
+                'eta'   => 'Mark as done when you are happy with it',
             ],
             'paid' => [
-                'icon'    => 'ki-check-circle',
-                'color'   => 'primary',
-                'title'   => "Thank you — payment received",
-                'body'    => "Our team has been notified and is preparing to assign a senior HR expert to your CV. You'll get an update here as soon as work begins.",
-                'eta'     => 'Assignment usually within 1 hour',
+                'icon'  => 'ki-check-circle',
+                'color' => 'primary',
+                'title' => "Thank you — payment received",
+                'body'  => "Our team has been notified and is preparing your file. You'll get an update here as soon as work begins.",
+                'eta'   => 'Assignment usually within 1 hour',
             ],
             'in_progress' => [
-                'icon'    => 'ki-arrows-circle',
-                'color'   => 'primary',
-                'title'   => "Your CV is in expert hands",
-                'body'    => "A senior HR expert is carefully rewriting your CV now. Every line is read, revised, and re-read for professionalism, clarity, and alignment with your target role.",
-                'eta'     => "You'll be notified the moment it's ready",
+                'icon'  => 'ki-arrows-circle',
+                'color' => 'primary',
+                'title' => "Your CV is in expert hands",
+                'body'  => "A senior HR expert is carefully rewriting your CV now. Every line is read, revised, and re-read for professionalism, clarity, and alignment with your target role.",
+                'eta'   => "You'll be notified the moment it's ready",
             ],
             'delivered' => [
-                'icon'    => 'ki-check-circle',
-                'color'   => 'success',
-                'title'   => "Your revised CV is ready 🎉",
-                'body'    => "Please download it, read it carefully, and let us know if anything needs adjusting. We're happy to make revisions — that's what we're here for.",
-                'eta'     => 'Revision window: 3 days',
+                'icon'  => 'ki-check-circle',
+                'color' => 'success',
+                'title' => "Your revised CV is ready 🎉",
+                'body'  => "Please download it, read it carefully, and let us know if anything needs adjusting. We're happy to make revisions — that's what we're here for.",
+                'eta'   => 'Revision window: 3 days',
             ],
             'revision_requested' => [
-                'icon'    => 'ki-arrows-circle',
-                'color'   => 'warning',
-                'title'   => "We're on your revision",
-                'body'    => "Thanks for the feedback — our HR expert is applying your requested changes right now. You'll get the updated version here shortly.",
-                'eta'     => 'Usually within a few hours',
+                'icon'  => 'ki-arrows-circle',
+                'color' => 'warning',
+                'title' => "We're on your revision",
+                'body'  => "Thanks for the feedback — our HR expert is applying your requested changes right now. You'll get the updated version here shortly.",
+                'eta'   => 'Usually within a few hours',
             ],
             'completed' => [
-                'icon'    => 'ki-check-circle',
-                'color'   => 'success',
-                'title'   => "All done — thank you!",
-                'body'    => "We hope your new CV serves you well on your career journey. If you ever want another review — for a new role, a new industry, or just a refresh — we're here.",
-                'eta'     => null,
+                'icon'  => 'ki-check-circle',
+                'color' => 'success',
+                'title' => "All done — thank you!",
+                'body'  => "We hope your new CV serves you well on your career journey. If you ever want another review — for a new role, a new industry, or just a refresh — we're here.",
+                'eta'   => null,
             ],
             'cancelled' => [
-                'icon'    => 'ki-information-5',
-                'color'   => 'danger',
-                'title'   => "This request was cancelled",
-                'body'    => "If this was a mistake, or you'd like to start again, you're welcome to submit a new CV for review any time.",
-                'eta'     => null,
+                'icon'  => 'ki-information-5',
+                'color' => 'danger',
+                'title' => "This request was cancelled",
+                'body'  => "If this was a mistake, or you'd like to start again, you're welcome to submit a new CV for review any time.",
+                'eta'   => null,
             ],
         ];
 
@@ -378,111 +547,190 @@
     </div>
     @endif
 
-    {{-- ========================================================= --}}
-    {{-- ACTION CARD — Submit answers / Edit answers              --}}
-    {{-- ========================================================= --}}
-    @if(in_array($status, ['ai_reviewed', 'awaiting_payment'], true))
-
-        @php
-            $hasAnswers = !empty($answers);
-            $isEditMode = $status === 'awaiting_payment' && $hasAnswers;
-        @endphp
-
-        <div class="card card-flush mb-6 border border-{{ $isEditMode ? 'warning' : 'primary' }}">
-            <div class="card-header bg-light-{{ $isEditMode ? 'warning' : 'primary' }}">
-                <h3 class="card-title">
-                    {{ $isEditMode ? 'Review Your Answers' : 'Fill In The Gaps' }}
-                </h3>
-            </div>
-            <div class="card-body">
-                @if(!$hasAnswers)
-                    <p class="text-muted mb-4">
-                        The AI found <strong>{{ count($missingFields) }}</strong>
-                        {{ Str::plural('gap', count($missingFields)) }} in your CV. Answer them
-                        in under a minute and we'll unlock the payment step so our expert can begin.
-                    </p>
-                    <button type="button" class="btn btn-primary btn-lg" id="openAnswersBtn">
-                        <i class="ki-duotone ki-notepad-edit fs-3 me-2">
-                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                        </i>
-                        Answer {{ count($missingFields) }} {{ Str::plural('Question', count($missingFields)) }}
-                    </button>
-                @else
-                    <div class="alert alert-light-success d-flex align-items-center mb-4">
-                        <i class="ki-duotone ki-check-circle fs-2x text-success me-3">
-                            <span class="path1"></span><span class="path2"></span>
-                        </i>
-                        <div>
-                            <div class="fw-bold">Answers saved</div>
-                            <div class="text-muted fs-7">
-                                You can still edit them before paying. Once you pay, they're locked.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        @foreach($answers as $field => $value)
-                            <div class="col-md-6">
-                                <div class="border rounded p-3 h-100 bg-light">
-                                    <div class="fw-semibold text-muted fs-7 mb-1">
-                                        {{ ucwords(str_replace('_', ' ', $field)) }}
-                                    </div>
-                                    <div>{{ $value ?: '—' }}</div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <button type="button" class="btn btn-light-warning" id="openAnswersBtn">
-                        <i class="ki-duotone ki-pencil fs-3 me-2">
-                            <span class="path1"></span><span class="path2"></span>
-                        </i>
-                        Edit My Answers
-                    </button>
-                @endif
-            </div>
-        </div>
-    @endif
 
     {{-- ========================================================= --}}
-    {{-- PAYMENT CTA                                              --}}
+    {{-- ACTION CARDS by status                                   --}}
     {{-- ========================================================= --}}
-    @if($status === 'awaiting_payment')
-    <div class="card card-flush mb-6 border border-warning">
+
+    {{-- STEP 2 — SUBMITTED: run AI review --}}
+    @if($status === 'submitted')
+    <div class="card card-flush mb-6 border border-info">
         <div class="card-body text-center py-10">
-            <i class="ki-duotone ki-dollar fs-3x text-warning mb-3 d-block">
+            <i class="ki-duotone ki-robot fs-3x text-info mb-3 d-block">
                 <span class="path1"></span><span class="path2"></span>
             </i>
-            <h3 class="fw-bold mb-2">Complete Payment to Start</h3>
+            <h3 class="fw-bold mb-2">Analyse Your CV Now</h3>
             <p class="text-muted mb-5">
-                Our expert will rewrite your CV within
-                {{ $r['sla_due_at'] ? 'the SLA window' : '24 hours' }}.
+                Run a free AI review to find every gap in your CV, then answer
+                a few short questions so our rewrite can be exact.
             </p>
-            @if(!empty($r['next_service_price']['formatted']))
-                <div class="text-muted fs-7 mb-1">{{ $r['next_service_name'] ?? 'CV Rewrite' }}</div>
-                <div class="fs-2x fw-bold text-primary mb-5">{{ $r['next_service_price']['formatted'] }}</div>
-            @else
-                <div class="fs-2x fw-bold text-primary mb-5">{{ $r['formatted_amount'] }}</div>
-            @endif
-            <button class="btn btn-success btn-lg px-10" id="payBtn">
+            <button type="button" class="btn btn-info btn-lg px-8" id="runAiReviewBtn"
+                    data-uuid="{{ $r['uuid'] }}">
                 <span class="indicator-label">
-                    <i class="ki-duotone ki-lock fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>
-                    Pay Now
+                    <i class="ki-duotone ki-magnifier fs-3 me-2">
+                        <span class="path1"></span><span class="path2"></span>
+                    </i>
+                    Run Free AI Review
                 </span>
-                <span class="indicator-progress">Redirecting...
+                <span class="indicator-progress">
+                    Analysing (up to 30s)...
                     <span class="spinner-border spinner-border-sm ms-2"></span>
                 </span>
             </button>
-            <div class="text-muted fs-7 mt-3">
-                Not ready yet? You can
-                <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="openAnswersBtn">
-                    edit your answers
-                </button>
-                before paying.
-            </div>
         </div>
     </div>
     @endif
+
+    {{-- STEP 3 — AI REVIEWED: answer gap questions --}}
+    @if($status === 'ai_reviewed' || ($status === 'awaiting_payment' && !$hasAnswers))
+    <div class="card card-flush mb-6 border border-primary">
+        <div class="card-header bg-light-primary">
+            <h3 class="card-title">
+                <i class="ki-duotone ki-notepad-edit fs-2 me-2">
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                </i>
+                Fill In The Gaps
+            </h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-4">
+                The AI found <strong>{{ count($missingFields) }}</strong>
+                {{ Str::plural('gap', count($missingFields)) }}. Answer every field below to unlock payment.
+                <span class="text-danger">All fields are required.</span>
+            </p>
+            <button type="button" class="btn btn-primary btn-lg open-answers-btn">
+                <i class="ki-duotone ki-notepad-edit fs-3 me-2">
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                </i>
+                Answer {{ count($missingFields) }} {{ Str::plural('Question', count($missingFields)) }}
+            </button>
+        </div>
+    </div>
+    @endif
+
+
+    {{-- STEP 3b — AWAITING PAYMENT with answers: choose AI vs HR --}}
+    @if($status === 'awaiting_payment' && $hasAnswers)
+    @php
+        $aiPrice    = $r['next_service_price']       ?? null;
+        $humanPrice = $r['next_service_price_human'] ?? null;
+    @endphp
+    <div class="card card-flush mb-6 border border-warning">
+        <div class="card-header bg-light-warning">
+            <h3 class="card-title">
+                <i class="ki-duotone ki-dollar fs-2 me-2">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Choose How To Rewrite Your CV
+            </h3>
+        </div>
+        <div class="card-body">
+
+            {{-- Answers preview --}}
+            <div class="alert alert-light-success d-flex align-items-center mb-5">
+                <i class="ki-duotone ki-check-circle fs-2x text-success me-3">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">Answers saved</div>
+                    <div class="text-muted fs-7">
+                        You can still
+                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline open-answers-btn">
+                            edit them
+                        </button>
+                        before paying.
+                    </div>
+                </div>
+            </div>
+
+            {{-- Two options --}}
+            <div class="row g-4 mb-5">
+                {{-- Option A: AI Tool --}}
+                <div class="col-md-6">
+                    <label class="d-block border border-primary border-2 rounded p-4 cursor-pointer h-100 option-card"
+                        data-mode="ai">
+                        <input type="radio" name="rewrite_mode" value="ai" class="d-none" checked>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="fw-bold fs-4">Let the Tool Do It</div>
+                                <div class="text-muted fs-7">AI-generated in 30&ndash;60 seconds</div>
+                            </div>
+                            <i class="ki-duotone ki-rocket fs-2x text-primary">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                        </div>
+                        <ul class="text-muted fs-7 mb-3 ps-4">
+                            <li>Instant delivery</li>
+                            <li>2 free regenerations</li>
+                            <li>Full editing &amp; PDF download</li>
+                        </ul>
+                        <div class="fs-3 fw-bold text-primary">{{ $aiPrice['formatted'] ?? '—' }}</div>
+                    </label>
+                </div>
+
+                {{-- Option B: HR Expert --}}
+                <div class="col-md-6">
+                    <label class="d-block border border-warning border-2 rounded p-4 cursor-pointer h-100 option-card"
+                        data-mode="human">
+                        <input type="radio" name="rewrite_mode" value="human" class="d-none">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="fw-bold fs-4">Let an HR Expert Do It</div>
+                                <div class="text-muted fs-7">Human-written in 12&ndash;24 hours</div>
+                            </div>
+                            <i class="ki-duotone ki-user-tick fs-2x text-warning">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                        </div>
+                        <ul class="text-muted fs-7 mb-3 ps-4">
+                            <li>Reviewed by a senior HR expert</li>
+                            <li>12&ndash;24 hour delivery</li>
+                            <li>1 free revision</li>
+                        </ul>
+                        <div class="fs-3 fw-bold text-warning">{{ $humanPrice['formatted'] ?? '—' }}</div>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Pay button --}}
+            <div class="text-center">
+                <button class="btn btn-success btn-lg px-10" id="payBtn">
+                    <span class="indicator-label">
+                        <i class="ki-duotone ki-lock fs-3 me-2">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Pay Now
+                    </span>
+                    <span class="indicator-progress">
+                        Redirecting...
+                        <span class="spinner-border spinner-border-sm ms-2"></span>
+                    </span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    @endif
+
+    {{-- STEP 4 (HUMAN) — PAID HUMAN / IN PROGRESS --}}
+    @if($r['rewrite_mode'] === 'human' && in_array($status, ['paid_human', 'in_progress'], true))
+    <div class="card card-flush mb-6 border border-primary">
+        <div class="card-body text-center py-10">
+            <i class="ki-duotone ki-user-tick fs-3x text-primary mb-3 d-block"></i>
+            <h3 class="fw-bold mb-2">An HR Expert Is On It</h3>
+            <p class="text-muted mb-4">
+                We've assigned your CV to a senior HR expert. They'll deliver within 12&ndash;24 hours.
+                You'll be notified the moment it's ready.
+            </p>
+            @if($r['sla_due_at'])
+                <div class="badge badge-light-primary fs-7 py-3 px-4">
+                    Expected: {{ \Carbon\Carbon::parse($r['sla_due_at'])->format('M d, Y H:i') }}
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
 
     {{-- ========================================================= --}}
     {{-- DELIVERED                                                --}}
@@ -581,14 +829,14 @@
         </div>
     </div>
     @endif
-
+    @endif
 </div>
 
 {{-- ============================================================= --}}
 {{-- ANSWERS MODAL — submit or edit                               --}}
 {{-- ============================================================= --}}
 <div class="modal fade" id="answersModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="fw-bold" id="answersModalTitle">Fill In The Gaps</h3>
@@ -608,9 +856,14 @@
                                 {{ ucwords(str_replace('_', ' ', $field)) }}
                             </label>
                             <textarea name="answers[{{ $field }}]"
-                                      rows="3"
-                                      class="form-control"
-                                      placeholder="Tell us about {{ str_replace('_', ' ', $field) }}...">{{ $answers[$field] ?? '' }}</textarea>
+                                    rows="3"
+                                    class="form-control @error('answers.' . $field) is-invalid @enderror"
+                                    placeholder="Tell us about {{ str_replace('_', ' ', $field) }}..."
+                                    required
+                                    minlength="5">{{ $answers[$field] ?? '' }}</textarea>
+                            <div class="invalid-feedback">
+                                Please answer this question before continuing.
+                            </div>
                         </div>
                     @empty
                         <div class="alert alert-light-info">
@@ -636,6 +889,7 @@
         </div>
     </div>
 </div>
+
 
 {{-- ============================================================= --}}
 {{-- REVISION MODAL — create or edit                              --}}
@@ -776,6 +1030,45 @@
         </div>
     </div>
 </div>
+
+{{-- ============================================================= --}}
+{{-- REUSABLE CONFIRM MODAL                                        --}}
+{{-- ============================================================= --}}
+<div class="modal fade" id="confirmActionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="ki-duotone ki-information-5 fs-2x" id="confirmIcon">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    </i>
+                    <h3 class="fw-bold mb-0 fs-5" id="confirmTitle">Confirm Action</h3>
+                </div>
+                <button type="button" class="btn btn-icon btn-sm" data-bs-dismiss="modal">
+                    <i class="ki-duotone ki-cross fs-1">
+                        <span class="path1"></span><span class="path2"></span>
+                    </i>
+                </button>
+            </div>
+            <div class="modal-body pt-2 pb-4">
+                <p class="text-gray-700 mb-0" id="confirmMessage">Are you sure?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" id="confirmCancelBtn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmOkBtn">
+                    <span class="indicator-label">Confirm</span>
+                    <span class="indicator-progress">
+                        Please wait...
+                        <span class="spinner-border spinner-border-sm ms-2"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .pm-method-option {
         transition: border-color .15s ease, background .15s ease;
@@ -789,57 +1082,313 @@
         background: var(--bs-light-primary);
     }
 </style>
-@endsection
+<style>
+    .option-card {
+        transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+    .option-card:hover {
+        background: #f8f9fa;
+    }
+    .option-card.selected[data-mode="ai"] {
+        border-color: var(--bs-primary) !important;
+        background: var(--bs-light-primary);
+        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .15);
+    }
+    .option-card.selected[data-mode="human"] {
+        border-color: var(--bs-warning) !important;
+        background: var(--bs-light-warning);
+        box-shadow: 0 0 0 3px rgba(var(--bs-warning-rgb), .15);
+    }
+    .cv-preview {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    @media (min-width: 768px) {
+        .cv-preview { font-size: 1rem; line-height: 1.6; }
+    }
+    .cv-preview h1 { font-size: 1.5rem; font-weight: 700; }
+    .cv-preview h2 { font-size: 1.2rem; font-weight: 700; margin-top: 1.4em; border-bottom: 1px solid #e4e6ef; padding-bottom: 0.3em; }
+    .cv-preview h3 { font-size: 1.05rem; font-weight: 700; margin-top: 1em; }
+    .cv-preview ul { padding-left: 1.4em; }
+</style>
+<style>
+    /* Make TinyMCE blend with Metronic */
+    .tox-tinymce {
+        border-radius: 0.475rem !important;
+        border-color: var(--bs-gray-300) !important;
+    }
 
-@push('scripts')
-<script>
-const CSRF = '{{ csrf_token() }}';
-const UUID = '{{ $r['uuid'] }}';
-const STATUS = '{{ $status }}';
+    @media (max-width: 575.98px) {
+        .w-sm-auto { width: 100% !important; }
+    }
+    @media (min-width: 576px) {
+        .w-sm-auto { width: auto !important; }
+    }
+</style>
+<style>
+    .cv-preview h2 { border-bottom: 2px solid #1a1a1a; }
 
-// ─────────────────────────────────────────────────────────────
-// ANSWERS MODAL
-// ─────────────────────────────────────────────────────────────
-const answersModalEl = document.getElementById('answersModal');
-const answersModal = answersModalEl ? new bootstrap.Modal(answersModalEl) : null;
+    .cv-preview .cv-header,
+    .cv-preview .cv-header * { text-align: center !important; }
+    .cv-preview .cv-header h1 { margin: 0 0 .25rem; }
+    .cv-preview .cv-titles,
+    .cv-preview .cv-contact { margin: 0 0 .15rem; }
 
-// Open from any "openAnswersBtn" trigger
-document.querySelectorAll('#openAnswersBtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (answersModal) answersModal.show();
-    });
-});
+    .cv-preview .entry { margin-bottom: .8rem; }
+    .cv-preview .employer { font-style: italic; margin: 0 0 .3rem; }
+    .cv-preview .referee { margin: 0 0 .4rem; }
 
-// Auto-open on first visit when status is 'ai_reviewed' and answers are empty
-document.addEventListener('DOMContentLoaded', () => {
-    if (STATUS === 'ai_reviewed' && answersModal) {
-        const key = 'cv_review_answers_modal_' + UUID;
-        if (!sessionStorage.getItem(key)) {
-            answersModal.show();
-            sessionStorage.setItem(key, '1');
+    .cv-preview table.entry-line {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin: .5rem 0 0;
+    }
+    .cv-preview table.entry-line td {
+        padding: 0;
+        vertical-align: baseline;
+        border: 0;
+        background: transparent;
+    }
+    .cv-preview table.entry-line h3 { margin: 0; }
+    .cv-preview table.entry-line td.dates {
+        width: 1%;
+        white-space: nowrap;
+        text-align: right !important;
+        font-size: .9em;
+    }
+
+    /* After the existing .cv-preview rules */
+    @media (max-width: 575.98px) {
+        .cv-preview {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            padding: 1rem !important;
+        }
+        .cv-preview h1 { font-size: 1.15rem !important; }
+        .cv-preview h2 {
+            font-size: 1rem !important;
+            margin-top: 1.2em !important;
+            border-bottom-width: 1px !important;
+        }
+        .cv-preview h3 { font-size: 0.95rem !important; }
+
+        /* Dates column too narrow on mobile — force stack */
+        .cv-preview table.entry-line {
+            display: block;
+        }
+        .cv-preview table.entry-line tbody,
+        .cv-preview table.entry-line tr,
+        .cv-preview table.entry-line td {
+            display: block;
+            width: 100% !important;
+            text-align: left !important;
+        }
+        .cv-preview table.entry-line td.dates {
+            white-space: normal !important;
+            font-size: 0.8em;
+            color: #6b7280;
+            margin-top: 0.2em;
         }
     }
-});
+</style>
+@endsection
 
-// Submit answers
-document.getElementById('answersForm')?.addEventListener('submit', function (e) {
+
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+    // Mirror the mobile menu buttons to the desktop buttons
+    (function mirrorMobileButtons() {
+        const mirrors = [
+            ['editCvBtnMobile',     'editCvBtn'],
+            ['copyCvBtnMobile',     'copyCvBtn'],
+            ['regenerateBtnMobile', 'regenerateBtn'],
+            ['markDoneBtnMobile',   'markDoneBtn'],
+        ];
+        mirrors.forEach(([mobileId, desktopId]) => {
+            const mobileBtn = document.getElementById(mobileId);
+            const desktopBtn = document.getElementById(desktopId);
+            if (!mobileBtn || !desktopBtn) return;
+
+            mobileBtn.addEventListener('click', () => {
+                // Bootstrap dropdown close
+                const dropdown = bootstrap.Dropdown.getInstance(mobileBtn.closest('.dropdown > button'));
+                dropdown?.hide();
+
+                // Trigger the real action
+                desktopBtn.click();
+            });
+        });
+    })();
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Shared constants — DECLARED ONCE, at the very top
+// ═══════════════════════════════════════════════════════════════
+const CSRF   = '{{ csrf_token() }}';
+const UUID   = '{{ $r['uuid'] }}';
+const STATUS = '{{ $status }}';
+
+// ═══════════════════════════════════════════════════════════════
+// REUSABLE CONFIRM MODAL — promise-based, Metronic-styled
+// ═══════════════════════════════════════════════════════════════
+const confirmAction = (function () {
+    const modalEl = document.getElementById('confirmActionModal');
+    if (!modalEl) {
+        // Fallback if the modal isn't in the DOM
+        return ({ message = 'Are you sure?' } = {}) => Promise.resolve(window.confirm(message));
+    }
+
+    const modal      = new bootstrap.Modal(modalEl);
+    const titleEl    = document.getElementById('confirmTitle');
+    const msgEl      = document.getElementById('confirmMessage');
+    const okBtn      = document.getElementById('confirmOkBtn');
+    const cancelBtn  = document.getElementById('confirmCancelBtn');
+    const iconEl     = document.getElementById('confirmIcon');
+
+    return function confirmAction({
+        title        = 'Confirm',
+        message      = 'Are you sure?',
+        okText       = 'Confirm',
+        okClass      = 'btn-primary',
+        icon         = 'ki-information-5',
+        iconClass    = 'text-primary',
+    } = {}) {
+        return new Promise((resolve) => {
+            // Reset state each time
+            titleEl.textContent = title;
+            msgEl.textContent   = message;
+            okBtn.className     = `btn ${okClass}`;
+            okBtn.querySelector('.indicator-label').textContent = okText;
+            okBtn.disabled      = false;
+            okBtn.removeAttribute('data-kt-indicator');
+
+            // Icon + color
+            iconEl.className = `ki-duotone ${icon} fs-2x ${iconClass}`;
+            iconEl.innerHTML = '<span class="path1"></span><span class="path2"></span><span class="path3"></span>';
+
+            let resolved = false;
+
+            const cleanup = (result) => {
+                if (resolved) return;
+                resolved = true;
+                modal.hide();
+                // Remove all listeners so they don't fire on the next open
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                resolve(result);
+            };
+
+            const onOk     = () => cleanup(true);
+            const onCancel = () => cleanup(false);
+            const onHidden = () => cleanup(false);
+
+            okBtn.addEventListener('click', onOk);
+            cancelBtn.addEventListener('click', onCancel);
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+
+            modal.show();
+        });
+    };
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// Auto-run AI review if we just arrived from the submit form
+// ═══════════════════════════════════════════════════════════════
+(function () {
+    const params     = new URLSearchParams(window.location.search);
+    if (params.get('auto_review') !== '1') return;
+
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+
+    if (STATUS !== 'submitted') return;
+
+    const btn = document.getElementById('runAiReviewBtn');
+    if (btn) setTimeout(() => btn.click(), 200);
+})();
+
+
+
+// ─────────────────────────────────────────────────────────────
+// ANSWERS MODAL — init immediately (DOM is ready by the time this runs)
+// ─────────────────────────────────────────────────────────────
+(function () {
+    const answersModalEl = document.getElementById('answersModal');
+    if (!answersModalEl) {
+        console.warn('[answers-modal] #answersModal not found in DOM');
+        return;
+    }
+
+    // Guard against double-init
+    if (answersModalEl.dataset.initialized === '1') return;
+    answersModalEl.dataset.initialized = '1';
+
+    const answersModal = new bootstrap.Modal(answersModalEl);
+    window.__answersModal = answersModal;
+
+    // Delegated click — matches class OR fallback ID for compat
+    document.addEventListener('click', function (e) {
+        const trigger = e.target.closest('.open-answers-btn, #open-answers-btn, #openAnswersBtn');
+        if (!trigger) return;
+        e.preventDefault();
+        answersModal.show();
+    });
+
+    // Auto-open once when status = ai_reviewed and no session flag yet
+    if (STATUS === 'ai_reviewed') {
+        const key = 'cv_review_answers_modal_' + UUID;
+        if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            // Small delay ensures Bootstrap backdrop is painted first
+            setTimeout(() => answersModal.show(), 300);
+        }
+    }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// ANSWER SUBMIT — one handler, validations + fetch
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!form || form.id !== 'answersForm') return;
     e.preventDefault();
-    const btn = document.getElementById('answersBtn');
-    window.showButtonSpinner(btn);
 
-    const fd = new FormData(this);
+    const textareas = form.querySelectorAll('textarea[name^="answers["]');
+    const missing = [];
+
+    textareas.forEach(ta => {
+        if (!ta.value.trim()) {
+            ta.classList.add('is-invalid');
+            const field = ta.name.match(/answers\[(.+)\]/)?.[1] || 'field';
+            missing.push(field);
+        } else {
+            ta.classList.remove('is-invalid');
+        }
+    });
+
+    if (missing.length > 0) {
+        window.showToast?.(
+            'error',
+            'Please fill in all ' + missing.length + ' field(s) before continuing.',
+            'Missing Answers'
+        );
+        return;
+    }
+
+    const btn = document.getElementById('answersBtn');
+    window.showButtonSpinner?.(btn);
+
+    const fd = new FormData(form);
     const answers = {};
     for (const [k, v] of fd.entries()) {
         const m = k.match(/answers\[(.+)\]/);
         if (m) answers[m[1]] = v;
-    }
-
-    // Client-side guard: require at least one field filled
-    const filled = Object.values(answers).filter(v => v && v.trim() !== '');
-    if (filled.length === 0) {
-        window.showToast('error', 'Please fill in at least one answer.', 'Missing Info');
-        window.hideButtonSpinner(btn);
-        return;
     }
 
     fetch(`/cv-review/${UUID}/answers`, {
@@ -847,35 +1396,78 @@ document.getElementById('answersForm')?.addEventListener('submit', function (e) 
         headers: {
             'X-CSRF-TOKEN': CSRF,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
         },
-        body: JSON.stringify({ answers })
+        body: JSON.stringify({ answers }),
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            window.showToast('success', data.message || 'Answers saved. You can now pay.', 'Saved');
-            answersModal?.hide();
+            window.showToast?.('success', data.message || 'Answers saved.', 'Saved');
+            window.__answersModal?.hide();
             setTimeout(() => location.reload(), 800);
         } else {
-            const msg = data.errors
-                ? Object.values(data.errors).flat().join('\n')
-                : (data.message || 'Failed to save answers.');
-            window.showToast('error', msg, 'Error');
+            window.showToast?.('error', data.message || 'Failed to save.', 'Error');
+            window.hideButtonSpinner?.(btn);
         }
     })
-    .catch(() => window.showToast('error', 'Something went wrong', 'Error'))
-    .finally(() => window.hideButtonSpinner(btn));
+    .catch(() => {
+        window.showToast?.('error', 'Network error.', 'Error');
+        window.hideButtonSpinner?.(btn);
+    });
 });
 
-// ─────────────────────────────────────────────────────────────
-// PAYMENT
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// Run AI Review
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('runAiReviewBtn')?.addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.setAttribute('data-kt-indicator', 'on');
+
+    try {
+        const res = await fetch(`{{ route('cv-review.run-ai-review', $r['uuid']) }}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            window.showToast?.('success', 'AI review complete. Reloading…', 'Success');
+            setTimeout(() => window.location.reload(), 600);
+        } else {
+            window.showToast?.('error', data.message || 'AI review failed.', 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+        }
+    } catch (e) {
+        window.showToast?.('error', 'Network error.', 'Error');
+        btn.disabled = false;
+        btn.removeAttribute('data-kt-indicator');
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Rewrite mode cards (AI vs HR)
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('input[name="rewrite_mode"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        this.closest('.option-card')?.classList.add('selected');
+    });
+});
+document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(new Event('change'));
+
+// ═══════════════════════════════════════════════════════════════
+// PAYMENT MODAL
+// ═══════════════════════════════════════════════════════════════
 (function () {
     const payBtn = document.getElementById('payBtn');
     if (!payBtn) return;
 
     const modalEl     = document.getElementById('paymentModal');
+    if (!modalEl) return;
+
     const modal       = new bootstrap.Modal(modalEl);
     const phoneWrap   = document.getElementById('pm_phone_wrap');
     const phoneInput  = document.getElementById('pm_phone');
@@ -884,70 +1476,70 @@ document.getElementById('answersForm')?.addEventListener('submit', function (e) 
     const amountEl    = document.getElementById('pm_amount');
     const errorEl     = document.getElementById('pm_error');
     const closeBtn    = document.getElementById('paymentModalClose');
-
     const warningText = document.getElementById('pm_warning_text');
+    let lastSubmitAt = 0;
 
-    function setWarningText(method) {
-        if (!warningText) return;
+    function selectedMode() {
+        return document.querySelector('input[name="rewrite_mode"]:checked')?.value || 'ai';
+    }
 
-        if (method === 'card') {
-            warningText.innerHTML = `
-                <strong>Have your card details ready.</strong>
-                You will be redirected to a secure payment page to complete the transaction.
-                Make sure the card supports online payments and has sufficient funds.
-                If the payment fails, contact support.
-            `;
-        } else {
-            warningText.innerHTML = `
-                <strong>Make sure you have enough mobile money credit.</strong>
-                Your balance must cover the amount above before you can approve the PIN prompt.
-                If the payment fails, contact support.
-            `;
+    function syncAmountFromCard() {
+        // If the amount has been locked by a successful payment init,
+        // do NOT overwrite it — the server told us the real amount.
+        if (amountEl?.dataset.locked === '1') return;
+
+        const mode = selectedMode();
+        const card = document.querySelector(`.option-card[data-mode="${mode}"]`);
+        const priceEl = card?.querySelector('.fs-3.fw-bold');
+        if (amountEl && priceEl) {
+            amountEl.textContent = priceEl.textContent.trim();
         }
     }
 
-    // Show/hide the phone field based on chosen method
+    function setWarningText(method) {
+        if (!warningText) return;
+        warningText.innerHTML = method === 'card'
+            ? '<strong>Have your card details ready.</strong> You will be redirected to a secure payment page.'
+            : '<strong>Make sure you have enough mobile money credit.</strong> Your balance must cover the amount above.';
+    }
+
     function syncMethod() {
         const method = document.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
-        phoneWrap.classList.toggle('d-none', method === 'card');
-        errorEl.classList.add('d-none');
-        errorEl.textContent = '';
+        phoneWrap?.classList.toggle('d-none', method === 'card');
+        errorEl?.classList.add('d-none');
         setWarningText(method);
     }
     methodRadios.forEach(r => r.addEventListener('change', syncMethod));
 
-    // Open the modal
     payBtn.addEventListener('click', () => {
+        syncAmountFromCard();
         modal.show();
         syncMethod();
-        // Focus the phone input if mobile money is selected
         setTimeout(() => {
-            if (phoneWrap && !phoneWrap.classList.contains('d-none')) {
-                phoneInput.focus();
-            }
+            if (phoneWrap && !phoneWrap.classList.contains('d-none')) phoneInput.focus();
         }, 300);
     });
 
-    // Submit from within the modal
     submitBtn.addEventListener('click', async () => {
+        // ── Debounce: block double-taps within 3 seconds
+        const now = Date.now();
+        if (now - lastSubmitAt < 3000) {
+            console.log('[payment] Ignoring duplicate submit (3s debounce)');
+            return;
+        }
+        lastSubmitAt = now;
+
         const method = document.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
-        const phone = phoneInput.value.replace(/[^\d+]/g, '').trim();
+        const phone  = phoneInput.value.replace(/[^\d+]/g, '').trim();
 
         if (method === 'mobile_money') {
-            if (!phone) {
-                showError('Please enter your mobile money number.');
-                return;
-            }
-            if (!/^\+\d{9,15}$/.test(phone)) {
-                showError('That phone number does not look right. Use the format +256 754 428 612.');
-                return;
-            }
+            if (!phone) return showError('Please enter your mobile money number.');
+            if (!/^\+\d{9,15}$/.test(phone)) return showError('Use the format +256 754 428 612.');
         }
 
-        // Visual loading state on the submit button
         submitBtn.setAttribute('data-kt-indicator', 'on');
         submitBtn.disabled = true;
-        errorEl.classList.add('d-none');
+        errorEl?.classList.add('d-none');
 
         try {
             const res = await fetch(`/cv-review/${UUID}/pay`, {
@@ -960,87 +1552,65 @@ document.getElementById('answersForm')?.addEventListener('submit', function (e) 
                 body: JSON.stringify({
                     phone: method === 'mobile_money' ? phone : null,
                     method,
+                    mode: selectedMode(),
                 }),
             });
             const data = await res.json();
 
             if (!data.success) {
-                const msg = data.message || 'Payment could not be started.';
-
-                // If MarzPay rejected the phone number, focus and highlight that field
-                if (/phone number/i.test(msg) && !phoneWrap.classList.contains('d-none')) {
-                    phoneInput.classList.add('is-invalid');
-                    phoneInput.focus();
-                    phoneInput.addEventListener('input', () => phoneInput.classList.remove('is-invalid'), { once: true });
-                }
-
-                showError(msg);
+                showError(data.message || 'Payment could not be started.');
                 submitBtn.removeAttribute('data-kt-indicator');
                 submitBtn.disabled = false;
                 return;
             }
 
-            // Show the amount from the response, in case the server updated it
-            if (data.amount_formatted) {
-                amountEl.textContent = data.amount_formatted;
+            // ── Lock the amount so no re-sync can overwrite it ────
+            if (data.amount_formatted && amountEl) {
+                amountEl.textContent   = data.amount_formatted;
+                amountEl.dataset.locked = '1';
+                console.log('[payment] Amount locked at', data.amount_formatted);
             }
+
+            if (data.amount_formatted && amountEl) amountEl.textContent = data.amount_formatted;
 
             if (data.is_free) {
                 modal.hide();
-                window.showToast('success', data.message, 'Free');
-                setTimeout(() => location.reload(), 1500);
+                window.showToast?.('success', data.message, 'Free');
+                setTimeout(() => location.reload(), 1200);
                 return;
             }
 
             if (data.redirect_url) {
-                // Card flow — leave the modal open while the browser navigates
                 window.location.href = data.redirect_url;
                 return;
             }
 
-            // Mobile money — modal stays open, show "check your phone" and poll
-            showInfo(
-                'A payment prompt has been sent to your phone. Enter your PIN to complete payment. ' +
-                'Please make sure you have enough mobile money credit.'
-            );
-
-            // Swap the Pay Now button to a disabled state while polling
+            // Mobile money — poll
+            showInfo('A prompt has been sent to your phone. Enter your PIN.');
             submitBtn.removeAttribute('data-kt-indicator');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Waiting for confirmation...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Waiting...';
 
             let polls = 0;
-            const maxPolls = 40;  // ~2 minutes at 3s intervals
-
             const poll = setInterval(async () => {
-                polls++;
+                if (++polls >= 40) {
+                    clearInterval(poll);
+                    showError('No confirmation yet. Refresh in a moment.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = payButtonHTML();
+                    return;
+                }
                 try {
-                    const r  = await fetch(`/cv-review/${UUID}`, {
-                        headers: { 'Accept': 'application/json' },
-                    });
+                    const r = await fetch(`/cv-review/${UUID}`, { headers: { 'Accept': 'application/json' } });
                     const b = await r.json();
-                    const status = b.request?.status;
-
-                    if (status && status !== 'awaiting_payment') {
+                    const st = b.request?.status;
+                    if (st && st !== 'awaiting_payment') {
                         clearInterval(poll);
                         modal.hide();
-                        window.showToast('success', 'Payment confirmed. Welcome aboard.', 'Success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else if (polls >= maxPolls) {
-                        clearInterval(poll);
-                        showError(
-                            'We have not received the confirmation yet. ' +
-                            'If you were charged, the payment will appear shortly. ' +
-                            'Refresh this page in a moment.'
-                        );
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = payButtonHTML();
+                        window.showToast?.('success', 'Payment confirmed.', 'Success');
+                        setTimeout(() => location.reload(), 800);
                     }
-                } catch (e) {
-                    // network blip — keep polling
-                }
+                } catch {}
             }, 3000);
-
         } catch (e) {
             showError('Something went wrong: ' + e.message);
             submitBtn.removeAttribute('data-kt-indicator');
@@ -1048,100 +1618,438 @@ document.getElementById('answersForm')?.addEventListener('submit', function (e) 
         }
     });
 
-    // Reset the modal when closed
-    closeBtn.addEventListener('click', () => {
+    closeBtn?.addEventListener('click', () => {
         submitBtn.disabled = false;
         submitBtn.removeAttribute('data-kt-indicator');
         submitBtn.innerHTML = payButtonHTML();
-        errorEl.classList.add('d-none');
+        errorEl?.classList.add('d-none');
+
+        // Release the amount lock so the next open can sync from the card
+        if (amountEl) delete amountEl.dataset.locked;
     });
 
-    // Helpers
+    modalEl.addEventListener('hidden.bs.modal', () => {
+        if (amountEl) delete amountEl.dataset.locked;
+    });
+
     function showError(msg) {
+        if (!errorEl) return;
         errorEl.className = 'alert alert-light-danger mt-4 mb-0';
         errorEl.textContent = msg;
         errorEl.classList.remove('d-none');
     }
-
     function showInfo(msg) {
+        if (!errorEl) return;
         errorEl.className = 'alert alert-light-info mt-4 mb-0';
         errorEl.textContent = msg;
         errorEl.classList.remove('d-none');
     }
-
     function payButtonHTML() {
         return '<i class="ki-duotone ki-lock fs-3 me-2"><span class="path1"></span><span class="path2"></span></i> Pay Now';
     }
-
-    // Populate the amount when the modal opens — pull from the page or fetch
-    document.getElementById('payBtn')?.addEventListener('click', async () => {
-        // You likely already have the price rendered on the page
-        const existingAmount = document.getElementById('pm_amount')?.textContent;
-        if (!existingAmount || existingAmount === '—') {
-            // Fallback: hit the quote endpoint to get the amount
-            try {
-                const r = await fetch(`/cv-review/${UUID}`, { headers: { 'Accept': 'application/json' } });
-                const b = await r.json();
-                const formatted = b?.request?.formatted_amount || '—';
-                amountEl.textContent = formatted;
-            } catch (e) {
-                amountEl.textContent = '—';
-            }
-        }
-    });
 })();
+</script>
 
-// ─────────────────────────────────────────────────────────────
-// REVISION MODAL
-// ─────────────────────────────────────────────────────────────
-const revisionModalEl = document.getElementById('revisionModal');
-const revisionModal = revisionModalEl ? new bootstrap.Modal(revisionModalEl) : null;
 
-document.getElementById('openRevisionEditBtn')?.addEventListener('click', () => {
-    // Edit mode uses the same modal, different submit endpoint
-    revisionModal?.show();
-});
+{{-- Second script block: AI rewrite + polling --}}
+<script>
+(function () {
+    'use strict';
 
-document.getElementById('revisionForm')?.addEventListener('submit', function (e) {
-    e.preventDefault();
-    const btn = document.getElementById('revisionBtn');
-    window.showButtonSpinner(btn);
+    // ═══════════════════════════════════════════════════════════════
+    // POLLING — reload while AI is generating
+    // ═══════════════════════════════════════════════════════════════
+    (function pollWhileGenerating() {
+        const needsPolling = STATUS === 'paid_ai' || STATUS === 'generating';
 
-    const notes = this.querySelector('textarea[name="notes"]').value.trim();
+        if (!needsPolling) {
+            sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
+            return;
+        }
 
-    if (!notes) {
-        window.showToast('error', 'Please describe what you want changed.', 'Missing Info');
-        window.hideButtonSpinner(btn);
-        return;
+        const KEY     = 'cv_rewrite_poll_' + UUID;
+        const tries   = parseInt(sessionStorage.getItem(KEY) || '0', 10);
+        const MAX     = 60;
+        const POLL_MS = 3000;
+
+        if (tries >= MAX) {
+            sessionStorage.removeItem(KEY);
+            const loading = document.getElementById('rewriteLoading');
+            if (loading) {
+                loading.innerHTML = `
+                    <div class="card-body text-center py-15">
+                        <i class="ki-duotone ki-information-5 fs-3x text-warning mb-3 d-block">
+                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                        </i>
+                        <h3 class="fw-bold mb-2">Taking longer than usual</h3>
+                        <p class="text-muted mb-4">
+                            Generation is still running. Refresh the page in a minute,
+                            or contact support if it stays stuck.
+                        </p>
+                        <button class="btn btn-primary" onclick="location.reload()">Refresh</button>
+                    </div>`;
+            }
+            return;
+        }
+
+        sessionStorage.setItem(KEY, String(tries + 1));
+        setTimeout(() => window.location.reload(), POLL_MS);
+    })();
+
+    // ═══════════════════════════════════════════════════════════════
+    // The AI rewrite handlers — only run when #aiRewriteSection exists
+    // ═══════════════════════════════════════════════════════════════
+    const section = document.getElementById('aiRewriteSection');
+
+    if (section) {
+        const jobUuid = section.dataset.uuid || UUID;
+
+        // ── Regenerate ─────────────────────────────────────────
+        (function () {
+            const regenBtn = document.getElementById('regenerateBtn');
+            if (!regenBtn) return;
+
+            const isEdited = @json($r['rewrite_is_user_edited'] ?? false);
+
+            regenBtn.addEventListener('click', async () => {
+                const ok = await confirmAction({
+                    title:    'Regenerate CV?',
+                    message:  isEdited
+                                ? 'This will replace your manual edits with a fresh AI version. Continue?'
+                                : 'This uses one of your retries. Continue?',
+                    okText:   'Regenerate',
+                    okClass:  'btn-warning',
+                    icon:     'ki-arrows-circle',
+                    iconClass:'text-warning',
+                });
+                if (!ok) return;
+
+                try {
+                    const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/regenerate`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        window.showToast?.('success', 'Regenerating…', 'Started');
+                        sessionStorage.removeItem('cv_rewrite_poll_' + jobUuid);
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        window.showToast?.('error', data.message || 'Could not start.', 'Error');
+                    }
+                } catch (e) {
+                    window.showToast?.('error', 'Network error.', 'Error');
+                }
+            });
+        })();
+
+        // ── Edit CV (TinyMCE) ──────────────────────────────────
+        const cvView        = document.getElementById('cvView');
+        const cvEdit        = document.getElementById('cvEdit');
+        const cvEditor      = document.getElementById('cvEditor');
+        const cvContentEl   = document.querySelector('#cvView .cv-preview');
+
+        let editorInstance     = null;
+        let editorReadyPromise = null;
+
+        function initEditor(initialHtml) {
+            if (!cvEditor) return Promise.resolve(null);
+
+            if (editorInstance && editorReadyPromise) {
+                return editorReadyPromise.then(editor => {
+                    if (editor && editor.setContent) {
+                        editor.setContent(initialHtml || '');
+                    }
+                    return editor;
+                });
+            }
+
+            if (typeof tinymce === 'undefined') {
+                cvEditor.value = htmlToPlainText(initialHtml);
+                return Promise.resolve(null);
+            }
+
+            cvEditor.value = initialHtml || '';
+
+            editorReadyPromise = new Promise((resolve) => {
+                tinymce.init({
+                    target: cvEditor,
+                    height: 600,
+                    menubar: false,
+                    statusbar: true,
+                    branding: false,
+                    promotion: false,
+                    plugins: 'lists link code wordcount',
+                    toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
+                    block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
+                    content_css: "{{ asset('css/cv-document.css') }}",
+                    body_class: 'cv-doc',
+                    extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
+                    valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
+                    invalid_elements: 'script,style',
+                    paste_as_text: true,
+                    setup: (editor) => {
+                        editor.on('init', () => {
+                            editorInstance = editor;
+                            if (initialHtml && !editor.getContent().trim()) {
+                                editor.setContent(initialHtml);
+                            }
+                            resolve(editor);
+                        });
+                    },
+                }).catch(err => {
+                    console.warn('TinyMCE failed to load, falling back to plain textarea:', err);
+                    cvEditor.value = htmlToPlainText(initialHtml);
+                    resolve(null);
+                });
+            });
+
+            return editorReadyPromise;
+        }
+
+        function getEditorContent() {
+            if (editorInstance && typeof editorInstance.getContent === 'function') {
+                return editorInstance.getContent();
+            }
+            return cvEditor?.value || '';
+        }
+
+        function htmlToPlainText(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            tmp.querySelectorAll('p, li, h1, h2, h3').forEach(el => {
+                el.appendChild(document.createTextNode('\n\n'));
+            });
+            return (tmp.innerText || tmp.textContent || '').trim();
+        }
+
+        function getCurrentCvHtml() {
+            if (!cvContentEl) return '';
+            return cvContentEl.innerHTML.trim();
+        }
+
+        document.getElementById('editCvBtn')?.addEventListener('click', () => {
+            if (!cvEdit || !cvView) return;
+            cvView.classList.add('d-none');
+            cvEdit.classList.remove('d-none');
+            cvEdit.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            initEditor(getCurrentCvHtml());
+        });
+
+        document.getElementById('cancelEditsBtn')?.addEventListener('click', () => {
+            cvEdit?.classList.add('d-none');
+            cvView?.classList.remove('d-none');
+        });
+
+        document.getElementById('saveEditsBtn')?.addEventListener('click', async function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.setAttribute('data-kt-indicator', 'on');
+            const lbl = btn.querySelector('.indicator-label');
+            const prg = btn.querySelector('.indicator-progress');
+            lbl?.classList.add('d-none');
+            prg?.classList.remove('d-none');
+
+            try {
+                await editorReadyPromise;
+                const html = getEditorContent().trim();
+
+                if (!html || html.replace(/<[^>]*>/g, '').trim().length < 50) {
+                    window.showToast?.('error', 'CV looks too short. Please keep at least a few sentences.', 'Too short');
+                    btn.disabled = false;
+                    btn.removeAttribute('data-kt-indicator');
+                    lbl?.classList.remove('d-none');
+                    prg?.classList.add('d-none');
+                    return;
+                }
+
+                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/save`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': CSRF,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ content: html }),
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    window.showToast?.('error', data.message || 'Could not save your edits.', 'Save failed');
+                    btn.disabled = false;
+                    btn.removeAttribute('data-kt-indicator');
+                    lbl?.classList.remove('d-none');
+                    prg?.classList.add('d-none');
+                    return;
+                }
+
+                window.showToast?.('success', 'Your edits have been saved.', 'Saved');
+                setTimeout(() => window.location.reload(), 700);
+            } catch (e) {
+                window.showToast?.('error', 'Network error: ' + e.message, 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+                lbl?.classList.remove('d-none');
+                prg?.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('resetToAiBtn')?.addEventListener('click', async function () {
+            const ok = await confirmAction({
+                title:    'Reset to AI version?',
+                message:  'Discard all your edits and restore the last AI-generated version?',
+                okText:   'Reset',
+                okClass:  'btn-danger',
+                icon:     'ki-arrows-circle',
+                iconClass:'text-danger',
+            });
+            if (!ok) return;
+
+            const btn = this;
+            btn.disabled = true;
+            btn.setAttribute('data-kt-indicator', 'on');
+
+            try {
+                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/reset`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    window.showToast?.('error', data.message || 'Could not reset.', 'Reset failed');
+                    btn.disabled = false;
+                    btn.removeAttribute('data-kt-indicator');
+                    return;
+                }
+
+                window.showToast?.('success', 'Restored to the AI version.', 'Reset');
+                setTimeout(() => window.location.reload(), 700);
+            } catch (e) {
+                window.showToast?.('error', 'Network error: ' + e.message, 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        });
+
+        // ── Copy ───────────────────────────────────────────────
+        document.getElementById('copyCvBtn')?.addEventListener('click', async function () {
+            const text = cvContentEl?.innerText || '';
+            if (!text.trim()) {
+                window.showToast?.('error', 'Nothing to copy.', 'Empty');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                window.showToast?.('success', 'Copied to clipboard.', 'Copied');
+                const original = this.innerHTML;
+                this.innerHTML = '<i class="ki-duotone ki-check fs-4 me-1"><span class="path1"></span><span class="path2"></span></i> Copied!';
+                setTimeout(() => { this.innerHTML = original; }, 1800);
+            } catch (e) {
+                window.showToast?.('error', 'Browser blocked the copy.', 'Error');
+            }
+        });
+
+        // ── Mark as Done ───────────────────────────────────────
+        document.getElementById('markDoneBtn')?.addEventListener('click', async function () {
+            const ok = await confirmAction({
+                title:    'Mark CV as complete?',
+                message:  'You will not be able to edit or regenerate this CV after marking it done. Download your PDF first if you want a copy.',
+                okText:   'Mark as Done',
+                okClass:  'btn-success',
+                icon:     'ki-check-circle',
+                iconClass:'text-success',
+            });
+            if (!ok) return;
+
+            this.disabled = true;
+            this.setAttribute('data-kt-indicator', 'on');
+
+            try {
+                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/complete`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.showToast?.('success', 'Marked as done. Thank you!', 'Success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    window.showToast?.('error', data.message || 'Failed.', 'Error');
+                    this.disabled = false;
+                    this.removeAttribute('data-kt-indicator');
+                }
+            } catch (e) {
+                window.showToast?.('error', 'Network error.', 'Error');
+                this.disabled = false;
+                this.removeAttribute('data-kt-indicator');
+            }
+        });
     }
 
-    // Choose endpoint: create new revision vs update existing
-    const isEdit = STATUS === 'revision_requested';
-    const url = isEdit
-        ? `/cv-review/${UUID}/revision`   // same route, controller upserts last
-        : `/cv-review/${UUID}/revision`;
+    // ═══════════════════════════════════════════════════════════════
+    // Revision modal
+    // ═══════════════════════════════════════════════════════════════
+    (function () {
+        const revisionModalEl = document.getElementById('revisionModal');
+        if (!revisionModalEl) return;
+        const revisionModal = new bootstrap.Modal(revisionModalEl);
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': CSRF,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ notes })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.showToast('success', data.message || 'Revision requested.', 'Sent');
-            revisionModal?.hide();
-            setTimeout(() => location.reload(), 800);
-        } else {
-            window.showToast('error', data.message || 'Failed', 'Error');
-        }
-    })
-    .catch(() => window.showToast('error', 'Something went wrong', 'Error'))
-    .finally(() => window.hideButtonSpinner(btn));
-});
+        document.getElementById('openRevisionEditBtn')?.addEventListener('click', () => revisionModal.show());
+
+        document.getElementById('revisionForm')?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const notes = this.querySelector('textarea[name="notes"]').value.trim();
+            if (!notes) {
+                window.showToast?.('error', 'Please describe what you want changed.', 'Missing Info');
+                return;
+            }
+
+            const ok = await confirmAction({
+                title:    'Submit revision request?',
+                message:  'Your HR expert will be notified and will re-deliver an updated CV.',
+                okText:   'Submit',
+                okClass:  'btn-warning',
+                icon:     'ki-send',
+                iconClass:'text-warning',
+            });
+            if (!ok) return;
+
+            const btn = document.getElementById('revisionBtn');
+            window.showButtonSpinner?.(btn);
+
+            try {
+                const res = await fetch(`/cv-review/${UUID}/revision`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': CSRF,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ notes }),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.showToast?.('success', data.message || 'Revision requested.', 'Sent');
+                    revisionModal.hide();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    window.showToast?.('error', data.message || 'Failed.', 'Error');
+                    window.hideButtonSpinner?.(btn);
+                }
+            } catch (err) {
+                window.showToast?.('error', 'Network error.', 'Error');
+                window.hideButtonSpinner?.(btn);
+            }
+        });
+    })();
+
+})();
 </script>
+
+
 @endpush

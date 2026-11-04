@@ -194,6 +194,74 @@
 
 								<!--begin::Menu item - Resources (Dropdown)-->
 								<div class="menu-item jp-nav-resources">
+									<!--begin::Menu item - CV -->
+									<div class="menu-item jp-nav-cv">
+										<!-- Desktop: hover-based dropdown -->
+										<div class="jp-nav-cv-desktop">
+											<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('cv-maker.*', 'cv-review.*', 'letters.*') ? 'active' : '' }}" style="cursor: pointer;">
+												CV
+												<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+													<path d="M6 9l6 6 6-6"/>
+												</svg>
+											</span>
+											<div class="jp-nav-cv-panel">
+												<a href="{{ route('cv-review.index') }}"
+												data-kt-drawer-dismiss="true"
+												class="{{ Route::is('cv-review.*') ? 'active' : '' }}">
+													<span class="d-flex align-items-center gap-2">
+														<i class="ki-duotone ki-document fs-4 text-primary">
+															<span class="path1"></span><span class="path2"></span>
+														</i>
+														CV Maker
+													</span>
+												</a>
+												<a href="{{ route('letters.index') }}"
+												data-kt-drawer-dismiss="true"
+												class="{{ Route::is('letters.*') ? 'active' : '' }}">
+													<span class="d-flex align-items-center gap-2">
+														<i class="ki-duotone ki-message-text-2 fs-4 text-success">
+															<span class="path1"></span><span class="path2"></span><span class="path3"></span>
+														</i>
+														Cover Letter Generator
+													</span>
+												</a>
+											</div>
+										</div>
+
+										<!-- Mobile: details-based dropdown -->
+										<details class="jp-nav-cv-mobile">
+											<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('cv-maker.*', 'cv-review.*', 'letters.*') ? 'active' : '' }}" style="cursor: pointer;">
+												CV
+												<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+													<path d="M6 9l6 6 6-6"/>
+												</svg>
+											</summary>
+											<div class="jp-nav-cv-panel">
+												<a href="{{ route('cv-review.index') }}"
+												data-kt-drawer-dismiss="true"
+												class="{{ Route::is('cv-review.*') ? 'active' : '' }}">
+													<span class="d-flex align-items-center gap-2">
+														<i class="ki-duotone ki-document fs-4 text-primary">
+															<span class="path1"></span><span class="path2"></span>
+														</i>
+														CV Maker
+													</span>
+												</a>
+												<a href="{{ route('letters.index') }}"
+												data-kt-drawer-dismiss="true"
+												class="{{ Route::is('letters.*') ? 'active' : '' }}">
+													<span class="d-flex align-items-center gap-2">
+														<i class="ki-duotone ki-message-text-2 fs-4 text-success">
+															<span class="path1"></span><span class="path2"></span><span class="path3"></span>
+														</i>
+														Cover Letter Generator
+													</span>
+												</a>
+											</div>
+										</details>
+									</div>
+									<!--end::Menu item - CV-->
+
 									<!-- Desktop: hover-based dropdown -->
 									<div class="jp-nav-resources-desktop">
 										<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('social-media.*','blog.*','email-alerts.*','tenders.*','pricing.*') ? 'active' : '' }}" style="cursor: pointer;">
@@ -368,191 +436,324 @@
 <!--end::Header Section-->
 
 <style>
-/* Mobile menu icon adjustment - better margins */
-@media (max-width: 991.98px) {
-	#kt_landing_menu_toggle {
-		margin-right: -5px !important;
-		margin-top: 5px !important;
-		padding: 0 !important;
+	/* Mobile menu icon adjustment - better margins */
+	@media (max-width: 991.98px) {
+		#kt_landing_menu_toggle {
+			margin-right: -5px !important;
+			margin-top: 5px !important;
+			padding: 0 !important;
+		}
+
+		#kt_landing_menu_toggle i {
+			font-size: 1.75rem !important;
+		}
+
+		/* Logo padding adjustment on mobile - remove extra spacing */
+		.d-flex.align-items-center .logo-default,
+		.d-flex.align-items-center .logo-sticky {
+			padding: -5px !important;
+			margin: 0 !important;
+		}
+
+		/* Remove padding from logo link container */
+		.d-flex.align-items-center > a {
+			padding: 0 !important;
+			margin: 0 !important;
+		}
+
+		/* Adjust the wrapper to respect margins */
+		.d-flex.align-items-center.justify-content-between {
+			padding-left: 0 !important;
+			padding-right: 0 !important;
+		}
+
+		/* Push the whole header down a bit on mobile so it isn't flush with the top edge */
+		.jp-landing-header {
+			padding-top: 14px;
+		}
+		.jp-landing-header .container > .d-flex.align-items-center.justify-content-between {
+			padding-top: 6px;
+			padding-bottom: 10px;
+		}
 	}
 
-	#kt_landing_menu_toggle i {
-		font-size: 1.75rem !important;
+	/* Logo line at the top of the mobile drawer */
+	.jp-drawer-logo {
+		border-bottom-color: rgba(0, 0, 0, 0.06) !important;
 	}
 
-	/* Logo padding adjustment on mobile - remove extra spacing */
-	.d-flex.align-items-center .logo-default,
-	.d-flex.align-items-center .logo-sticky {
-		padding: -5px !important;
-		margin: 0 !important;
+	/* ==================== RESOURCES DROPDOWN STYLES ==================== */
+	.jp-nav-resources {
+		position: relative;
 	}
 
-	/* Remove padding from logo link container */
-	.d-flex.align-items-center > a {
-		padding: 0 !important;
-		margin: 0 !important;
-	}
-
-	/* Adjust the wrapper to respect margins */
-	.d-flex.align-items-center.justify-content-between {
-		padding-left: 0 !important;
-		padding-right: 0 !important;
-	}
-
-	/* Push the whole header down a bit on mobile so it isn't flush with the top edge */
-	.jp-landing-header {
-		padding-top: 14px;
-	}
-	.jp-landing-header .container > .d-flex.align-items-center.justify-content-between {
-		padding-top: 6px;
-		padding-bottom: 10px;
-	}
-}
-
-/* Logo line at the top of the mobile drawer */
-.jp-drawer-logo {
-	border-bottom-color: rgba(0, 0, 0, 0.06) !important;
-}
-
-/* ==================== RESOURCES DROPDOWN STYLES ==================== */
-.jp-nav-resources {
-	position: relative;
-}
-
-/* Desktop dropdown */
-.jp-nav-resources-desktop {
-	position: relative;
-}
-
-.jp-nav-resources-desktop .jp-nav-resources-panel {
-	position: absolute;
-	top: 100%;
-	left: 50%;
-	transform: translateX(-50%);
-	min-width: 200px;
-	background: #fff;
-	border-radius: 12px;
-	box-shadow: 0 20px 60px rgba(11, 28, 46, 0.15);
-	border: 1px solid var(--jp-line, rgba(15, 27, 45, 0.08));
-	padding: 8px 0;
-	opacity: 0;
-	visibility: hidden;
-	pointer-events: none;
-	transition: all 0.2s ease;
-	z-index: 1000;
-}
-
-.jp-nav-resources-desktop:hover .jp-nav-resources-panel,
-.jp-nav-resources-desktop:focus-within .jp-nav-resources-panel {
-	opacity: 1;
-	visibility: visible;
-	pointer-events: auto;
-	margin-top: 4px;
-}
-
-.jp-nav-resources-panel a {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 20px;
-	color: #3B5166;
-	text-decoration: none;
-	font-size: 0.9rem;
-	font-weight: 500;
-	transition: all 0.15s ease;
-	border-left: 3px solid transparent;
-}
-
-.jp-nav-resources-panel a:hover {
-	background: var(--jp-bg-soft, #F4F8F7);
-	color: var(--jp-teal, #03A588);
-	border-left-color: var(--jp-teal, #03A588);
-}
-
-.jp-nav-resources-panel a.active {
-	background: var(--jp-bg-soft, #F4F8F7);
-	color: var(--jp-teal, #03A588);
-	border-left-color: var(--jp-teal, #03A588);
-}
-
-.jp-nav-resources-panel a .badge {
-	font-size: 0.7rem;
-	padding: 2px 10px;
-}
-
-/* Mobile dropdown */
-.jp-nav-resources-mobile {
-	display: none;
-}
-
-.jp-nav-resources-mobile summary {
-	list-style: none;
-}
-
-.jp-nav-resources-mobile summary::-webkit-details-marker {
-	display: none;
-}
-
-.jp-nav-resources-mobile .jp-nav-resources-panel {
-	padding: 4px 0 8px 16px;
-}
-
-.jp-nav-resources-mobile .jp-nav-resources-panel a {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 16px;
-	color: #3B5166;
-	text-decoration: none;
-	font-size: 0.9rem;
-	font-weight: 500;
-	border-radius: 6px;
-	transition: all 0.15s ease;
-}
-
-.jp-nav-resources-mobile .jp-nav-resources-panel a:hover {
-	background: var(--jp-bg-soft, #F4F8F7);
-	color: var(--jp-teal, #03A588);
-}
-
-.jp-nav-resources-mobile .jp-nav-resources-panel a.active {
-	background: var(--jp-bg-soft, #F4F8F7);
-	color: var(--jp-teal, #03A588);
-}
-
-/* Show mobile dropdown on small screens */
-@media (max-width: 991.98px) {
+	/* Desktop dropdown */
 	.jp-nav-resources-desktop {
-		display: none !important;
+		position: relative;
 	}
+
+	.jp-nav-resources-desktop .jp-nav-resources-panel {
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		min-width: 200px;
+		background: #fff;
+		border-radius: 12px;
+		box-shadow: 0 20px 60px rgba(11, 28, 46, 0.15);
+		border: 1px solid var(--jp-line, rgba(15, 27, 45, 0.08));
+		padding: 8px 0;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: all 0.2s ease;
+		z-index: 1000;
+	}
+
+	.jp-nav-resources-desktop:hover .jp-nav-resources-panel,
+	.jp-nav-resources-desktop:focus-within .jp-nav-resources-panel {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		margin-top: 4px;
+	}
+
+	.jp-nav-resources-panel a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 20px;
+		color: #3B5166;
+		text-decoration: none;
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: all 0.15s ease;
+		border-left: 3px solid transparent;
+	}
+
+	.jp-nav-resources-panel a:hover {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+		border-left-color: var(--jp-teal, #03A588);
+	}
+
+	.jp-nav-resources-panel a.active {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+		border-left-color: var(--jp-teal, #03A588);
+	}
+
+	.jp-nav-resources-panel a .badge {
+		font-size: 0.7rem;
+		padding: 2px 10px;
+	}
+
+	/* Mobile dropdown */
 	.jp-nav-resources-mobile {
-		display: block;
+		display: none;
 	}
-}
 
-/* Show desktop dropdown on large screens */
-@media (min-width: 992px) {
-	.jp-nav-resources-desktop {
-		display: block;
+	.jp-nav-resources-mobile summary {
+		list-style: none;
 	}
-	.jp-nav-resources-mobile {
-		display: none !important;
+
+	.jp-nav-resources-mobile summary::-webkit-details-marker {
+		display: none;
 	}
-}
 
-/* Ensure dropdown doesn't get cut off on smaller desktop screens */
-.jp-nav-resources-desktop .jp-nav-resources-panel {
-	left: 50%;
-	transform: translateX(-50%);
-}
+	.jp-nav-resources-mobile .jp-nav-resources-panel {
+		padding: 4px 0 8px 16px;
+	}
 
-/* Arrow rotation for mobile dropdown */
-.jp-nav-resources-mobile[open] summary svg {
-	transform: rotate(180deg);
-	transition: transform 0.2s ease;
-}
+	.jp-nav-resources-mobile .jp-nav-resources-panel a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 16px;
+		color: #3B5166;
+		text-decoration: none;
+		font-size: 0.9rem;
+		font-weight: 500;
+		border-radius: 6px;
+		transition: all 0.15s ease;
+	}
 
-.jp-nav-resources-mobile summary svg {
-	transition: transform 0.2s ease;
-}
+	.jp-nav-resources-mobile .jp-nav-resources-panel a:hover {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+	}
+
+	.jp-nav-resources-mobile .jp-nav-resources-panel a.active {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+	}
+
+	/* Show mobile dropdown on small screens */
+	@media (max-width: 991.98px) {
+		.jp-nav-resources-desktop {
+			display: none !important;
+		}
+		.jp-nav-resources-mobile {
+			display: block;
+		}
+	}
+
+	/* Show desktop dropdown on large screens */
+	@media (min-width: 992px) {
+		.jp-nav-resources-desktop {
+			display: block;
+		}
+		.jp-nav-resources-mobile {
+			display: none !important;
+		}
+	}
+
+	/* Ensure dropdown doesn't get cut off on smaller desktop screens */
+	.jp-nav-resources-desktop .jp-nav-resources-panel {
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	/* Arrow rotation for mobile dropdown */
+	.jp-nav-resources-mobile[open] summary svg {
+		transform: rotate(180deg);
+		transition: transform 0.2s ease;
+	}
+
+	.jp-nav-resources-mobile summary svg {
+		transition: transform 0.2s ease;
+	}
+	</style>
+
+	<style>
+		/* ==================== CV DROPDOWN STYLES ==================== */
+	.jp-nav-cv {
+		position: relative;
+	}
+
+	/* Desktop dropdown */
+	.jp-nav-cv-desktop {
+		position: relative;
+	}
+
+	.jp-nav-cv-desktop .jp-nav-cv-panel {
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		min-width: 240px;
+		background: #fff;
+		border-radius: 12px;
+		box-shadow: 0 20px 60px rgba(11, 28, 46, 0.15);
+		border: 1px solid var(--jp-line, rgba(15, 27, 45, 0.08));
+		padding: 8px 0;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: all 0.2s ease;
+		z-index: 1000;
+	}
+
+	.jp-nav-cv-desktop:hover .jp-nav-cv-panel,
+	.jp-nav-cv-desktop:focus-within .jp-nav-cv-panel {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		margin-top: 4px;
+	}
+
+	.jp-nav-cv-panel a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 20px;
+		color: #3B5166;
+		text-decoration: none;
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: all 0.15s ease;
+		border-left: 3px solid transparent;
+	}
+
+	.jp-nav-cv-panel a:hover {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+		border-left-color: var(--jp-teal, #03A588);
+	}
+
+	.jp-nav-cv-panel a.active {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+		border-left-color: var(--jp-teal, #03A588);
+	}
+
+	/* Mobile dropdown */
+	.jp-nav-cv-mobile {
+		display: none;
+	}
+
+	.jp-nav-cv-mobile summary {
+		list-style: none;
+	}
+
+	.jp-nav-cv-mobile summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.jp-nav-cv-mobile .jp-nav-cv-panel {
+		padding: 4px 0 8px 16px;
+	}
+
+	.jp-nav-cv-mobile .jp-nav-cv-panel a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 16px;
+		color: #3B5166;
+		text-decoration: none;
+		font-size: 0.9rem;
+		font-weight: 500;
+		border-radius: 6px;
+		transition: all 0.15s ease;
+	}
+
+	.jp-nav-cv-mobile .jp-nav-cv-panel a:hover {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+	}
+
+	.jp-nav-cv-mobile .jp-nav-cv-panel a.active {
+		background: var(--jp-bg-soft, #F4F8F7);
+		color: var(--jp-teal, #03A588);
+	}
+
+	/* Show mobile dropdown on small screens */
+	@media (max-width: 991.98px) {
+		.jp-nav-cv-desktop {
+			display: none !important;
+		}
+		.jp-nav-cv-mobile {
+			display: block;
+		}
+	}
+
+	/* Show desktop dropdown on large screens */
+	@media (min-width: 992px) {
+		.jp-nav-cv-desktop {
+			display: block;
+		}
+		.jp-nav-cv-mobile {
+			display: none !important;
+		}
+	}
+
+	/* Arrow rotation for mobile dropdown */
+	.jp-nav-cv-mobile[open] summary svg {
+		transform: rotate(180deg);
+		transition: transform 0.2s ease;
+	}
+
+	.jp-nav-cv-mobile summary svg {
+		transition: transform 0.2s ease;
+	}
 </style>

@@ -34,13 +34,12 @@ class LetterController extends Controller
     {
         if ($r = $this->requireAuth()) return $r;
 
-        // Existing CVs from the profile
+        // Existing CVs
         $userResp = $this->countryService->api('auth/user', [], 'GET', 0, false);
         $user     = $userResp['user'] ?? [];
         $cvFiles  = $user['cv_files'] ?? [];
         $cvFiles  = is_array($cvFiles) ? $cvFiles : [];
 
-        // Add URLs to each CV
         $cvFiles = array_map(function ($f) {
             if (!empty($f['path'])) {
                 $f['url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($f['path']);
@@ -48,13 +47,56 @@ class LetterController extends Controller
             return $f;
         }, $cvFiles);
 
-        // Companies for the picker
+        // Companies
         $companies = $this->countryService->api('letters/companies', [], 'GET', 3600, false);
 
+        // ── Detect any in-progress letter so we can lock the UI ──
+        $inProgress = null;
+        $lettersResp = $this->countryService->api('letters', [], 'GET', 0, false);
+        $letters = $lettersResp['data'] ?? [];
+
+        foreach ($letters as $l) {
+            $status = $l['status'] ?? null;
+
+            // pending_payment letters are ABANDONED — let user create a fresh one
+            // paid/processing = actively generating → LOCK
+            if (in_array($status, ['paid', 'processing'], true)) {
+                $inProgress = [
+                    'uuid'        => $l['uuid'] ?? null,
+                    'status'      => $status,
+                    'job_title'   => $l['job_title'] ?? null,
+                    'company'     => $l['company_name'] ?? null,
+                    'created_at'  => $l['created_at'] ?? null,
+                ];
+                break;
+            }
+        }
+
         return view('seeker.letter.create', [
-            'cvFiles'   => $cvFiles,
-            'companies' => $companies['data'] ?? [],
+            'cvFiles'    => $cvFiles,
+            'companies'  => $companies['data'] ?? [],
+            'inProgress' => $inProgress,
         ]);
+    }
+
+    public function pay(Request $request, $uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        return response()->json(
+            $this->countryService->api(
+                "letters/{$uuid}/pay",
+                [
+                    'phone'  => $request->input('phone'),
+                    'method' => $request->input('method', 'mobile_money'),
+                ],
+                'POST',
+                0,
+                false
+            )
+        );
     }
 
     public function searchJobs(Request $request)
@@ -105,14 +147,75 @@ class LetterController extends Controller
         return response()->json($response, $status);
     }
 
-    public function pay($uuid)
+    public function saveEdited(Request $request, $uuid)
     {
-        if (!Session::has('user')) return response()->json(['success' => false], 401);
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
 
         return response()->json(
-            $this->countryService->api("letters/{$uuid}/pay", [], 'POST', 0, false)
+            $this->countryService->api(
+                "letters/{$uuid}/save-edited",
+                ['content' => $request->input('content')],
+                'POST',
+                0,
+                false
+            )
         );
     }
+
+    public function resetEdited(Request $request, $uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        return response()->json(
+            $this->countryService->api("letters/{$uuid}/reset-edited", [], 'POST', 0, false)
+        );
+    }
+
+    public function regenerate(Request $request, $uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        return response()->json(
+            $this->countryService->api("letters/{$uuid}/regenerate", [], 'POST', 0, false)
+        );
+    }
+
+    public function updateInputs(Request $request, $uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $files = [];
+        if ($request->hasFile('cv_file')) {
+            $files['cv_file'] = $request->file('cv_file');
+        }
+
+        $params = array_filter([
+            'job_title'    => $request->input('job_title'),
+            'company_name' => $request->input('company_name'),
+        ], fn($v) => $v !== null && $v !== '');
+
+        $response = $this->countryService->api(
+            "letters/{$uuid}/update",
+            $params,
+            'POST',
+            0,
+            false,
+            $files
+        );
+
+        $status = ($response['success'] ?? false) ? 200 : ($response['status'] ?? 422);
+
+        return response()->json($response, $status);
+    }
+
 
     public function show($uuid)
     {
@@ -139,13 +242,64 @@ class LetterController extends Controller
             abort($response->status(), 'Letter not ready');
         }
 
-        $filename = 'letter-' . $uuid . '.pdf';
+        // Pass through the upstream filename if the main app set one.
+        // Fall back to a safe default if the header is missing or unparseable.
+        $filename = $this->extractFilenameFromDisposition(
+            $response->header('Content-Disposition')
+        ) ?: ('letter-' . $uuid . '.pdf');
 
         return response()->streamDownload(function () use ($response) {
             echo $response->body();
         }, $filename, [
             'Content-Type' => $response->header('Content-Type') ?: 'application/pdf',
         ]);
+    }
+
+    /**
+     * Parse "attachment; filename=..." or "attachment; filename*=UTF-8''..."
+     * from a Content-Disposition header.
+     */
+    protected function extractFilenameFromDisposition(?string $header): ?string
+    {
+        if (empty($header)) return null;
+
+        // RFC 5987: filename*=UTF-8''stella-mirembe_cover-letter_...
+        if (preg_match("/filename\*\s*=\s*UTF-8''([^;]+)/i", $header, $m)) {
+            $decoded = rawurldecode(trim($m[1], '"\''));
+            if ($decoded !== '') return $this->sanitizeFilename($decoded);
+        }
+
+        // Plain: filename="stella-mirembe_cover-letter_....pdf"
+        if (preg_match('/filename\s*=\s*"?([^";]+)"?/i', $header, $m)) {
+            $raw = trim($m[1]);
+            if ($raw !== '') return $this->sanitizeFilename($raw);
+        }
+
+        return null;
+    }
+
+    /**
+     * Block path traversal, control chars, and reserved names.
+     */
+    protected function sanitizeFilename(string $name): string
+    {
+        // Strip any path components
+        $name = basename($name);
+
+        // Drop control chars and characters that are illegal on Windows
+        $name = preg_replace('/[\x00-\x1F\x7F<>:"\/\\\\|?*]+/', '', $name);
+
+        // Trim, cap length (255 bytes is the usual filesystem limit)
+        $name = trim($name);
+        if ($name === '' || $name === '.' || $name === '..') {
+            return 'letter.pdf';
+        }
+
+        if (!str_ends_with(strtolower($name), '.pdf')) {
+            $name .= '.pdf';
+        }
+
+        return mb_substr($name, 0, 200) . '.pdf';
     }
 
     public function destroy($uuid)
@@ -156,4 +310,36 @@ class LetterController extends Controller
             $this->countryService->api("letters/{$uuid}", [], 'DELETE', 0, false)
         );
     }
+
+    /**
+     * Lightweight JSON status for polling — no view, no full content.
+     */
+    public function status($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $response = $this->countryService->api("letters/{$uuid}", [], 'GET', 0, false);
+
+        if (!($response['success'] ?? false)) {
+            return response()->json(['success' => false, 'message' => 'Letter not found'], 404);
+        }
+
+        $letter = $response['data'] ?? [];
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'uuid'          => $letter['uuid']          ?? $uuid,
+                'status'        => $letter['status']        ?? null,
+                'is_paid'       => $letter['is_paid']       ?? false,
+                'generated_at'  => $letter['generated_at']  ?? null,
+                'paid_at'       => $letter['paid_at']       ?? null,
+                'error_message' => $letter['error_message'] ?? null,
+            ],
+        ]);
+    }
+
+
 }
