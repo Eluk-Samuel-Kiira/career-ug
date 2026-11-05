@@ -184,6 +184,23 @@ class CvReviewController extends Controller
         ]);
     }
 
+    public function promoteRewriteOriginal($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $response = $this->countryService->api(
+            "cv-review/{$uuid}/rewrite/promote-original",
+            [],
+            'POST',
+            0,
+            false
+        );
+
+        return response()->json($response);
+    }
+
     /**
      * Submit answers to the AI gap questions (AJAX).
      */

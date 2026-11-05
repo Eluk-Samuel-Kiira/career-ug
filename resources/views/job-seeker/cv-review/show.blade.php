@@ -101,7 +101,7 @@
                     <div class="spinner-border text-primary mb-4" style="width:4rem;height:4rem;"></div>
                     <h2 class="fw-bold mb-2">Writing your CV…</h2>
                     <p class="text-muted mb-1">
-                        Our AI is drafting your rewritten CV. Every line is being built
+                        The CV Rewriter is drafting your rewritten CV. Every line is being built
                         from your original CV and the answers you provided.
                     </p>
                     <p class="text-muted fs-7 mb-5">
@@ -156,31 +156,119 @@
                     <span class="text-break">{{ $r['rewrite_error_message'] }}</span>
                 </div>
 
-                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                    <button type="button"
-                            class="btn btn-warning btn-lg px-8"
-                            id="retryGenerationBtn"
-                            data-uuid="{{ $r['uuid'] }}">
-                        <span class="indicator-label">
-                            <i class="ki-duotone ki-arrows-circle fs-3 me-2">
-                                <span class="path1"></span><span class="path2"></span>
-                            </i>
-                            Try Again
-                        </span>
-                        <span class="indicator-progress">
-                            Starting…
-                            <span class="spinner-border spinner-border-sm ms-2"></span>
-                        </span>
-                    </button>
+                {{-- ═══════════════════════════════════════════════════════════ --}}
+                {{-- AI Rewrite FAILED — retry OR fall back to original        --}}
+                {{-- ═══════════════════════════════════════════════════════════ --}}
+                @php
+                    $hasOriginalContent = !empty($r['rewrite_content_original']['html'] ?? null);
+                    $originalWords      = $hasOriginalContent
+                        ? str_word_count(strip_tags($r['rewrite_content_original']['html']))
+                        : 0;
+                @endphp
 
-                    @if(($r['rewrite_regeneration_count'] ?? 0) < ($r['rewrite_max_regenerations'] ?? 2))
-                        <span class="text-muted fs-8 align-self-center">
-                            {{ ($r['rewrite_max_regenerations'] ?? 2) - ($r['rewrite_regeneration_count'] ?? 0) }}
-                            {{ Str::plural('retry', ($r['rewrite_max_regenerations'] ?? 2) - ($r['rewrite_regeneration_count'] ?? 0)) }}
-                            remaining
-                        </span>
-                    @endif
-                </div>
+                @if(
+                    $status === 'failed'
+                    && ($r['rewrite_mode'] ?? null) === 'ai'
+                    && !empty($r['rewrite_error_message'])
+                )
+                    <div class="card card-flush mb-6 border border-danger border-2">
+                        <div class="card-header bg-light-danger">
+                            <h3 class="card-title">
+                                <i class="ki-duotone ki-information-5 fs-2 me-2 text-danger">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                                We couldn't finish writing your CV
+                            </h3>
+                        </div>
+                        <div class="card-body text-center py-10">
+
+                            <p class="text-gray-700 fs-6 mb-3 mx-auto" style="max-width: 560px;">
+                                Something went wrong while generating your CV. Your payment is safe —
+                                choose one of the options below to continue.
+                            </p>
+
+                            <div class="alert alert-light-warning d-inline-block text-start fs-7 mb-5 mx-auto"
+                                style="max-width: 640px;">
+                                <strong>Why it failed:</strong>
+                                <span class="text-break">{{ $r['rewrite_error_message'] }}</span>
+                            </div>
+
+                            <div class="row g-4 justify-content-center mt-2">
+
+                                {{-- Option A: retry the AI --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="card h-100 border border-warning border-2">
+                                        <div class="card-body text-center py-8">
+                                            <i class="ki-duotone ki-arrows-circle fs-3x text-warning mb-3 d-block">
+                                                <span class="path1"></span><span class="path2"></span>
+                                            </i>
+                                            <h4 class="fw-bold mb-2">Try Again</h4>
+                                            <p class="text-muted fs-7 mb-4">
+                                                Most failures are temporary. Try writing the CV once more —
+                                                your payment still applies.
+                                            </p>
+                                            <button type="button"
+                                                    class="btn btn-warning w-100"
+                                                    id="retryGenerationBtn"
+                                                    data-uuid="{{ $r['uuid'] }}">
+                                                <span class="indicator-label">
+                                                    <i class="ki-duotone ki-arrows-circle fs-4 me-1">
+                                                        <span class="path1"></span><span class="path2"></span>
+                                                    </i>
+                                                    Try Again
+                                                </span>
+                                                <span class="indicator-progress">
+                                                    Starting…
+                                                    <span class="spinner-border spinner-border-sm ms-2"></span>
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Option B: fall back to the last saved original --}}
+                                @if($hasOriginalContent)
+                                    <div class="col-12 col-md-6">
+                                        <div class="card h-100 border border-primary border-2">
+                                            <div class="card-body text-center py-8">
+                                                <i class="ki-duotone ki-document fs-3x text-primary mb-3 d-block">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                                <h4 class="fw-bold mb-2">Use the last saved version</h4>
+                                                <p class="text-muted fs-7 mb-4">
+                                                    We still have your previous AI-written CV
+                                                    ({{ number_format($originalWords) }} words).
+                                                    Restore it and edit it yourself — same price,
+                                                    no extra charge.
+                                                </p>
+                                                <button type="button"
+                                                        class="btn btn-primary w-100"
+                                                        id="promoteOriginalBtn"
+                                                        data-uuid="{{ $r['uuid'] }}">
+                                                    <span class="indicator-label">
+                                                        <i class="ki-duotone ki-pencil fs-4 me-1">
+                                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                        </i>
+                                                        View & Edit Original
+                                                    </span>
+                                                    <span class="indicator-progress">
+                                                        Restoring…
+                                                        <span class="spinner-border spinner-border-sm ms-2"></span>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="text-muted fs-8 mt-6">
+                                If it keeps failing, contact support with reference
+                                <strong>#{{ substr($r['uuid'], 0, 8) }}</strong>.
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 <div class="text-muted fs-8 mt-4">
                     If it keeps failing, contact support with reference
@@ -243,7 +331,7 @@
                 'icon'  => 'ki-time',
                 'color' => 'info',
                 'title' => "Your CV has been received",
-                'body'  => "Nothing is happening yet — you're in control. Scroll to the bottom of this page and click “Run Free AI Review” to see your gap analysis. It takes about 30 seconds and costs nothing. After that, you choose how to proceed: let our AI tool rewrite your CV instantly, or let a senior HR expert do it manually.",
+                'body'  => "Nothing is happening yet — you're in control. Scroll to the bottom of this page and click “Run Free AI Review” to see your gap analysis. It takes about 30 seconds and costs nothing. After that, you choose how to proceed: let The CV Rewriter tool rewrite your CV instantly, or let a senior HR expert do it manually.",
                 'eta'   => 'Action required from you',
             ],
             'failed' => [
@@ -271,7 +359,7 @@
                 'icon'  => 'ki-robot',
                 'color' => 'primary',
                 'title' => "Payment received — generating your CV",
-                'body'  => "Thank you! Our AI is rewriting your CV right now. This usually takes under a minute, and the page will update automatically when it's ready.",
+                'body'  => "Thank you! The CV Rewriter is rewriting your CV right now. This usually takes under a minute, and the page will update automatically when it's ready.",
                 'eta'   => 'Usually 30–60 seconds',
             ],
             'paid_human' => [
@@ -285,7 +373,7 @@
                 'icon'  => 'ki-arrows-circle',
                 'color' => 'primary',
                 'title' => "Writing your CV…",
-                'body'  => "Our AI is drafting your rewritten CV. Every line is being built from your original CV and the answers you provided.",
+                'body'  => "The CV Rewriter is drafting your rewritten CV. Every line is being built from your original CV and the answers you provided.",
                 'eta'   => 'Usually 30–60 seconds',
             ],
             'generated' => [
@@ -1302,14 +1390,16 @@
             ['markDoneBtnMobile',   'markDoneBtn'],
         ];
         mirrors.forEach(([mobileId, desktopId]) => {
-            const mobileBtn = document.getElementById(mobileId);
+            const mobileBtn  = document.getElementById(mobileId);
             const desktopBtn = document.getElementById(desktopId);
             if (!mobileBtn || !desktopBtn) return;
 
             mobileBtn.addEventListener('click', () => {
-                // Bootstrap dropdown close
-                const dropdown = bootstrap.Dropdown.getInstance(mobileBtn.closest('.dropdown > button'));
-                dropdown?.hide();
+                // Close the mobile Actions dropdown if it's a Bootstrap dropdown
+                try {
+                    const dropdownToggle = mobileBtn.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                    if (dropdownToggle) bootstrap.Dropdown.getInstance(dropdownToggle)?.hide();
+                } catch (_) { /* ignore */ }
 
                 // Trigger the real action
                 desktopBtn.click();
@@ -1317,6 +1407,7 @@
         });
     })();
 </script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // Shared constants — DECLARED ONCE, at the very top
@@ -1846,297 +1937,365 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     })();
 
     // ═══════════════════════════════════════════════════════════════
-    // The AI rewrite handlers — only run when #aiRewriteSection exists
+    // EDIT CV (TinyMCE) — REGISTER UNCONDITIONALLY
+    //
+    // These handlers MUST be registered even when #aiRewriteSection
+    // isn't in the DOM, because on mobile the desktop mirror uses
+    // them. Registering inside `if (section)` was the bug.
     // ═══════════════════════════════════════════════════════════════
-    const section = document.getElementById('aiRewriteSection');
+    const cvView        = document.getElementById('cvView');
+    const cvEdit        = document.getElementById('cvEdit');
+    const cvEditor      = document.getElementById('cvEditor');
+    const cvContentEl   = document.querySelector('#cvView .cv-preview');
 
-    if (section) {
-        const jobUuid = section.dataset.uuid || UUID;
+    let editorInstance     = null;
+    let editorReadyPromise = null;
 
-        // ── Regenerate ─────────────────────────────────────────
-        (function () {
-            const regenBtn = document.getElementById('regenerateBtn');
-            if (!regenBtn) return;
+    function initEditor(initialHtml) {
+        if (!cvEditor) return Promise.resolve(null);
 
-            const isEdited = @json($r['rewrite_is_user_edited'] ?? false);
+        if (editorInstance && editorReadyPromise) {
+            return editorReadyPromise.then(editor => {
+                if (editor && editor.setContent) editor.setContent(initialHtml || '');
+                return editor;
+            });
+        }
 
-            regenBtn.addEventListener('click', async () => {
-                const ok = await confirmAction({
-                    title:    'Regenerate CV?',
-                    message:  isEdited
-                                ? 'This will replace your manual edits with a fresh AI version. Continue?'
-                                : 'This uses one of your retries. Continue?',
-                    okText:   'Regenerate',
-                    okClass:  'btn-warning',
-                    icon:     'ki-arrows-circle',
-                    iconClass:'text-warning',
-                });
-                if (!ok) return;
+        if (typeof tinymce === 'undefined') {
+            cvEditor.value = htmlToPlainText(initialHtml);
+            return Promise.resolve(null);
+        }
 
-                try {
-                    const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/regenerate`, {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        cvEditor.value = initialHtml || '';
+
+        editorReadyPromise = new Promise((resolve) => {
+            tinymce.init({
+                target: cvEditor,
+                height: 600,
+                menubar: false,
+                statusbar: true,
+                branding: false,
+                promotion: false,
+                plugins: 'lists link code wordcount',
+                toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
+                block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
+                content_css: "{{ asset('css/cv-document.css') }}",
+                body_class: 'cv-doc',
+                extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
+                valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
+                invalid_elements: 'script,style',
+                paste_as_text: true,
+                setup: (editor) => {
+                    editor.on('init', () => {
+                        editorInstance = editor;
+                        if (initialHtml && !editor.getContent().trim()) editor.setContent(initialHtml);
+                        resolve(editor);
                     });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        window.showToast?.('success', 'Regenerating…', 'Started');
-                        sessionStorage.removeItem('cv_rewrite_poll_' + jobUuid);
-                        setTimeout(() => location.reload(), 800);
-                    } else {
-                        window.showToast?.('error', data.message || 'Could not start.', 'Error');
-                    }
-                } catch (e) {
-                    window.showToast?.('error', 'Network error.', 'Error');
-                }
-            });
-        })();
-
-        // ── Edit CV (TinyMCE) ──────────────────────────────────
-        const cvView        = document.getElementById('cvView');
-        const cvEdit        = document.getElementById('cvEdit');
-        const cvEditor      = document.getElementById('cvEditor');
-        const cvContentEl   = document.querySelector('#cvView .cv-preview');
-
-        let editorInstance     = null;
-        let editorReadyPromise = null;
-
-        function initEditor(initialHtml) {
-            if (!cvEditor) return Promise.resolve(null);
-
-            if (editorInstance && editorReadyPromise) {
-                return editorReadyPromise.then(editor => {
-                    if (editor && editor.setContent) {
-                        editor.setContent(initialHtml || '');
-                    }
-                    return editor;
-                });
-            }
-
-            if (typeof tinymce === 'undefined') {
+                },
+            }).catch(err => {
+                console.warn('TinyMCE failed to load, falling back to plain textarea:', err);
                 cvEditor.value = htmlToPlainText(initialHtml);
-                return Promise.resolve(null);
-            }
-
-            cvEditor.value = initialHtml || '';
-
-            editorReadyPromise = new Promise((resolve) => {
-                tinymce.init({
-                    target: cvEditor,
-                    height: 600,
-                    menubar: false,
-                    statusbar: true,
-                    branding: false,
-                    promotion: false,
-                    plugins: 'lists link code wordcount',
-                    toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
-                    block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
-                    content_css: "{{ asset('css/cv-document.css') }}",
-                    body_class: 'cv-doc',
-                    extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
-                    valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
-                    invalid_elements: 'script,style',
-                    paste_as_text: true,
-                    setup: (editor) => {
-                        editor.on('init', () => {
-                            editorInstance = editor;
-                            if (initialHtml && !editor.getContent().trim()) {
-                                editor.setContent(initialHtml);
-                            }
-                            resolve(editor);
-                        });
-                    },
-                }).catch(err => {
-                    console.warn('TinyMCE failed to load, falling back to plain textarea:', err);
-                    cvEditor.value = htmlToPlainText(initialHtml);
-                    resolve(null);
-                });
+                resolve(null);
             });
-
-            return editorReadyPromise;
-        }
-
-        function getEditorContent() {
-            if (editorInstance && typeof editorInstance.getContent === 'function') {
-                return editorInstance.getContent();
-            }
-            return cvEditor?.value || '';
-        }
-
-        function htmlToPlainText(html) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = html;
-            tmp.querySelectorAll('p, li, h1, h2, h3').forEach(el => {
-                el.appendChild(document.createTextNode('\n\n'));
-            });
-            return (tmp.innerText || tmp.textContent || '').trim();
-        }
-
-        function getCurrentCvHtml() {
-            if (!cvContentEl) return '';
-            return cvContentEl.innerHTML.trim();
-        }
-
-        document.getElementById('editCvBtn')?.addEventListener('click', () => {
-            if (!cvEdit || !cvView) return;
-            cvView.classList.add('d-none');
-            cvEdit.classList.remove('d-none');
-            cvEdit.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            initEditor(getCurrentCvHtml());
         });
 
-        document.getElementById('cancelEditsBtn')?.addEventListener('click', () => {
-            cvEdit?.classList.add('d-none');
-            cvView?.classList.remove('d-none');
-        });
+        return editorReadyPromise;
+    }
 
-        document.getElementById('saveEditsBtn')?.addEventListener('click', async function () {
-            const btn = this;
-            btn.disabled = true;
-            btn.setAttribute('data-kt-indicator', 'on');
-            const lbl = btn.querySelector('.indicator-label');
-            const prg = btn.querySelector('.indicator-progress');
-            lbl?.classList.add('d-none');
-            prg?.classList.remove('d-none');
+    function getEditorContent() {
+        if (editorInstance && typeof editorInstance.getContent === 'function') return editorInstance.getContent();
+        return cvEditor?.value || '';
+    }
 
-            try {
-                await editorReadyPromise;
-                const html = getEditorContent().trim();
+    function htmlToPlainText(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        tmp.querySelectorAll('p, li, h1, h2, h3').forEach(el => el.appendChild(document.createTextNode('\n\n')));
+        return (tmp.innerText || tmp.textContent || '').trim();
+    }
 
-                if (!html || html.replace(/<[^>]*>/g, '').trim().length < 50) {
-                    window.showToast?.('error', 'CV looks too short. Please keep at least a few sentences.', 'Too short');
-                    btn.disabled = false;
-                    btn.removeAttribute('data-kt-indicator');
-                    lbl?.classList.remove('d-none');
-                    prg?.classList.add('d-none');
-                    return;
-                }
+    function getCurrentCvHtml() {
+        if (!cvContentEl) return '';
+        return cvContentEl.innerHTML.trim();
+    }
 
-                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/save`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': CSRF,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({ content: html }),
-                });
-                const data = await res.json();
+    // ── Edit ────────────────────────────────────────────────────
+    document.getElementById('editCvBtn')?.addEventListener('click', () => {
+        if (!cvEdit || !cvView) return;
 
-                if (!data.success) {
-                    window.showToast?.('error', data.message || 'Could not save your edits.', 'Save failed');
-                    btn.disabled = false;
-                    btn.removeAttribute('data-kt-indicator');
-                    lbl?.classList.remove('d-none');
-                    prg?.classList.add('d-none');
-                    return;
-                }
+        cvView.classList.add('d-none');
+        cvEdit.classList.remove('d-none');
+        cvEdit.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                window.showToast?.('success', 'Your edits have been saved.', 'Saved');
-                setTimeout(() => window.location.reload(), 700);
-            } catch (e) {
-                window.showToast?.('error', 'Network error: ' + e.message, 'Error');
+        initEditor(getCurrentCvHtml());
+    });
+
+    // ── Cancel ──────────────────────────────────────────────────
+    document.getElementById('cancelEditsBtn')?.addEventListener('click', () => {
+        cvEdit?.classList.add('d-none');
+        cvView?.classList.remove('d-none');
+    });
+
+    // ── Save edits ──────────────────────────────────────────────
+    document.getElementById('saveEditsBtn')?.addEventListener('click', async function () {
+        const btn = this;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+        const lbl = btn.querySelector('.indicator-label');
+        const prg = btn.querySelector('.indicator-progress');
+        lbl?.classList.add('d-none');
+        prg?.classList.remove('d-none');
+
+        try {
+            await editorReadyPromise;
+            const html = getEditorContent().trim();
+
+            if (!html || html.replace(/<[^>]*>/g, '').trim().length < 50) {
+                window.showToast?.('error', 'CV looks too short. Please keep at least a few sentences.', 'Too short');
                 btn.disabled = false;
                 btn.removeAttribute('data-kt-indicator');
                 lbl?.classList.remove('d-none');
                 prg?.classList.add('d-none');
-            }
-        });
-
-        document.getElementById('resetToAiBtn')?.addEventListener('click', async function () {
-            const ok = await confirmAction({
-                title:    'Reset to AI version?',
-                message:  'Discard all your edits and restore the last AI-generated version?',
-                okText:   'Reset',
-                okClass:  'btn-danger',
-                icon:     'ki-arrows-circle',
-                iconClass:'text-danger',
-            });
-            if (!ok) return;
-
-            const btn = this;
-            btn.disabled = true;
-            btn.setAttribute('data-kt-indicator', 'on');
-
-            try {
-                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/reset`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-
-                if (!data.success) {
-                    window.showToast?.('error', data.message || 'Could not reset.', 'Reset failed');
-                    btn.disabled = false;
-                    btn.removeAttribute('data-kt-indicator');
-                    return;
-                }
-
-                window.showToast?.('success', 'Restored to the AI version.', 'Reset');
-                setTimeout(() => window.location.reload(), 700);
-            } catch (e) {
-                window.showToast?.('error', 'Network error: ' + e.message, 'Error');
-                btn.disabled = false;
-                btn.removeAttribute('data-kt-indicator');
-            }
-        });
-
-        // ── Copy ───────────────────────────────────────────────
-        document.getElementById('copyCvBtn')?.addEventListener('click', async function () {
-            const text = cvContentEl?.innerText || '';
-            if (!text.trim()) {
-                window.showToast?.('error', 'Nothing to copy.', 'Empty');
                 return;
             }
-            try {
-                await navigator.clipboard.writeText(text);
-                window.showToast?.('success', 'Copied to clipboard.', 'Copied');
-                const original = this.innerHTML;
-                this.innerHTML = '<i class="ki-duotone ki-check fs-4 me-1"><span class="path1"></span><span class="path2"></span></i> Copied!';
-                setTimeout(() => { this.innerHTML = original; }, 1800);
-            } catch (e) {
-                window.showToast?.('error', 'Browser blocked the copy.', 'Error');
-            }
-        });
 
-        // ── Mark as Done ───────────────────────────────────────
-        document.getElementById('markDoneBtn')?.addEventListener('click', async function () {
-            const ok = await confirmAction({
-                title:    'Mark CV as complete?',
-                message:  'You will not be able to edit or regenerate this CV after marking it done. Download your PDF first if you want a copy.',
-                okText:   'Mark as Done',
-                okClass:  'btn-success',
-                icon:     'ki-check-circle',
-                iconClass:'text-success',
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/save`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ content: html }),
             });
-            if (!ok) return;
+            const data = await res.json();
 
-            this.disabled = true;
-            this.setAttribute('data-kt-indicator', 'on');
+            if (!data.success) {
+                window.showToast?.('error', data.message || 'Could not save your edits.', 'Save failed');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+                lbl?.classList.remove('d-none');
+                prg?.classList.add('d-none');
+                return;
+            }
 
-            try {
-                const res = await fetch(`{{ url('cv-review') }}/${jobUuid}/rewrite/complete`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                });
-                const data = await res.json();
+            window.showToast?.('success', 'Your edits have been saved.', 'Saved');
+            setTimeout(() => window.location.reload(), 700);
+        } catch (e) {
+            window.showToast?.('error', 'Network error: ' + e.message, 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+            lbl?.classList.remove('d-none');
+            prg?.classList.add('d-none');
+        }
+    });
 
-                if (data.success) {
-                    window.showToast?.('success', 'Marked as done. Thank you!', 'Success');
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    window.showToast?.('error', data.message || 'Failed.', 'Error');
-                    this.disabled = false;
-                    this.removeAttribute('data-kt-indicator');
-                }
-            } catch (e) {
-                window.showToast?.('error', 'Network error.', 'Error');
+    // ── Reset to AI ─────────────────────────────────────────────
+    document.getElementById('resetToAiBtn')?.addEventListener('click', async function () {
+        const ok = await confirmAction({
+            title:    'Reset to AI version?',
+            message:  'Discard all your edits and restore the last AI-generated version?',
+            okText:   'Reset',
+            okClass:  'btn-danger',
+            icon:     'ki-arrows-circle',
+            iconClass:'text-danger',
+        });
+        if (!ok) return;
+
+        const btn = this;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/reset`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                window.showToast?.('error', data.message || 'Could not reset.', 'Reset failed');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+                return;
+            }
+
+            window.showToast?.('success', 'Restored to the AI version.', 'Reset');
+            setTimeout(() => window.location.reload(), 700);
+        } catch (e) {
+            window.showToast?.('error', 'Network error: ' + e.message, 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+        }
+    });
+
+    // ── Copy ────────────────────────────────────────────────────
+    document.getElementById('copyCvBtn')?.addEventListener('click', async function () {
+        const text = cvContentEl?.innerText || '';
+        if (!text.trim()) {
+            window.showToast?.('error', 'Nothing to copy.', 'Empty');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(text);
+            window.showToast?.('success', 'Copied to clipboard.', 'Copied');
+            const original = this.innerHTML;
+            this.innerHTML = '<i class="ki-duotone ki-check fs-4 me-1"><span class="path1"></span><span class="path2"></span></i> Copied!';
+            setTimeout(() => { this.innerHTML = original; }, 1800);
+        } catch (e) {
+            window.showToast?.('error', 'Browser blocked the copy.', 'Error');
+        }
+    });
+
+    // ── Regenerate ──────────────────────────────────────────────
+    document.getElementById('regenerateBtn')?.addEventListener('click', async function () {
+        const isEdited = @json($r['rewrite_is_user_edited'] ?? false);
+        const ok = await confirmAction({
+            title:    'Regenerate CV?',
+            message:  isEdited
+                        ? 'This will replace your manual edits with a fresh AI version. Continue?'
+                        : 'This uses one of your retries. Continue?',
+            okText:   'Regenerate',
+            okClass:  'btn-warning',
+            icon:     'ki-arrows-circle',
+            iconClass:'text-warning',
+        });
+        if (!ok) return;
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/regenerate`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.showToast?.('success', 'Regenerating…', 'Started');
+                sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
+                setTimeout(() => location.reload(), 800);
+            } else {
+                window.showToast?.('error', data.message || 'Could not start.', 'Error');
+            }
+        } catch (e) {
+            window.showToast?.('error', 'Network error.', 'Error');
+        }
+    });
+
+    // ── Mark as Done ────────────────────────────────────────────
+    document.getElementById('markDoneBtn')?.addEventListener('click', async function () {
+        const ok = await confirmAction({
+            title:    'Mark CV as complete?',
+            message:  'You will not be able to edit or regenerate this CV after marking it done. Download your PDF first if you want a copy.',
+            okText:   'Mark as Done',
+            okClass:  'btn-success',
+            icon:     'ki-check-circle',
+            iconClass:'text-success',
+        });
+        if (!ok) return;
+
+        this.disabled = true;
+        this.setAttribute('data-kt-indicator', 'on');
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/complete`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.showToast?.('success', 'Marked as done. Thank you!', 'Success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                window.showToast?.('error', data.message || 'Failed.', 'Error');
                 this.disabled = false;
                 this.removeAttribute('data-kt-indicator');
             }
+        } catch (e) {
+            window.showToast?.('error', 'Network error.', 'Error');
+            this.disabled = false;
+            this.removeAttribute('data-kt-indicator');
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // Retry generation (failed state)
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('retryGenerationBtn')?.addEventListener('click', async function () {
+        const ok = await confirmAction({
+            title:    'Retry writing your CV?',
+            message:  'We\'ll start a fresh attempt. Your original payment is still valid.',
+            okText:   'Try Again',
+            okClass:  'btn-warning',
+            icon:     'ki-arrows-circle',
+            iconClass:'text-warning',
         });
-    }
+        if (!ok) return;
+
+        const btn = this;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/regenerate`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.showToast?.('success', 'Retrying generation…', 'Started');
+                sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
+                setTimeout(() => location.reload(), 700);
+            } else {
+                window.showToast?.('error', data.message || 'Could not retry.', 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        } catch (e) {
+            window.showToast?.('error', 'Network error.', 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+        }
+    });
+
+    // ── Promote original (failed state) ─────────────────────────
+    document.getElementById('promoteOriginalBtn')?.addEventListener('click', async function () {
+        const ok = await confirmAction({
+            title:    'Restore the last saved version?',
+            message:  'We\'ll replace the failed attempt with the last successfully written version. You can then edit and download it.',
+            okText:   'Restore & Edit',
+            okClass:  'btn-primary',
+            icon:     'ki-document',
+            iconClass:'text-primary',
+        });
+        if (!ok) return;
+
+        const btn = this;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+
+        try {
+            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/promote-original`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.showToast?.('success', 'Restored. Opening the CV so you can edit it…', 'Ready');
+                setTimeout(() => location.reload(), 700);
+            } else {
+                window.showToast?.('error', data.message || 'Could not restore.', 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        } catch (e) {
+            window.showToast?.('error', 'Network error.', 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+        }
+    });
 
     // ═══════════════════════════════════════════════════════════════
     // Revision modal
@@ -2196,46 +2355,6 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
             }
         });
     })();
-
-        // ── Retry generation after failure ─────────────────────────
-    document.getElementById('retryGenerationBtn')?.addEventListener('click', async function () {
-        const ok = await confirmAction({
-            title:    'Retry writing your CV?',
-            message:  'We\'ll start a fresh attempt. Your original payment is still valid.',
-            okText:   'Try Again',
-            okClass:  'btn-warning',
-            icon:     'ki-arrows-circle',
-            iconClass:'text-warning',
-        });
-        if (!ok) return;
-
-        const btn = this;
-        btn.disabled = true;
-        btn.setAttribute('data-kt-indicator', 'on');
-
-        try {
-            const res = await fetch(`{{ url('cv-review') }}/${UUID}/rewrite/regenerate`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                window.showToast?.('success', 'Retrying generation…', 'Started');
-                // Reset poll counter and reload so the spinner state kicks in
-                sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
-                setTimeout(() => location.reload(), 700);
-            } else {
-                window.showToast?.('error', data.message || 'Could not retry.', 'Error');
-                btn.disabled = false;
-                btn.removeAttribute('data-kt-indicator');
-            }
-        } catch (e) {
-            window.showToast?.('error', 'Network error.', 'Error');
-            btn.disabled = false;
-            btn.removeAttribute('data-kt-indicator');
-        }
-    });
 
 })();
 </script>
