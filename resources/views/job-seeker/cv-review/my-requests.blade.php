@@ -428,7 +428,7 @@
 
                                 @if(($r['status'] ?? '') === 'failed' && ($r['rewrite_mode'] ?? null) === 'ai')
                                     <a href="{{ route('cv-review.show', $r['uuid']) }}"
-                                    class="btn btn-sm btn-warning w-100 w-sm-auto">
+                                    class="btn btn-sm btn-warning">
                                         <i class="ki-duotone ki-arrows-circle fs-4 me-1">
                                             <span class="path1"></span><span class="path2"></span>
                                         </i>
