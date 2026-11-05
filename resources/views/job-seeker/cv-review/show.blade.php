@@ -99,8 +99,8 @@
             <div class="card card-flush">
                 <div class="card-body text-center py-15" style="min-height: 60vh;">
                     <div class="spinner-border text-primary mb-4" style="width:4rem;height:4rem;"></div>
-                    <h2 class="fw-bold mb-2">Writing your CV…</h2>
-                    <p class="text-muted mb-1">
+                    <h2 class="fw-bold mb-2" id="genTitle">Writing your CV…</h2>
+                    <p class="text-muted mb-1" id="genMessage">
                         The CV Rewriter is drafting your rewritten CV. Every line is being built
                         from your original CV and the answers you provided.
                     </p>
@@ -108,10 +108,28 @@
                         <i class="ki-duotone ki-time fs-6 me-1">
                             <span class="path1"></span><span class="path2"></span>
                         </i>
-                        Usually 30–60 seconds
+                        Usually 30-60 seconds
                     </p>
-                    <div class="text-muted fs-8">
+                    <div class="text-muted fs-8" id="genHint">
                         This page will update automatically. You can safely leave it open.
+                    </div>
+
+                    <div id="genRetryWrap" class="mt-6 d-none">
+                        <p class="text-warning fw-semibold mb-3">
+                            Generation is taking longer than usual.
+                        </p>
+                        <button type="button" class="btn btn-warning" id="kickBtn">
+                            <span class="indicator-label">
+                                <i class="ki-duotone ki-arrows-circle fs-3 me-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                                Retry generation now
+                            </span>
+                            <span class="indicator-progress">
+                                Starting…
+                                <span class="spinner-border spinner-border-sm ms-2"></span>
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -293,7 +311,7 @@
                 'icon'  => 'ki-time',
                 'color' => 'info',
                 'title' => "Your CV has been received",
-                'body'  => "Nothing is happening yet — you're in control. Scroll to the bottom of this page and click “Run Free AI Review” to see your gap analysis. It takes about 30 seconds and costs nothing. After that, you choose how to proceed: let The CV Rewriter tool rewrite your CV instantly, or let a senior HR expert do it manually.",
+                'body'  => "Nothing is happening yet — you're in control. Scroll to the bottom of this page and click “Run Free A Review” to see your gap analysis. It takes about 30 seconds and costs nothing. After that, you choose how to proceed: let The CV Rewriter tool rewrite your CV instantly, or let a senior HR expert do it manually.",
                 'eta'   => 'Action required from you',
             ],
             'failed' => [
@@ -703,7 +721,7 @@
                     <i class="ki-duotone ki-magnifier fs-3 me-2">
                         <span class="path1"></span><span class="path2"></span>
                     </i>
-                    Run Free AI Review Now
+                    Run Free Review Now
                 </span>
                 <span class="indicator-progress">
                     Analysing your CV (up to 30s)...
@@ -1563,33 +1581,66 @@ document.addEventListener('submit', function (e) {
 
 // ═══════════════════════════════════════════════════════════════
 // Run AI Review
+//
+// Rule: ALWAYS reload after a response — success OR failure —
+// because the backend may have changed the record's state:
+//   - success                          → status = ai_reviewed
+//   - 422 "already generated"          → status = ai_reviewed (already)
+//   - 422 "already exists for status"  → status may have moved on
+//   - 500 "AI review failed"           → status might still be submitted
+//   - anything else                    → we want the truth from the server
+//
+// The only case we DON'T reload is a genuine network error where we
+// never got a response — the user can retry without losing context.
 // ═══════════════════════════════════════════════════════════════
 document.getElementById('runAiReviewBtn')?.addEventListener('click', async function () {
     const btn = this;
     btn.disabled = true;
     btn.setAttribute('data-kt-indicator', 'on');
 
+    // Choose a slightly longer delay on failure so the toast is readable
+    const reload = (delay) => setTimeout(() => window.location.reload(), delay);
+
     try {
         const res = await fetch(`{{ route('cv-review.run-ai-review', $r['uuid']) }}`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         });
-        const data = await res.json();
 
-        if (data.success) {
+        let data = {};
+        try { data = await res.json(); } catch (_) { /* non-JSON body */ }
+
+        if (res.ok && data.success) {
             window.showToast?.('success', 'AI review complete. Reloading…', 'Success');
-            setTimeout(() => window.location.reload(), 600);
-        } else {
-            window.showToast?.('error', data.message || 'AI review failed.', 'Error');
-            btn.disabled = false;
-            btn.removeAttribute('data-kt-indicator');
+            reload(600);
+            return;
         }
+
+        // ── Failure path — still reload ──────────────────────────
+        // Map common backend codes to a friendly message
+        const msg = (() => {
+            if (data.code === 'already_generated' || /already/i.test(data.message || '')) {
+                return 'This review was already generated — reloading the latest view.';
+            }
+            if (data.message) return data.message;
+            if (res.status === 422) return 'The review could not be started — reloading to refresh the current state.';
+            if (res.status >= 500)  return 'The AI review hit an error — reloading in case it partially completed.';
+            return 'Unexpected response — reloading to refresh.';
+        })();
+
+        window.showToast?.('error', msg, 'Notice');
+
+        // Longer delay on failure — gives the user time to read the toast
+        reload(res.status >= 500 ? 1800 : 1200);
+
     } catch (e) {
-        window.showToast?.('error', 'Network error.', 'Error');
+        // ── Genuine network error — do NOT reload, let user retry ─
+        console.error('[run-ai-review]', e);
+        window.showToast?.('error', 'Network error. Please check your connection and try again.', 'Error');
         btn.disabled = false;
         btn.removeAttribute('data-kt-indicator');
     }
-});
+}); 
 
 // ═══════════════════════════════════════════════════════════════
 // Rewrite mode cards (AI vs HR)
@@ -1859,46 +1910,6 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     'use strict';
 
     // ═══════════════════════════════════════════════════════════════
-    // POLLING — reload while AI is generating
-    // ═══════════════════════════════════════════════════════════════
-    (function pollWhileGenerating() {
-        const needsPolling = STATUS === 'paid_ai' || STATUS === 'generating';
-
-        if (!needsPolling) {
-            sessionStorage.removeItem('cv_rewrite_poll_' + UUID);
-            return;
-        }
-
-        const KEY     = 'cv_rewrite_poll_' + UUID;
-        const tries   = parseInt(sessionStorage.getItem(KEY) || '0', 10);
-        const MAX     = 60;
-        const POLL_MS = 3000;
-
-        if (tries >= MAX) {
-            sessionStorage.removeItem(KEY);
-            const loading = document.getElementById('rewriteLoading');
-            if (loading) {
-                loading.innerHTML = `
-                    <div class="card-body text-center py-15">
-                        <i class="ki-duotone ki-information-5 fs-3x text-warning mb-3 d-block">
-                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                        </i>
-                        <h3 class="fw-bold mb-2">Taking longer than usual</h3>
-                        <p class="text-muted mb-4">
-                            Generation is still running. Refresh the page in a minute,
-                            or contact support if it stays stuck.
-                        </p>
-                        <button class="btn btn-primary" onclick="location.reload()">Refresh</button>
-                    </div>`;
-            }
-            return;
-        }
-
-        sessionStorage.setItem(KEY, String(tries + 1));
-        setTimeout(() => window.location.reload(), POLL_MS);
-    })();
-
-    // ═══════════════════════════════════════════════════════════════
     // EDIT CV (TinyMCE) — REGISTER UNCONDITIONALLY
     //
     // These handlers MUST be registered even when #aiRewriteSection
@@ -2094,7 +2105,7 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     // ── Reset to AI ─────────────────────────────────────────────
     document.getElementById('resetToAiBtn')?.addEventListener('click', async function () {
         const ok = await confirmAction({
-            title:    'Reset to AI version?',
+            title:    'Reset to Original version?',
             message:  'Discard all your edits and restore the last AI-generated version?',
             okText:   'Reset',
             okClass:  'btn-danger',
@@ -2150,6 +2161,8 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
 
     // ── Regenerate ──────────────────────────────────────────────
     document.getElementById('regenerateBtn')?.addEventListener('click', async function () {
+        console.log('Yes we are none');
+        
         const isEdited = @json($r['rewrite_is_user_edited'] ?? false);
         const ok = await confirmAction({
             title:    'Regenerate CV?',
@@ -2357,6 +2370,73 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
         });
     })();
 
+})();
+</script>
+
+
+<script>
+(function () {
+    const UUID       = @json($r['uuid']);
+    const STATUS_NOW = @json($r['status']);
+    const CSRF       = document.querySelector('meta[name="csrf-token"]')?.content || @json(csrf_token());
+    const KICK_URL   = @json(url('cv-review')) + '/' + UUID + '/kick';
+
+    const RELOAD_MS  = 5000;   // reload every 5 seconds while generating
+    const KICK_EVERY = 15000;  // try to re-dispatch after 15s, 30s, 45s…
+    const MAX_KICKS  = 3;
+
+    const START_KEY = 'cv_gen_start_' + UUID;
+    const KICK_KEY  = 'cv_gen_kicks_' + UUID;
+
+    const isGenerating = ['paid_ai', 'generating'].includes(STATUS_NOW);
+
+    // Not generating: clear the counters and do nothing else.
+    // No reload, no polling.
+    if (!isGenerating) {
+        sessionStorage.removeItem(START_KEY);
+        sessionStorage.removeItem(KICK_KEY);
+        return;
+    }
+
+    async function kick() {
+        try {
+            const res = await fetch(KICK_URL, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            console.log('[cv-gen] kick:', data);
+        } catch (e) {
+            console.warn('[cv-gen] kick failed:', e);
+        }
+    }
+
+    // Track when this generation run was first seen in this tab
+    const startedAt = Number(sessionStorage.getItem(START_KEY) || Date.now());
+    sessionStorage.setItem(START_KEY, String(startedAt));
+
+    const elapsed = Date.now() - startedAt;
+    const kicks   = Number(sessionStorage.getItem(KICK_KEY) || 0);
+
+    // Re-dispatch only when generation looks stuck, and at most MAX_KICKS times
+    const shouldKick = kicks < MAX_KICKS && elapsed >= KICK_EVERY * (kicks + 1);
+
+    const scheduleReload = () => setTimeout(() => window.location.reload(), RELOAD_MS);
+
+    if (shouldKick) {
+        sessionStorage.setItem(KICK_KEY, String(kicks + 1));
+        kick().finally(scheduleReload);
+    } else {
+        scheduleReload();
+    }
+
+    // Manual retry button in the generating view
+    document.getElementById('kickBtn')?.addEventListener('click', async function () {
+        this.disabled = true;
+        this.setAttribute('data-kt-indicator', 'on');
+        await kick();
+        setTimeout(() => window.location.reload(), 1000);
+    });
 })();
 </script>
 

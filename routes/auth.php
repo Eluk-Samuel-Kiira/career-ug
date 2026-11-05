@@ -44,9 +44,11 @@ Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
     Route::get('/',               [CvReviewController::class, 'index'])->name('cv-review.index');
     Route::get('/new',            [CvReviewController::class, 'create'])->name('cv-review.create');
     Route::get('/my',             [CvReviewController::class, 'myRequests'])->name('cv-review.my');
+    Route::get('/search-jobs',   [CvReviewController::class, 'searchJobs'])->name('cv-review.search-jobs');
     Route::post('/',              [CvReviewController::class, 'store'])->name('cv-review.store');
 
     // ── Rewrite sub-routes (must come BEFORE /{uuid}) ──
+    Route::post('/{uuid}/kick', [CvReviewController::class, 'kick'])->name('kick'); 
     Route::get('/{uuid}/status',                     [CvReviewController::class, 'status'])->name('cv-review.status');
     Route::post('/{uuid}/run-ai-review',             [CvReviewController::class, 'runAiReview'])->name('cv-review.run-ai-review');  // ← ADD
     Route::get('/{uuid}/rewrite',                    [CvReviewController::class, 'showRewrite'])->name('cv-review.rewrite.show');

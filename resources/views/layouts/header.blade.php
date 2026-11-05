@@ -205,7 +205,7 @@
 												</svg>
 											</span>
 											<div class="jp-nav-cv-panel">
-												<a href="{{ route('cv-review.index') }}"
+												<a href="{{ route('cv-review.my') }}"
 												data-kt-drawer-dismiss="true"
 												class="{{ Route::is('cv-review.*') ? 'active' : '' }}">
 													<span class="d-flex align-items-center gap-2">
@@ -237,7 +237,7 @@
 												</svg>
 											</summary>
 											<div class="jp-nav-cv-panel">
-												<a href="{{ route('cv-review.index') }}"
+												<a href="{{ route('cv-review.my') }}"
 												data-kt-drawer-dismiss="true"
 												class="{{ Route::is('cv-review.*') ? 'active' : '' }}">
 													<span class="d-flex align-items-center gap-2">
