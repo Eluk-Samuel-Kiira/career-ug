@@ -371,6 +371,9 @@
 								</div>
 							</div>
 						</div>
+						@if($loop->iteration === 10)
+                            @include('jobs.partials.promo-banners-row')
+                        @endif
 					@empty
 						<div class="col-12">
 							<div class="jp-empty-card text-center py-10">
