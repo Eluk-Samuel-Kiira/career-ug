@@ -48,11 +48,12 @@ Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
 
     // ── Rewrite sub-routes (must come BEFORE /{uuid}) ──
     Route::get('/{uuid}/status',                     [CvReviewController::class, 'status'])->name('cv-review.status');
+    Route::post('/{uuid}/run-ai-review',             [CvReviewController::class, 'runAiReview'])->name('cv-review.run-ai-review');  // ← ADD
     Route::get('/{uuid}/rewrite',                    [CvReviewController::class, 'showRewrite'])->name('cv-review.rewrite.show');
     Route::post('/{uuid}/rewrite/regenerate',        [CvReviewController::class, 'regenerateRewrite'])->name('cv-review.rewrite.regenerate');
     Route::post('/{uuid}/rewrite/save',              [CvReviewController::class, 'saveRewrite'])->name('cv-review.rewrite.save');
     Route::post('/{uuid}/rewrite/reset',             [CvReviewController::class, 'resetRewrite'])->name('cv-review.rewrite.reset');
-    Route::post('/{uuid}/rewrite/promote-original',  [CvReviewController::class, 'promoteRewriteOriginal'])->name('cv-review.rewrite.promote-original');  // ← ADD
+    Route::post('/{uuid}/rewrite/promote-original',  [CvReviewController::class, 'promoteRewriteOriginal'])->name('cv-review.rewrite.promote-original');
     Route::post('/{uuid}/rewrite/complete',          [CvReviewController::class, 'completeRewrite'])->name('cv-review.rewrite.complete');
     Route::get('/{uuid}/rewrite/download',           [CvReviewController::class, 'downloadRewrite'])->name('cv-review.rewrite.download');
 
