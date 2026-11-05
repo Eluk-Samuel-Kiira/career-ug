@@ -180,6 +180,28 @@
 		.jp-shortlist-mock{ margin-left:0; margin-top:8px; }
 	}
 </style>
+
+<style>
+	/* Service tile: icon and title on one line */
+	.jp-service{ padding:24px 20px; }
+	.jp-service-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+	.jp-service .icon-sq{ margin-bottom:0; flex:0 0 auto; width:42px; height:42px; }
+	.jp-service-title{ font-weight:700; margin:0; font-size:1rem; line-height:1.3; min-width:0; overflow-wrap:anywhere; }
+
+	@media (min-width: 992px){
+		.jp-service{ padding:22px 16px; }
+		.jp-service-head{ gap:10px; }
+		.jp-service .icon-sq{ width:40px; height:40px; }
+		.jp-service-title{ font-size:.95rem; }
+	}
+
+	@media (max-width: 575.98px){
+		.jp-service{ padding:16px 14px; }
+		.jp-service-head{ gap:10px; margin-bottom:8px; }
+		.jp-service .icon-sq{ width:36px; height:36px; }
+		.jp-service-title{ font-size:.92rem; }
+	}
+</style>
 @endpush
 
 @section('content')
@@ -341,50 +363,88 @@
 
 <!-- ====================== SERVICES ====================== -->
 <div style="background:var(--jp-bg-soft);">
-	<div class="container py-15 py-lg-20">
-		<div class="text-center mb-10 mb-lg-14">
-			<div class="jp-kicker mb-2">Candidate Services</div>
-			<h2 class="jp-h2 mb-3">Everything your application needs, done for you</h2>
-			<p class="jp-sub">Professional writing services powered by AI and reviewed for quality.</p>
+    <div class="container pt-15 pt-lg-20 pb-10 pb-lg-12">
+        <div class="text-center mb-10 mb-lg-12">
+            <div class="jp-kicker mb-2">Candidate Services</div>
+            <h2 class="jp-h2 mb-3">Everything your application needs, done for you</h2>
+            <p class="jp-sub">Professional writing services powered by AI and reviewed for quality.</p>
+        </div>
+
+        <div class="row gy-4 gx-4 gx-lg-3">
+            <div class="col-6 col-lg">
+                <div class="jp-service">
+                    <div class="jp-service-head">
+                        <div class="icon-sq"><i class="ki-duotone ki-search-list fs-2"><span class="path1"></span><span class="path2"></span></i></div>
+                        <h5 class="jp-service-title">CV Review</h5>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">An honest, detailed assessment of your CV's strengths and gaps from our experts.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="jp-service">
+                    <div class="jp-service-head">
+                        <div class="icon-sq"><i class="ki-duotone ki-pencil fs-2"><span class="path1"></span><span class="path2"></span></i></div>
+                        <h5 class="jp-service-title">CV Revamp</h5>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">A professionally rewritten CV, formatted to get past employer screening.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="jp-service">
+                    <div class="jp-service-head">
+                        <div class="icon-sq"><i class="ki-duotone ki-document fs-2"><span class="path1"></span><span class="path2"></span></i></div>
+                        <h5 class="jp-service-title">Cover Letters</h5>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">Cover and application letters generated and tailored to each role you apply for.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="jp-service">
+                    <div class="jp-service-head">
+                        <div class="icon-sq"><i class="ki-duotone ki-rocket fs-2"><span class="path1"></span><span class="path2"></span></i></div>
+                        <h5 class="jp-service-title">Easy Apply</h5>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">Apply to any listing in one tap using your saved profile and CV.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="jp-service">
+                    <div class="jp-service-head">
+                        <div class="icon-sq"><i class="ki-duotone ki-filter fs-2"><span class="path1"></span><span class="path2"></span></i></div>
+                        <h5 class="jp-service-title">AI CV Shortlisting</h5>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">Upload hundreds of CVs and get a ranked shortlist in minutes, for employers on any paid plan.</p>
+                </div>
+            </div>
+        </div>
+
+		<div class="row gx-4 gy-4 mt-6">
+			<div class="col-12 col-lg-6">
+				@include('jobs.partials.promo-banner', [
+					'href'    => route('cv-review.my'),
+					'image'   => 'assets/media/banners/cv-banner.svg',
+					'alt'     => 'Job seeker holding a professional CV',
+					'eyebrow' => 'CV Tailor & Maker',
+					'title'   => 'Your CV, rewritten to get shortlisted.',
+					'text'    => 'ATS-friendly. Tailored to this job. Ready in about 60 seconds.',
+					'cta'     => 'Build my CV',
+				])
+			</div>
+
+			<div class="col-12 col-lg-6">
+				@include('jobs.partials.promo-banner', [
+					'href'    => route('letters.index'),
+					'image'   => 'assets/media/banners/cover-letter-banner.svg',
+					'alt'     => 'Applicant writing a cover letter',
+					'eyebrow' => 'Cover Letter Generator',
+					'title'   => 'Stop starting from a blank page.',
+					'text'    => 'A cover letter written for this role, in one minute.',
+					'cta'     => 'Write my cover letter',
+				])
+			</div>
 		</div>
-		<div class="row gy-4 gx-4 gx-lg-5">
-			<div class="col-6 col-md-4 col-lg-3">
-				<div class="jp-service">
-					<div class="icon-sq"><i class="ki-duotone ki-search-list fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-					<h5 class="fw-bold mb-2">CV Review</h5>
-					<p class="text-muted fs-7 mb-0">An honest, detailed assessment of your CV's strengths and gaps from our experts.</p>
-				</div>
-			</div>
-			<div class="col-6 col-md-4 col-lg-3">
-				<div class="jp-service">
-					<div class="icon-sq"><i class="ki-duotone ki-pencil fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-					<h5 class="fw-bold mb-2">CV Revamp</h5>
-					<p class="text-muted fs-7 mb-0">A professionally rewritten CV, formatted to get past employer screening.</p>
-				</div>
-			</div>
-			<div class="col-6 col-md-4 col-lg-3">
-				<div class="jp-service">
-					<div class="icon-sq"><i class="ki-duotone ki-document fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-					<h5 class="fw-bold mb-2">Cover Letters</h5>
-					<p class="text-muted fs-7 mb-0">Cover and application letters generated and tailored to each role you apply for.</p>
-				</div>
-			</div>
-			<div class="col-6 col-md-4 col-lg-3">
-				<div class="jp-service">
-					<div class="icon-sq"><i class="ki-duotone ki-rocket fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-					<h5 class="fw-bold mb-2">Easy Apply</h5>
-					<p class="text-muted fs-7 mb-0">Apply to any listing in one tap using your saved profile and CV.</p>
-				</div>
-			</div>
-			<div class="col-6 col-md-4 col-lg-3">
-				<div class="jp-service">
-					<div class="icon-sq"><i class="ki-duotone ki-filter fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-					<h5 class="fw-bold mb-2">AI CV Shortlisting</h5>
-					<p class="text-muted fs-7 mb-0">Upload hundreds of CVs and get a ranked shortlist in minutes — for employers on any paid plan.</p>
-				</div>
-			</div>
-		</div>
-	</div>
+
+    </div>
 </div>
 
 <!-- ====================== HOW IT WORKS ====================== -->

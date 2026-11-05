@@ -466,22 +466,31 @@
 
 	/* ===== Mobile ===== */
 	@media (max-width: 575.98px){
-		.jp-header-card{ padding:18px; }
-		.jp-header-id{ gap:12px; flex-basis:100%; }
-		.jp-logo-sq{ width:52px; height:52px; padding:5px; font-size:1.1rem; }
-		.jp-header-actions{ margin-top:18px; padding-top:18px; gap:10px; }
-		.jp-header-actions .jp-apply-btn{ flex:1 1 100%; justify-content:center; }
-		.jp-header-actions .jp-save-job-btn{ flex:1 1 auto; justify-content:center; }
-		.jp-share-row{ margin-left:0; flex:0 0 auto; }
-		.jp-content-card{ padding:20px 18px; }
-		.jp-sidebar-card{ padding:20px 18px; }
-		.jp-prose{ font-size:.94rem; }
-		.jp-content-card .jp-apply-btn{ width:100%; justify-content:center; }
-		.jp-cta-banner{ padding:1.5rem 1.25rem; border-radius:18px; }
-		.jp-cta-banner .cta-actions{ width:100%; flex-direction:column; }
-		.jp-cta-banner .cta-actions .btn{ width:100%; }
+		.jp-promo{ height:auto; min-height:190px; }
+
+		/* Figure stays fully visible, anchored to the right, close to the words */
+		.jp-promo-img{
+			width:62%; height:100%; opacity:1;
+			object-fit:cover; object-position:85% center;
+		}
+
+		/* Solid navy on the text side, fading out where the figure begins */
+		.jp-promo::after{
+			background:linear-gradient(90deg,
+				#13273D 0%,
+				rgba(19,39,61,.9) 28%,
+				rgba(19,39,61,0) 46%);
+		}
+
+		/* Text stays on the left so it sits over the navy, not over the figure */
+		.jp-promo-copy{ max-width:58%; padding:18px; }
+		.jp-promo-eyebrow{ font-size:.65rem; }
+		.jp-promo-title{ font-size:1rem; }
+		.jp-promo-text{ font-size:.78rem; }
+		.jp-promo-cta{ font-size:.78rem; padding:7px 13px; }
 	}
 </style>
+
 @endpush
 
 @section('content')
@@ -606,6 +615,15 @@
 						</h2>
 						<div class="jp-prose">{!! $job['job_description'] ?? '<p>No description provided.</p>' !!}</div>
 					</div>
+					@include('jobs.partials.promo-banner', [
+						'href'    => route('cv-review.my'),
+						'image'   => 'assets/media/banners/cv-banner.svg',
+						'alt'     => 'Job seeker holding a professional CV',
+						'eyebrow' => 'CV Tailor & Maker',
+						'title'   => 'Your CV, rewritten to get shortlisted.',
+						'text'    => 'ATS-friendly. Tailored to this job. Ready in about 60 seconds.',
+						'cta'     => 'Build my CV',
+					])
 
 					{{-- Legacy-migrated postings have everything folded into job_description
 					     and empty responsibilities/qualifications/skills; has_structured_content
@@ -666,6 +684,16 @@
 							<a href="{{ route('jobs.index') }}">All jobs in {{ country_name() }}</a>
 						</div>
 					</div>
+
+					@include('jobs.partials.promo-banner', [
+						'href'    => route('letters.index'),
+						'image'   => 'assets/media/banners/cover-letter-banner.svg',
+						'alt'     => 'Applicant writing a cover letter',
+						'eyebrow' => 'Cover Letter Generator',
+						'title'   => 'Stop starting from a blank page.',
+						'text'    => 'A cover letter written for this role, in one minute.',
+						'cta'     => 'Write my cover letter',
+					])
 
 					<div class="jp-content-card" id="apply">
 						<h2><i class="ki-duotone ki-send fs-3"><span class="path1"></span><span class="path2"></span></i>How to Apply</h2>
