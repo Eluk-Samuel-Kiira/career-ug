@@ -127,13 +127,20 @@
     @endif
 
         {{-- ═══════════════════════════════════════════════════════════ --}}
-    {{-- AI Rewrite FAILED — show retry card                       --}}
+    {{-- AI Rewrite FAILED — retry OR fall back to last saved      --}}
     {{-- ═══════════════════════════════════════════════════════════ --}}
     @if(
         $status === 'failed'
         && ($r['rewrite_mode'] ?? null) === 'ai'
         && !empty($r['rewrite_error_message'])
     )
+        @php
+            $hasOriginalContent = !empty($r['rewrite_content_original']['html'] ?? null);
+            $originalWords      = $hasOriginalContent
+                ? str_word_count(strip_tags($r['rewrite_content_original']['html']))
+                : 0;
+        @endphp
+
         <div class="card card-flush mb-6 border border-danger border-2">
             <div class="card-header bg-light-danger">
                 <h3 class="card-title">
@@ -146,8 +153,8 @@
             <div class="card-body text-center py-10">
 
                 <p class="text-gray-700 fs-6 mb-3 mx-auto" style="max-width: 560px;">
-                    Something went wrong while generating your CV. Your payment is safe.
-                    You can try again below — most failures are temporary.
+                    Something went wrong while generating your CV. Your payment is safe —
+                    choose one of the options below to continue.
                 </p>
 
                 <div class="alert alert-light-warning d-inline-block text-start fs-7 mb-5 mx-auto"
@@ -156,121 +163,76 @@
                     <span class="text-break">{{ $r['rewrite_error_message'] }}</span>
                 </div>
 
-                {{-- ═══════════════════════════════════════════════════════════ --}}
-                {{-- AI Rewrite FAILED — retry OR fall back to original        --}}
-                {{-- ═══════════════════════════════════════════════════════════ --}}
-                @php
-                    $hasOriginalContent = !empty($r['rewrite_content_original']['html'] ?? null);
-                    $originalWords      = $hasOriginalContent
-                        ? str_word_count(strip_tags($r['rewrite_content_original']['html']))
-                        : 0;
-                @endphp
+                <div class="row g-4 justify-content-center mt-2">
 
-                @if(
-                    $status === 'failed'
-                    && ($r['rewrite_mode'] ?? null) === 'ai'
-                    && !empty($r['rewrite_error_message'])
-                )
-                    <div class="card card-flush mb-6 border border-danger border-2">
-                        <div class="card-header bg-light-danger">
-                            <h3 class="card-title">
-                                <i class="ki-duotone ki-information-5 fs-2 me-2 text-danger">
-                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    {{-- Option A: retry the AI --}}
+                    <div class="col-12 col-md-6">
+                        <div class="card h-100 border border-warning border-2">
+                            <div class="card-body text-center py-8">
+                                <i class="ki-duotone ki-arrows-circle fs-3x text-warning mb-3 d-block">
+                                    <span class="path1"></span><span class="path2"></span>
                                 </i>
-                                We couldn't finish writing your CV
-                            </h3>
-                        </div>
-                        <div class="card-body text-center py-10">
-
-                            <p class="text-gray-700 fs-6 mb-3 mx-auto" style="max-width: 560px;">
-                                Something went wrong while generating your CV. Your payment is safe —
-                                choose one of the options below to continue.
-                            </p>
-
-                            <div class="alert alert-light-warning d-inline-block text-start fs-7 mb-5 mx-auto"
-                                style="max-width: 640px;">
-                                <strong>Why it failed:</strong>
-                                <span class="text-break">{{ $r['rewrite_error_message'] }}</span>
-                            </div>
-
-                            <div class="row g-4 justify-content-center mt-2">
-
-                                {{-- Option A: retry the AI --}}
-                                <div class="col-12 col-md-6">
-                                    <div class="card h-100 border border-warning border-2">
-                                        <div class="card-body text-center py-8">
-                                            <i class="ki-duotone ki-arrows-circle fs-3x text-warning mb-3 d-block">
-                                                <span class="path1"></span><span class="path2"></span>
-                                            </i>
-                                            <h4 class="fw-bold mb-2">Try Again</h4>
-                                            <p class="text-muted fs-7 mb-4">
-                                                Most failures are temporary. Try writing the CV once more —
-                                                your payment still applies.
-                                            </p>
-                                            <button type="button"
-                                                    class="btn btn-warning w-100"
-                                                    id="retryGenerationBtn"
-                                                    data-uuid="{{ $r['uuid'] }}">
-                                                <span class="indicator-label">
-                                                    <i class="ki-duotone ki-arrows-circle fs-4 me-1">
-                                                        <span class="path1"></span><span class="path2"></span>
-                                                    </i>
-                                                    Try Again
-                                                </span>
-                                                <span class="indicator-progress">
-                                                    Starting…
-                                                    <span class="spinner-border spinner-border-sm ms-2"></span>
-                                                </span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Option B: fall back to the last saved original --}}
-                                @if($hasOriginalContent)
-                                    <div class="col-12 col-md-6">
-                                        <div class="card h-100 border border-primary border-2">
-                                            <div class="card-body text-center py-8">
-                                                <i class="ki-duotone ki-document fs-3x text-primary mb-3 d-block">
-                                                    <span class="path1"></span><span class="path2"></span>
-                                                </i>
-                                                <h4 class="fw-bold mb-2">Use the last saved version</h4>
-                                                <p class="text-muted fs-7 mb-4">
-                                                    We still have your previous AI-written CV
-                                                    ({{ number_format($originalWords) }} words).
-                                                    Restore it and edit it yourself — same price,
-                                                    no extra charge.
-                                                </p>
-                                                <button type="button"
-                                                        class="btn btn-primary w-100"
-                                                        id="promoteOriginalBtn"
-                                                        data-uuid="{{ $r['uuid'] }}">
-                                                    <span class="indicator-label">
-                                                        <i class="ki-duotone ki-pencil fs-4 me-1">
-                                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                                                        </i>
-                                                        View & Edit Original
-                                                    </span>
-                                                    <span class="indicator-progress">
-                                                        Restoring…
-                                                        <span class="spinner-border spinner-border-sm ms-2"></span>
-                                                    </span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <div class="text-muted fs-8 mt-6">
-                                If it keeps failing, contact support with reference
-                                <strong>#{{ substr($r['uuid'], 0, 8) }}</strong>.
+                                <h4 class="fw-bold mb-2">Try Again</h4>
+                                <p class="text-muted fs-7 mb-4">
+                                    Most failures are temporary. Try writing the CV once more —
+                                    your payment still applies.
+                                </p>
+                                <button type="button"
+                                        class="btn btn-warning w-100"
+                                        id="retryGenerationBtn"
+                                        data-uuid="{{ $r['uuid'] }}">
+                                    <span class="indicator-label">
+                                        <i class="ki-duotone ki-arrows-circle fs-4 me-1">
+                                            <span class="path1"></span><span class="path2"></span>
+                                        </i>
+                                        Try Again
+                                    </span>
+                                    <span class="indicator-progress">
+                                        Starting…
+                                        <span class="spinner-border spinner-border-sm ms-2"></span>
+                                    </span>
+                                </button>
                             </div>
                         </div>
                     </div>
-                @endif
 
-                <div class="text-muted fs-8 mt-4">
+                    {{-- Option B: fall back to the last saved original --}}
+                    @if($hasOriginalContent)
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100 border border-primary border-2">
+                                <div class="card-body text-center py-8">
+                                    <i class="ki-duotone ki-document fs-3x text-primary mb-3 d-block">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                    <h4 class="fw-bold mb-2">Use the last saved version</h4>
+                                    <p class="text-muted fs-7 mb-4">
+                                        We still have your previous AI-written CV
+                                        ({{ number_format($originalWords) }} words).
+                                        Restore it and edit it yourself — same price,
+                                        no extra charge.
+                                    </p>
+                                    <button type="button"
+                                            class="btn btn-primary w-100"
+                                            id="promoteOriginalBtn"
+                                            data-uuid="{{ $r['uuid'] }}">
+                                        <span class="indicator-label">
+                                            <i class="ki-duotone ki-pencil fs-4 me-1">
+                                                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                            </i>
+                                            View & Edit Original
+                                        </span>
+                                        <span class="indicator-progress">
+                                            Restoring…
+                                            <span class="spinner-border spinner-border-sm ms-2"></span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="text-muted fs-8 mt-6">
                     If it keeps failing, contact support with reference
                     <strong>#{{ substr($r['uuid'], 0, 8) }}</strong>.
                 </div>
