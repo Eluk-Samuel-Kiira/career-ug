@@ -1923,7 +1923,7 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
         }
         if (editorReadyPromise) return editorReadyPromise;
 
-        // TinyMCE did not load: use the plain textarea so the user can still edit
+        // TinyMCE did not load: fall back to the plain textarea
         if (typeof tinymce === 'undefined') {
             console.error('[cv-edit] TinyMCE is not loaded. Using plain textarea.');
             cvEditor.value = initialHtml || '';
@@ -1932,7 +1932,7 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
 
         cvEditor.value = initialHtml || '';
 
-        tinymce.init({
+        editorReadyPromise = tinymce.init({
             target: cvEditor,
             height: 600,
             menubar: false,
@@ -1943,7 +1943,6 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
             toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
             block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
 
-            // ⬇️ Replaced content_css + body_class with content_style
             content_style: `
                 body {
                     font-family: Georgia, "Times New Roman", serif;
@@ -1965,16 +1964,12 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
                 h3 { font-size: 11pt; margin: 0; font-weight: 700; }
                 p { margin: 0 0 6pt; }
                 strong { font-weight: 700; }
-
                 .cv-header { text-align: center; margin-bottom: 6pt; }
                 .cv-header h1 { text-align: center; letter-spacing: .5pt; }
-                .cv-titles,
-                .cv-contact { text-align: center; margin: 0 0 2pt; }
-
+                .cv-titles, .cv-contact { text-align: center; margin: 0 0 2pt; }
                 .entry { margin: 0 0 10pt; }
                 .employer { margin: 0 0 4pt; font-style: italic; }
                 .referee { margin: 0 0 6pt; }
-
                 table.entry-line {
                     width: 100%;
                     border-collapse: collapse;
@@ -1989,35 +1984,27 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
                     text-align: right;
                     font-size: 10pt;
                 }
-
                 ul, ol { margin: 0.4em 0 0.6em 1.4em; padding: 0; }
                 li { margin: 0.2em 0; }
-                a { color: #1a4a8c; text-decoration: underline; }
-                ::selection { background: #cfe2ff; color: #000; }
             `,
 
             extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
             valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
             invalid_elements: 'script,style',
             paste_as_text: true,
+
             setup: (editor) => {
                 editor.on('init', () => {
                     editorInstance = editor;
-
-                    // Belt-and-braces: force content in even if TinyMCE missed the textarea seed
-                    const seeded = editor.getContent()?.trim() || '';
-                    if (!seeded && initialHtml && initialHtml.trim() !== '') {
-                        editor.setContent(initialHtml);
-                    }
-
-                    console.log('[edit-cv] editor ready, content length:', editor.getContent().length);
-                    resolve(editor);
+                    editor.setContent(initialHtml || '');
                 });
             },
-        }).catch(err => {
-            console.error('[edit-cv] TinyMCE init failed:', err);
-            cvEditor.value = htmlToPlainText(initialHtml);
-            resolve(null);
+        })
+        .then(editors => editors[0] ?? null)
+        .catch(err => {
+            console.error('[cv-edit] TinyMCE failed to start:', err);
+            cvEditor.value = initialHtml || '';
+            return null;
         });
 
         return editorReadyPromise;
@@ -2026,13 +2013,6 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     function getEditorContent() {
         if (editorInstance) return editorInstance.getContent();
         return cvEditor?.value || '';
-    }
-
-    function htmlToPlainText(html) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        tmp.querySelectorAll('p, li, h1, h2, h3').forEach(el => el.appendChild(document.createTextNode('\n\n')));
-        return (tmp.innerText || tmp.textContent || '').trim();
     }
 
     function getCurrentCvHtml() {
