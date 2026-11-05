@@ -41,31 +41,27 @@ Route::middleware(['auth.web'])->group(function () {
 use App\Http\Controllers\Home\CvReviewController;
 
 Route::middleware(['auth.web'])->prefix('cv-review')->group(function () {
-    Route::get('/', [CvReviewController::class, 'index'])->name('cv-review.index');
-    Route::get('/new', [CvReviewController::class, 'create'])->name('cv-review.create');
-    Route::get('/my', [CvReviewController::class, 'myRequests'])->name('cv-review.my');
-    Route::post('/', [CvReviewController::class, 'store'])->name('cv-review.store');
-    
-    Route::get('/{uuid}/status', [CvReviewController::class, 'status'])->name('cv-review.status');
-    Route::get('/{uuid}', [CvReviewController::class, 'show'])->name('cv-review.show');
-    Route::post('/{uuid}/answers', [CvReviewController::class, 'submitAnswers'])->name('cv-review.answers');
-    Route::post('/{uuid}/pay', [CvReviewController::class, 'pay'])->name('cv-review.pay');
+    Route::get('/',               [CvReviewController::class, 'index'])->name('cv-review.index');
+    Route::get('/new',            [CvReviewController::class, 'create'])->name('cv-review.create');
+    Route::get('/my',             [CvReviewController::class, 'myRequests'])->name('cv-review.my');
+    Route::post('/',              [CvReviewController::class, 'store'])->name('cv-review.store');
+
+    // ── Rewrite sub-routes (must come BEFORE /{uuid}) ──
+    Route::get('/{uuid}/status',                     [CvReviewController::class, 'status'])->name('cv-review.status');
+    Route::get('/{uuid}/rewrite',                    [CvReviewController::class, 'showRewrite'])->name('cv-review.rewrite.show');
+    Route::post('/{uuid}/rewrite/regenerate',        [CvReviewController::class, 'regenerateRewrite'])->name('cv-review.rewrite.regenerate');
+    Route::post('/{uuid}/rewrite/save',              [CvReviewController::class, 'saveRewrite'])->name('cv-review.rewrite.save');
+    Route::post('/{uuid}/rewrite/reset',             [CvReviewController::class, 'resetRewrite'])->name('cv-review.rewrite.reset');
+    Route::post('/{uuid}/rewrite/promote-original',  [CvReviewController::class, 'promoteRewriteOriginal'])->name('cv-review.rewrite.promote-original');  // ← ADD
+    Route::post('/{uuid}/rewrite/complete',          [CvReviewController::class, 'completeRewrite'])->name('cv-review.rewrite.complete');
+    Route::get('/{uuid}/rewrite/download',           [CvReviewController::class, 'downloadRewrite'])->name('cv-review.rewrite.download');
+
+    // ── Wildcard LAST ──
+    Route::get('/{uuid}',         [CvReviewController::class, 'show'])->name('cv-review.show');
+    Route::post('/{uuid}/answers',[CvReviewController::class, 'submitAnswers'])->name('cv-review.answers');
+    Route::post('/{uuid}/pay',    [CvReviewController::class, 'pay'])->name('cv-review.pay');
     Route::post('/{uuid}/revision', [CvReviewController::class, 'requestRevision'])->name('cv-review.revision');
-    Route::delete('/{uuid}', [CvReviewController::class, 'destroy'])->name('cv-review.destroy');
-
-    Route::get('/{uuid}/rewrite',              [CvReviewController::class, 'showRewrite'])->name('cv-review.rewrite.show');
-    Route::post('/{uuid}/rewrite/regenerate',  [CvReviewController::class, 'regenerateRewrite'])->name('cv-review.rewrite.regenerate');
-    Route::post('/{uuid}/rewrite/save',        [CvReviewController::class, 'saveRewrite'])->name('cv-review.rewrite.save');
-    Route::post('/{uuid}/rewrite/reset',       [CvReviewController::class, 'resetRewrite'])->name('cv-review.rewrite.reset');
-    Route::get('/{uuid}/rewrite/download',     [CvReviewController::class, 'downloadRewrite'])->name('cv-review.rewrite.download');
-    Route::get('/{uuid}/rewrite/status',       [CvReviewController::class, 'rewriteStatus'])->name('cv-review.rewrite.status');
-    Route::post('/{uuid}/run-ai-review', [CvReviewController::class, 'runAiReview'])
-        ->name('cv-review.run-ai-review');
-
-    
-    Route::post('/{uuid}/rewrite/complete', [CvReviewController::class, 'completeRewrite'])
-        ->name('cv-review.rewrite.complete');
-
+    Route::delete('/{uuid}',      [CvReviewController::class, 'destroy'])->name('cv-review.destroy');
 });
 
 
