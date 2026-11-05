@@ -1910,62 +1910,63 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     const cvEditor      = document.getElementById('cvEditor');
     const cvContentEl   = document.querySelector('#cvView .cv-preview');
 
-    let editorInstance     = null;
+    let editorInstance = null;
     let editorReadyPromise = null;
 
     function initEditor(initialHtml) {
         if (!cvEditor) return Promise.resolve(null);
 
-        if (editorInstance && editorReadyPromise) {
-            return editorReadyPromise.then(editor => {
-                if (editor && editor.setContent) editor.setContent(initialHtml || '');
-                return editor;
-            });
+        // Already running: just reset the content
+        if (editorInstance) {
+            editorInstance.setContent(initialHtml || '');
+            return Promise.resolve(editorInstance);
         }
+        if (editorReadyPromise) return editorReadyPromise;
 
+        // TinyMCE did not load: use the plain textarea so the user can still edit
         if (typeof tinymce === 'undefined') {
-            cvEditor.value = htmlToPlainText(initialHtml);
+            console.error('[cv-edit] TinyMCE is not loaded. Using plain textarea.');
+            cvEditor.value = initialHtml || '';
             return Promise.resolve(null);
         }
 
         cvEditor.value = initialHtml || '';
 
-        editorReadyPromise = new Promise((resolve) => {
-            tinymce.init({
-                target: cvEditor,
-                height: 600,
-                menubar: false,
-                statusbar: true,
-                branding: false,
-                promotion: false,
-                plugins: 'lists link code wordcount',
-                toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
-                block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
-                content_css: "{{ asset('css/cv-document.css') }}",
-                body_class: 'cv-doc',
-                extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
-                valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
-                invalid_elements: 'script,style',
-                paste_as_text: true,
-                setup: (editor) => {
-                    editor.on('init', () => {
-                        editorInstance = editor;
-                        if (initialHtml && !editor.getContent().trim()) editor.setContent(initialHtml);
-                        resolve(editor);
-                    });
-                },
-            }).catch(err => {
-                console.warn('TinyMCE failed to load, falling back to plain textarea:', err);
-                cvEditor.value = htmlToPlainText(initialHtml);
-                resolve(null);
-            });
+        editorReadyPromise = tinymce.init({
+            target: cvEditor,
+            min_height: 500,
+            menubar: false,
+            statusbar: true,
+            branding: false,
+            promotion: false,
+            plugins: 'lists link code wordcount',
+            toolbar: 'undo redo | blocks | bold italic | bullist numlist | link | removeformat | code',
+            block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3',
+            content_css: "{{ asset('css/cv-document.css') }}",
+            body_class: 'cv-doc',
+            extended_valid_elements: 'div[class],p[class],span[class],table[class],tr,td[class],h1,h2,h3,em,strong',
+            valid_classes: 'cv-header,cv-titles,cv-contact,entry,entry-line,dates,employer,referee',
+            invalid_elements: 'script,style',
+            paste_as_text: true,
+            setup: (editor) => {
+                editor.on('init', () => {
+                    editorInstance = editor;
+                    editor.setContent(initialHtml || '');
+                });
+            },
+        })
+        .then(editors => editors[0] ?? null)
+        .catch(err => {
+            console.error('[cv-edit] TinyMCE failed to start:', err);
+            cvEditor.value = initialHtml || '';
+            return null;
         });
 
         return editorReadyPromise;
     }
 
     function getEditorContent() {
-        if (editorInstance && typeof editorInstance.getContent === 'function') return editorInstance.getContent();
+        if (editorInstance) return editorInstance.getContent();
         return cvEditor?.value || '';
     }
 
@@ -1982,14 +1983,14 @@ document.querySelector('input[name="rewrite_mode"][value="ai"]')?.dispatchEvent(
     }
 
     // ── Edit ────────────────────────────────────────────────────
-    document.getElementById('editCvBtn')?.addEventListener('click', () => {
+    document.getElementById('editCvBtn')?.addEventListener('click', async () => {
         if (!cvEdit || !cvView) return;
 
         cvView.classList.add('d-none');
         cvEdit.classList.remove('d-none');
         cvEdit.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        initEditor(getCurrentCvHtml());
+        await initEditor(cvContentEl ? cvContentEl.innerHTML.trim() : '');
     });
 
     // ── Cancel ──────────────────────────────────────────────────
