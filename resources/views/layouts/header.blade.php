@@ -212,7 +212,7 @@
 														<i class="ki-duotone ki-document fs-4 text-primary">
 															<span class="path1"></span><span class="path2"></span>
 														</i>
-														CV Maker
+														CV Tailor & Maker
 													</span>
 												</a>
 												<a href="{{ route('letters.index') }}"
@@ -244,7 +244,7 @@
 														<i class="ki-duotone ki-document fs-4 text-primary">
 															<span class="path1"></span><span class="path2"></span>
 														</i>
-														CV Maker
+														CV Tailor & Maker
 													</span>
 												</a>
 												<a href="{{ route('letters.index') }}"
