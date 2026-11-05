@@ -27,7 +27,7 @@
                     {{ $quote['message'] ?? 'This service is not available in your region yet.' }}
                 </div>
             </div>
-            <a href="{{ route('cv-review.index') }}" class="btn btn-light w-100 w-sm-auto">Go Back</a>
+            <a href="{{ route('cv-review.my') }}" class="btn btn-light w-100 w-sm-auto">Go Back</a>
         </div>
     @else
 
@@ -126,21 +126,75 @@
                 </h3>
             </div>
             <div class="card-body">
-                <div class="fv-row mb-4 mb-md-5">
-                    <label class="fw-semibold mb-2 fs-7 fs-md-6">Job Title You're Applying For</label>
-                    <input type="text" name="target_job_title"
-                           class="form-control form-control-lg"
-                           placeholder="e.g., Senior Software Engineer" />
+
+                {{-- Source picker --}}
+                <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 gap-sm-4 mb-4">
+                    <label class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="radio" name="job_source" value="db" checked>
+                        <span class="form-check-label fs-7 fs-md-6">Search our jobs</span>
+                    </label>
+                    <label class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="radio" name="job_source" value="manual">
+                        <span class="form-check-label fs-7 fs-md-6">Enter title &amp; company</span>
+                    </label>
+                    <label class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="radio" name="job_source" value="paste">
+                        <span class="form-check-label fs-7 fs-md-6">Paste job post</span>
+                    </label>
+                    <label class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="radio" name="job_source" value="none">
+                        <span class="form-check-label fs-7 fs-md-6">Skip (general review)</span>
+                    </label>
                 </div>
-                <div class="fv-row">
-                    <label class="fw-semibold mb-2 fs-7 fs-md-6">Job Description</label>
-                    <textarea name="target_job_description" rows="5"
-                              class="form-control form-control-lg"
-                              placeholder="Paste the full job description here for a targeted review..."></textarea>
-                    <div class="text-muted fs-8 fs-md-7 mt-1">
-                        Leave blank for a general CV quality review.
+
+                {{-- DB search --}}
+                <div id="jobDbPanel">
+                    <label class="fw-semibold mb-2 fs-7 fs-md-6">Search job title or company</label>
+                    <select id="job_search" class="form-select form-select-solid" style="width:100%"></select>
+                    <input type="hidden" id="job_post_id" name="job_post_id">
+                    <div class="text-muted fs-8 mt-1">
+                        We'll automatically pull the description, responsibilities, qualifications and skills
+                        from the selected job to tailor your CV.
                     </div>
                 </div>
+
+                {{-- Manual --}}
+                <div id="jobManualPanel" class="d-none row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="fw-semibold mb-2 fs-7 fs-md-6">Job Title</label>
+                        <input type="text" id="job_title_manual" name="target_job_title" class="form-control">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="fw-semibold mb-2 fs-7 fs-md-6">Company Name</label>
+                        <input type="text" id="company_name_manual" name="target_company_name" class="form-control">
+                    </div>
+                </div>
+
+                {{-- Paste --}}
+                <div id="jobPastePanel" class="d-none row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="fw-semibold mb-2 fs-7 fs-md-6">Job Title</label>
+                        <input type="text" id="job_title_paste" name="target_job_title" class="form-control">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="fw-semibold mb-2 fs-7 fs-md-6">Company Name</label>
+                        <input type="text" id="company_name_paste" name="target_company_name" class="form-control">
+                    </div>
+                    <div class="col-12">
+                        <label class="fw-semibold mb-2 fs-7 fs-md-6">
+                            Full Job Post
+                            <span class="text-muted fw-normal fs-8">(description, responsibilities, qualifications, skills)</span>
+                        </label>
+                        <textarea id="job_description_paste" name="target_job_description" rows="8"
+                                  class="form-control"
+                                  placeholder="Paste the ENTIRE job post here — the description, key responsibilities, qualifications/requirements, and required skills. The more detail you give, the better the AI matches your CV to the role."></textarea>
+                        <div class="text-muted fs-8 mt-1">
+                            Paste everything from the job advert: what the role does, what's required, and what skills they list.
+                            This is what the AI reads when tailoring your CV.
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -154,7 +208,7 @@
                     </div>
                 </div>
                 <div class="d-flex flex-column-reverse flex-sm-row gap-2 gap-sm-3">
-                    <a href="{{ route('cv-review.index') }}" class="btn btn-light btn-lg w-100 w-sm-auto">Cancel</a>
+                    <a href="{{ route('cv-review.my') }}" class="btn btn-light btn-lg w-100 w-sm-auto">Cancel</a>
                     <button type="submit" class="btn btn-primary btn-lg px-6 px-sm-8 w-100 w-sm-auto" id="submitBtn">
                         <span class="indicator-label">
                             <i class="ki-duotone ki-rocket fs-3 me-2">
@@ -177,8 +231,8 @@
 @endsection
 
 @push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Full-width on mobile, auto on sm+ */
     @media (max-width: 575.98px) {
         .w-sm-auto { width: 100% !important; }
     }
@@ -186,10 +240,37 @@
         .w-sm-auto { width: auto !important; }
     }
     .cursor-pointer { cursor: pointer; }
+
+    /* Select2 — match Metronic form-select-solid */
+    #job_search + .select2-container .select2-selection--single {
+        display: flex; align-items: center; height: 44px;
+        padding: 0 40px 0 12px;
+        border: 1px solid var(--bs-gray-300);
+        border-radius: 0.475rem;
+        background-color: var(--bs-gray-100);
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+    #job_search + .select2-container .select2-selection--single:hover,
+    #job_search + .select2-container.select2-container--focus .select2-selection--single {
+        border-color: var(--bs-primary); background-color: var(--bs-white);
+    }
+    #job_search + .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: normal !important; padding: 0 !important; margin: 0 !important;
+        color: var(--bs-gray-800); font-size: 0.95rem;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+    }
+    #job_search + .select2-container .select2-selection--single .select2-selection__placeholder {
+        color: var(--bs-gray-500); line-height: normal !important;
+    }
+    #job_search + .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100% !important; top: 0; right: 8px;
+        display: flex; align-items: center; justify-content: center; width: 24px;
+    }
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content
@@ -202,15 +283,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!form || !drop || !fileInput) return;
 
-    // ── File picker ──────────────────────────────────────────
-    drop.addEventListener('click', () => fileInput.click());
+    // ── Job source switcher ─────────────────────────────────
+    const dbPanel     = document.getElementById('jobDbPanel');
+    const manualPanel = document.getElementById('jobManualPanel');
+    const pastePanel  = document.getElementById('jobPastePanel');
+    const jobPostIdIn = document.getElementById('job_post_id');
 
-    drop.addEventListener('dragover', e => {
-        e.preventDefault();
-        drop.classList.add('border-primary');
+    function setPanelVisibility(source) {
+        dbPanel.classList.toggle('d-none',     source !== 'db');
+        manualPanel.classList.toggle('d-none', source !== 'manual');
+        pastePanel.classList.toggle('d-none',  source !== 'paste');
+
+        // Disable hidden inputs so they don't submit
+        manualPanel.querySelectorAll('input, textarea, select')
+            .forEach(el => el.disabled = source !== 'manual');
+        pastePanel.querySelectorAll('input, textarea, select')
+            .forEach(el => el.disabled = source !== 'paste');
+        if (jobPostIdIn) jobPostIdIn.disabled = source !== 'db';
+    }
+
+    document.querySelectorAll('input[name="job_source"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.checked) setPanelVisibility(this.value);
+        });
     });
-    drop.addEventListener('dragleave', () => drop.classList.remove('border-primary'));
 
+    const initialSource = document.querySelector('input[name="job_source"]:checked')?.value || 'db';
+    setPanelVisibility(initialSource);
+
+    // ── Select2 for job search ──────────────────────────────
+    if (window.jQuery && jQuery.fn.select2) {
+        jQuery('#job_search').select2({
+            placeholder: 'Type at least 2 characters...',
+            minimumInputLength: 2,
+            width: '100%',
+            ajax: {
+                url: '{{ route("cv-review.search-jobs") }}',
+                dataType: 'json',
+                delay: 250,
+                data: params => ({ q: params.term }),
+                processResults: data => ({
+                    results: (data.data || []).map(j => ({ id: j.id, text: j.label })),
+                }),
+            },
+        }).on('select2:select', e => {
+            if (jobPostIdIn) jobPostIdIn.value = e.params.data.id;
+        }).on('select2:clear', () => {
+            if (jobPostIdIn) jobPostIdIn.value = '';
+        });
+    }
+
+    // ── File picker ─────────────────────────────────────────
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('border-primary'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('border-primary'));
     drop.addEventListener('drop', e => {
         e.preventDefault();
         drop.classList.remove('border-primary');
@@ -220,23 +346,12 @@ document.addEventListener('DOMContentLoaded', function () {
             clearExistingRadios();
         }
     });
-
     fileInput.addEventListener('change', function () {
-        if (this.files.length) {
-            showFileName(this.files[0].name);
-            clearExistingRadios();
-        } else {
-            fileName.classList.add('d-none');
-            fileName.textContent = '';
-        }
+        if (this.files.length) { showFileName(this.files[0].name); clearExistingRadios(); }
+        else { fileName.classList.add('d-none'); fileName.textContent = ''; }
     });
+    function showFileName(name) { fileName.textContent = '📎 ' + name; fileName.classList.remove('d-none'); }
 
-    function showFileName(name) {
-        fileName.textContent = '📎 ' + name;
-        fileName.classList.remove('d-none');
-    }
-
-    // ── Existing CV radios ──────────────────────────────────
     document.querySelectorAll('input[name="existing_cv_path"]').forEach(radio => {
         radio.addEventListener('change', function () {
             if (this.checked) {
@@ -246,85 +361,78 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
     function clearExistingRadios() {
-        document.querySelectorAll('input[name="existing_cv_path"]').forEach(r => {
-            r.checked = false;
-        });
+        document.querySelectorAll('input[name="existing_cv_path"]').forEach(r => r.checked = false);
     }
 
     // ── Submit ──────────────────────────────────────────────
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const hasFile = fileInput.files && fileInput.files.length > 0;
+        const hasFile     = fileInput.files && fileInput.files.length > 0;
         const hasExisting = document.querySelector('input[name="existing_cv_path"]:checked');
+        const jobSource   = document.querySelector('input[name="job_source"]:checked')?.value;
 
         if (!hasFile && !hasExisting) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('error', 'Please upload a CV or select one of your existing CVs.', 'Missing CV');
-            } else {
-                alert('Please upload a CV or select one of your existing CVs.');
-            }
-            return;
+            return toast('error', 'Please upload a CV or select one of your existing CVs.', 'Missing CV');
+        }
+
+        if (jobSource === 'db' && !jobPostIdIn?.value) {
+            return toast('error', 'Please pick a job from the list, or choose another option.', 'Missing job');
+        }
+        if (jobSource === 'manual') {
+            const t = document.getElementById('job_title_manual')?.value.trim();
+            const c = document.getElementById('company_name_manual')?.value.trim();
+            if (!t || !c) return toast('error', 'Please enter both job title and company.', 'Missing info');
+        }
+        if (jobSource === 'paste') {
+            const t = document.getElementById('job_title_paste')?.value.trim();
+            const d = document.getElementById('job_description_paste')?.value.trim();
+            if (!t || !d) return toast('error', 'Please enter the job title and description.', 'Missing info');
         }
 
         const btn = document.getElementById('submitBtn');
-        if (typeof window.showButtonSpinner === 'function') {
-            window.showButtonSpinner(btn);
-        } else {
-            btn.disabled = true;
-        }
+        if (typeof window.showButtonSpinner === 'function') window.showButtonSpinner(btn);
+        else btn.disabled = true;
 
         const formData = new FormData(this);
 
         fetch('{{ route('cv-review.store') }}', {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrf,
-                'Accept': 'application/json'
-            },
-            body: formData
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: formData,
         })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                if (typeof window.showToast === 'function') {
-                    window.showToast('success', data.message || 'CV received. Starting AI review…', 'Success');
-                }
+                toast('success', data.message || 'CV received. Starting AI review…', 'Success');
                 const uuid = data.request?.uuid;
                 setTimeout(() => {
                     window.location.href = uuid
                         ? '{{ url('cv-review') }}/' + uuid + '?auto_review=1'
-                        : '{{ route('cv-review.index') }}';
+                        : '{{ route('cv-review.my') }}';
                 }, 900);
             } else {
                 const msg = data.errors
                     ? Object.values(data.errors).flat().join('\n')
                     : (data.message || 'Failed to submit');
-                if (typeof window.showToast === 'function') {
-                    window.showToast('error', msg, 'Error');
-                } else {
-                    alert(msg);
-                }
+                toast('error', msg, 'Error');
             }
         })
         .catch(err => {
             console.error(err);
-            if (typeof window.showToast === 'function') {
-                window.showToast('error', 'Something went wrong. Please try again.', 'Error');
-            } else {
-                alert('Something went wrong.');
-            }
+            toast('error', 'Something went wrong. Please try again.', 'Error');
         })
         .finally(() => {
-            if (typeof window.hideButtonSpinner === 'function') {
-                window.hideButtonSpinner(btn);
-            } else {
-                btn.disabled = false;
-            }
+            if (typeof window.hideButtonSpinner === 'function') window.hideButtonSpinner(btn);
+            else btn.disabled = false;
         });
     });
+
+    function toast(type, msg, title) {
+        if (typeof window.showToast === 'function') window.showToast(type, msg, title);
+        else alert(msg);
+    }
 });
 </script>
 @endpush

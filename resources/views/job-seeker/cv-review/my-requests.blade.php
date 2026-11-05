@@ -129,7 +129,7 @@
 
         {{-- ⬅️ NEW: button switches to disabled when at limit --}}
         @if($canCreate)
-            <a href="{{ route('cv-review.index') }}" class="btn btn-primary">
+            <a href="{{ route('cv-review.create') }}" class="btn btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1">
                     <span class="path1"></span><span class="path2"></span>
                 </i>
@@ -233,7 +233,7 @@
                     Upload your CV and get a free AI gap review in seconds.
                 </p>
                 @if($canCreate)
-                    <a href="{{ route('cv-review.index') }}" class="btn btn-primary">
+                    <a href="{{ route('cv-review.create') }}" class="btn btn-primary">
                         <i class="ki-duotone ki-rocket fs-3 me-1">
                             <span class="path1"></span><span class="path2"></span>
                         </i>

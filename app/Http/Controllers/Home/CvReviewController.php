@@ -21,30 +21,7 @@ class CvReviewController extends Controller
             return redirect()->route('login')->with('error', 'Please sign in first.');
         }
 
-        // quote (existing)
-        $quoteResponse = $this->countryService->api('cv-review/quote', [], 'GET', 0, false);
-        $quote = ($quoteResponse['success'] ?? false) && ($quoteResponse['available'] ?? false)
-            ? $quoteResponse
-            : null;
-
-        // list (existing)
-        $requestsResponse = $this->countryService->api('cv-review', [], 'GET', 0, false);
-        $requests = $requestsResponse['data'] ?? [];
-        $meta     = $requestsResponse['meta'] ?? [
-            'total'        => 0,
-            'active_count' => 0,
-            'max_active'   => 3,
-            'can_create'   => true,
-        ];
-
-        // CV files (existing)
-        $cvResponse = $this->countryService->api('auth/user/cv', [], 'GET', 0, false);
-        $cvFiles    = $cvResponse['cv_files'] ?? [];
-        $maxFiles   = $cvResponse['max_files'] ?? 3;
-
-        return view('job-seeker.cv-review.index', compact(
-            'quote', 'requests', 'meta', 'cvFiles', 'maxFiles'
-        ));
+        return redirect()->route('cv-review.my');
     }
 
     /**
@@ -67,7 +44,7 @@ class CvReviewController extends Controller
             || !isset($quoteResponse['service'], $quoteResponse['price'])
         ) {
             return redirect()
-                ->route('cv-review.index')
+                ->route('cv-review.my')
                 ->with('error', $quoteResponse['message'] ?? 'CV Review is currently unavailable in your region.');
         }
 
@@ -93,8 +70,11 @@ class CvReviewController extends Controller
         $request->validate([
             'cv_file'                => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'existing_cv_path'       => 'nullable|string',
+            'job_source'             => 'nullable|in:db,manual,paste,none',
+            'job_post_id'            => 'nullable|integer',
             'target_job_title'       => 'nullable|string|max:255',
-            'target_job_description' => 'nullable|string|max:10000',
+            'target_company_name'    => 'nullable|string|max:255',
+            'target_job_description' => 'nullable|string|max:20000',
         ]);
 
         if (!$request->hasFile('cv_file') && !$request->filled('existing_cv_path')) {
@@ -104,27 +84,41 @@ class CvReviewController extends Controller
             ], 422);
         }
 
-        // Files need to be sent via the CountryService file support
         $files = [];
         if ($request->hasFile('cv_file')) {
             $files['cv_file'] = $request->file('cv_file');
         }
 
+        // ── IMPORTANT ─────────────────────────────────────────────
+        // Forward every job-picker field. array_filter with the strict
+        // callback keeps '0', false, and integers intact — only null
+        // and '' are dropped.
+        // ──────────────────────────────────────────────────────────
         $params = array_filter([
             'existing_cv_path'       => $request->input('existing_cv_path'),
+            'job_source'             => $request->input('job_source', 'none'),
+            'job_post_id'            => $request->input('job_post_id'),
             'target_job_title'       => $request->input('target_job_title'),
+            'target_company_name'    => $request->input('target_company_name'),
             'target_job_description' => $request->input('target_job_description'),
         ], fn($v) => $v !== null && $v !== '');
 
         try {
+            // \Log::info('CV review proxy — forwarding params', [
+            //     'keys'        => array_keys($params),
+            //     'job_source'  => $params['job_source']  ?? null,
+            //     'job_post_id' => $params['job_post_id'] ?? null,
+            //     'title'       => $params['target_job_title'] ?? null,
+            // ]);
+
             $response = $this->countryService->api(
                 'cv-review',
                 $params,
                 'POST',
-                0,     
-                false,   
+                0,
+                false,
                 $files,
-                180     
+                180
             );
 
             return response()->json($response);
@@ -136,6 +130,32 @@ class CvReviewController extends Controller
                 'message' => 'Failed to submit: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+
+    /**
+     * Proxy job search to the API (used by the CV review create page).
+     */
+    public function searchJobs(Request $request)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'data' => []], 401);
+        }
+
+        $q = trim((string) $request->get('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $response = $this->countryService->api(
+            'cv-review/search-jobs',
+            ['q' => $q],
+            'GET',
+            0,
+            false
+        );
+
+        return response()->json($response);
     }
 
     /**
@@ -150,11 +170,23 @@ class CvReviewController extends Controller
         $response = $this->countryService->api("cv-review/{$uuid}", [], 'GET', 0, false);
 
         if (!($response['success'] ?? false)) {
-            return redirect()->route('cv-review.index')->with('error', 'Request not found.');
+            return redirect()->route('cv-review.my')->with('error', 'Request not found.');
         }
 
+        $r = $response['request'] ?? [];
+
+        // ── LOG WHAT THE PROXY SEES ─────────────────────────────
+        Log::info('[show] CV request fetched from API', [
+            'uuid'                  => $uuid,
+            'status'                => $r['status'] ?? null,
+            'rewrite_mode'          => $r['rewrite_mode'] ?? null,
+            'rewrite_is_ready'      => $r['rewrite_is_ready'] ?? false,
+            'rewrite_generated_at'  => $r['rewrite_generated_at'] ?? null,
+            'rewrite_error_message' => $r['rewrite_error_message'] ?? null,
+        ]);
+
         return view('job-seeker.cv-review.show', [
-            'cvRequest' => $response['request'],
+            'cvRequest' => $r,
         ]);
     }
 
@@ -503,5 +535,29 @@ class CvReviewController extends Controller
 
         return mb_substr($name, 0, 200) . '.pdf';
     }
+
+
+    public function kick($uuid)
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $response = $this->countryService->api(
+            "cv-review/{$uuid}/kick",
+            [],
+            'POST',
+            0,
+            false
+        );
+
+        Log::info('[proxy kick] dispatched', [
+            'uuid' => $uuid,
+            'response' => $response,
+        ]);
+
+        return response()->json($response);
+    }
+
 
 }
