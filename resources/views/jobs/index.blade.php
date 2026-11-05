@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Browse Jobs — Search '.country_name().'\'s Latest Openings')
-@section('meta_description', 'Search thousands of live jobs across '.country_name().'. Filter by location, category, job type and salary. Apply in one tap with Easy Apply.')
+@section('title', 'Browse Jobs — Search '.country_name().'\'s Latest Openings + Free AI CV Tailor')
+@section('meta_description', 'Search thousands of live jobs across '.country_name().'. Filter by location, category, job type and salary. Plus a free AI CV Tailor and cover letter generator to match your CV to any job. Apply in one tap.')
 
 @push('styles')
 <style>

@@ -89,15 +89,23 @@
     $facts = array_filter([$jobTypeName, $hasSalary ? $salary : null, $category]);
     $factsLine = $facts ? ' ' . implode(' · ', $facts) . '.' : '';
     $deadlineLine = $deadlineLabel && $daysLeft !== null && $daysLeft >= 0 ? ' Apply by ' . $deadlineLabel . '.' : '';
-    $seoDescription = Str::limit(trim($lead . $factsLine . $deadlineLine . ' ' . $descSource . ' Apply today.'), 158, '…');
+	$seoDescription = Str::limit(
+		trim($lead . $factsLine . $deadlineLine)
+		. ' Free AI CV Tailor to match your CV to this role. '
+		. $descSource . ' Apply today.',
+		158,
+		'…'
+	);
 
     $seoKeywords = strtolower(implode(', ', array_filter([
-        $jobTitle, $jobTitle . ' jobs', $companyName . ' jobs', $companyName . ' careers',
-        $location ? 'jobs in ' . $location : null,
-        $category ? $category . ' jobs' : null,
-        $jobTypeName . ' jobs',
-        'jobs in ' . country_name(),
-    ])));
+		$jobTitle, $jobTitle . ' jobs', $companyName . ' jobs', $companyName . ' careers',
+		$location ? 'jobs in ' . $location : null,
+		$category ? $category . ' jobs' : null,
+		$jobTypeName . ' jobs',
+		'jobs in ' . country_name(),
+		'cv tailor',                    // ← add
+		'ai cv review',                 // ← add
+	])));
 
     // Share image: company logo (absolute URL). Falls back to the site default.
 	$toAbsolute = function ($url) {
