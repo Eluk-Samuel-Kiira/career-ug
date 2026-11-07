@@ -71,9 +71,9 @@ class ProfileController extends Controller
             'skills' => 'nullable|string',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:255',
-            'linkedin_url' => 'nullable|url|max:255',
-            'github_url' => 'nullable|url|max:255',
-            'portfolio_url' => 'nullable|url|max:255',
+            'linkedin_url' => 'nullable|string|max:255',
+            'github_url' => 'nullable|string|max:255',
+            'portfolio_url' => 'nullable|string|max:255',
             // Add missing fields validation
             'country' => 'nullable|string|max:255',
             'postal_code' => 'nullable|string|max:20',

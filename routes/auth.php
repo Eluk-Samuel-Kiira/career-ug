@@ -183,3 +183,14 @@ Route::middleware(['auth.web'])->prefix('alerts/log')->name('alert.log.')->group
     Route::get('/',     [\App\Http\Controllers\Seeker\AlertLogController::class, 'index'])->name('index');
     Route::get('/data', [\App\Http\Controllers\Seeker\AlertLogController::class, 'data'])->name('data');
 });
+
+
+
+use App\Http\Controllers\Home\MyJobsController;
+
+Route::middleware(['auth.web'])->prefix('my-jobs')->name('my-jobs.')->group(function () {
+    Route::get('/',           [MyJobsController::class, 'index'])->name('index');         // redirects to category
+    Route::get('/category',   [MyJobsController::class, 'byCategory'])->name('category');
+    Route::get('/skills',     [MyJobsController::class, 'bySkills'])->name('skills');
+    Route::get('/data',       [MyJobsController::class, 'data'])->name('data');
+});

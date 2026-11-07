@@ -43,8 +43,9 @@
 						<p style="color:#AFC0D2; font-size:.9rem; margin-bottom:0; line-height:1.6;">
 							Email us at
 							<a href="mailto:{{ support_email() }}" style="color:#7CF0C2; text-decoration:none; font-weight:700;">{{ support_email() }}</a><br>
-							or call
+							{{-- or call
 							<a href="tel:{{ support_phone() }}" style="color:#fff; text-decoration:none;">{{ support_phone() }}</a>
+							--}}
 						</p>
 					</div>
 

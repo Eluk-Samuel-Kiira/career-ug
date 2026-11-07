@@ -164,7 +164,7 @@
     });
 
     async function load() {
-        const wrap = document.getElementById('tableWrap');
+        const wrap  = document.getElementById('tableWrap');
         const pager = document.getElementById('paginationWrap');
         pager.classList.add('d-none');
         wrap.innerHTML = '<div class="text-center py-10"><div class="spinner-border text-primary"></div></div>';
@@ -178,13 +178,20 @@
             });
             const data = await res.json();
 
+            // ── Counts ─────────────────────────────────
             if (data.counts) {
                 document.getElementById('countAll').textContent    = data.counts.all ?? 0;
                 document.getElementById('countSent').textContent   = data.counts.sent ?? 0;
                 document.getElementById('countFailed').textContent = data.counts.failed ?? 0;
             }
 
-            if (!data.success || !data.data?.data?.length) {
+            // ── Unpack Laravel paginator ───────────────
+            // Laravel serialises a paginator as { data:[...], meta:{...}, links:{...} }
+            const paginator = data.data || {};
+            const rows      = paginator.data || [];
+            const meta      = paginator.meta || {};
+
+            if (!data.success || rows.length === 0) {
                 wrap.innerHTML = `
                     <div class="text-center py-15">
                         <i class="ki-duotone ki-information-5 fs-5tx text-muted mb-4 d-block">
@@ -193,6 +200,8 @@
                         <h4 class="fw-bold text-gray-800 mb-2">No WhatsApp alerts yet</h4>
                         <p class="text-muted">Your delivered alerts will appear here.</p>
                     </div>`;
+                document.getElementById('paginationInfo').textContent = '0 records';
+                document.getElementById('paginationList').innerHTML = '';
                 return;
             }
 
@@ -208,14 +217,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.data.data.map(row).join('')}
+                            ${rows.map(row).join('')}
                         </tbody>
                     </table>
                 </div>`;
 
-            renderPagination(data.data);
+            renderPagination(meta);
             pager.classList.remove('d-none');
         } catch (e) {
+            console.error(e);
             wrap.innerHTML = '<div class="alert alert-danger">Failed to load alerts.</div>';
         }
     }
@@ -234,20 +244,26 @@
                 </td>
                 <td class="text-start">
                     <span class="badge badge-light-${sColor}">${esc(d.status)}</span>
-                    ${d.error ? `<div class="text-danger fs-8 mt-1">${esc(d.error.substring(0, 60))}</div>` : ''}
+                    ${d.error ? `<div class="text-danger fs-8 mt-1">${esc(String(d.error).substring(0, 60))}</div>` : ''}
                 </td>
                 <td class="text-start text-muted fs-8">${when}</td>
             </tr>`;
     }
 
     function renderPagination(meta) {
-        const el = document.getElementById('paginationList');
+        const el   = document.getElementById('paginationList');
         const info = document.getElementById('paginationInfo');
         el.innerHTML = '';
 
-        info.textContent = meta.total
-            ? `Showing ${meta.from || 0} to ${meta.to || 0} of ${meta.total}`
-            : '0 records';
+        const total       = meta.total ?? 0;
+        const currentPage = meta.current_page ?? 1;
+        const lastPage    = meta.last_page ?? 1;
+        const from        = meta.from ?? 0;
+        const to          = meta.to ?? 0;
+
+        info.textContent = total ? `Showing ${from} to ${to} of ${total}` : '0 records';
+
+        if (lastPage <= 1) return;
 
         const add = (page, text, active = false, disabled = false) => {
             const li = document.createElement('li');
@@ -257,21 +273,45 @@
             a.href = '#';
             a.textContent = text;
             if (!disabled && !active) {
-                a.addEventListener('click', (e) => { e.preventDefault(); state.page = page; load(); });
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    state.page = page;
+                    load();
+                });
             }
             li.appendChild(a);
             el.appendChild(li);
         };
 
-        if (meta.current_page > 1) add(meta.current_page - 1, 'Prev');
-        const start = Math.max(1, meta.current_page - 2);
-        const end   = Math.min(meta.last_page, meta.current_page + 2);
-        if (start > 1) add(1, '1');
-        if (start > 2) el.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">…</span></li>');
-        for (let i = start; i <= end; i++) add(i, i, i === meta.current_page);
-        if (end < meta.last_page - 1) el.insertAdjacentHTML('beforeend', '<li class="page-item disabled"><span class="page-link">…</span></li>');
-        if (end < meta.last_page) add(meta.last_page, meta.last_page);
-        if (meta.current_page < meta.last_page) add(meta.current_page + 1, 'Next');
+        // Prev
+        add(currentPage - 1, 'Prev', false, currentPage <= 1);
+
+        // Page window
+        const start = Math.max(1, currentPage - 2);
+        const end   = Math.min(lastPage, currentPage + 2);
+
+        if (start > 1) {
+            add(1, '1', currentPage === 1);
+            if (start > 2) {
+                el.insertAdjacentHTML('beforeend',
+                    '<li class="page-item disabled"><span class="page-link">…</span></li>');
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            add(i, String(i), i === currentPage);
+        }
+
+        if (end < lastPage) {
+            if (end < lastPage - 1) {
+                el.insertAdjacentHTML('beforeend',
+                    '<li class="page-item disabled"><span class="page-link">…</span></li>');
+            }
+            add(lastPage, String(lastPage), currentPage === lastPage);
+        }
+
+        // Next
+        add(currentPage + 1, 'Next', false, currentPage >= lastPage);
     }
 
     function esc(t) {

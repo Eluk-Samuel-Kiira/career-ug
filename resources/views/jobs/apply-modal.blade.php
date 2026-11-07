@@ -3,9 +3,73 @@
     $phones = array_values(array_unique($phones ?? []));
     $emails = array_values(array_unique($emails ?? []));
 
-    $needsResume   = !empty($job['is_resume_required']);
-    $needsCover    = !empty($job['is_cover_letter_required']);
-    $needsAcademic = !empty($job['is_academic_documents_required']);
+    $needsResume       = !empty($job['is_resume_required']);
+    $needsCover        = !empty($job['is_cover_letter_required']);
+    $needsApplication  = !empty($job['is_application_required']);
+    $needsAcademic     = !empty($job['is_academic_documents_required']);
+
+    // In Uganda, cover letter and application letter are the same document.
+    // Show the letter card if the job requires EITHER — the create page
+    // lets the user pick the specific letter type in step 3.
+    $needsLetter = $needsCover || $needsApplication;
+
+    // What kind of letter(s) to mention in the "Have ready" note
+    $letterLabel = match (true) {
+        $needsCover && $needsApplication => 'a cover / application letter',
+        $needsCover                      => 'a cover letter',
+        $needsApplication                => 'an application letter',
+        default                          => null,
+    };
+
+@endphp
+
+@php
+    /* ──────────────────────────────────────────────────────────
+     | Pre-fill URLs for the two ATS boost cards.
+     |
+     | Both create pages accept the same inputs:
+     |   job_source=paste
+     |   + job title / company / full description
+     |
+     | We combine description + responsibilities + qualifications
+     | + skills into a single "job post" blob so the AI on the
+     | target page has the full context, not just the title.
+     * ────────────────────────────────────────────────────────── */
+
+    $targetTitle   = $jobTitle    ?? ($job['job_title'] ?? '');
+    $targetCompany = $companyName ?? ($job['company']['name'] ?? '');
+
+    $jdParts = array_filter([
+        trim(strip_tags((string) ($job['job_description'] ?? ''))),
+        !empty($job['responsibilities'])
+            ? "Key Responsibilities:\n" . trim(strip_tags((string) $job['responsibilities']))
+            : null,
+        !empty($job['qualifications'])
+            ? "Qualifications:\n" . trim(strip_tags((string) $job['qualifications']))
+            : null,
+        !empty($job['skills'])
+            ? "Required Skills:\n" . trim(strip_tags((string) $job['skills']))
+            : null,
+    ]);
+
+    $targetDescription = implode("\n\n", $jdParts);
+    $targetDescription = mb_substr($targetDescription, 0, 8000);   // safe URL cap
+
+    // ── CV Review: /cv-review/new?job_source=paste&target_job_title=… ──
+    $cvServiceUrl = route('cv-review.create', array_filter([
+        'job_source'             => 'paste',
+        'target_job_title'       => $targetTitle,
+        'target_company_name'    => $targetCompany,
+        'target_job_description' => $targetDescription,
+    ], fn ($v) => $v !== '' && $v !== null));
+
+    // ── Cover Letter: /letters/create?job_source=paste&job_title=… ──
+    $letterServiceUrl = route('letters.create', array_filter([
+        'job_source'      => 'paste',
+        'job_title'       => $targetTitle,
+        'company_name'    => $targetCompany,
+        'job_description' => $targetDescription,
+    ], fn ($v) => $v !== '' && $v !== null));
 @endphp
 
 @push('styles')
@@ -67,13 +131,13 @@
                     <p class="fw-semibold mb-3" style="color:var(--jp-ink); font-size:.92rem;">Choose how you'd like to apply</p>
                 @endif
 
-                @if($hasApplicationMethod && ($needsResume || $needsCover || $needsAcademic))
+                @if($hasApplicationMethod && ($needsResume || $needsLetter || $needsAcademic))
                     <div class="jp-docs-note mb-3">
-                        <strong style="color:var(--jp-ink);">Have ready:</strong>
+                        <strong>Have ready:</strong>
                         {{ collect([
-                            $needsResume ? 'your CV / resume' : null,
-                            $needsCover ? 'a cover letter' : null,
-                            $needsAcademic ? 'academic documents' : null,
+                            $needsResume    ? 'your CV / resume' : null,
+                            $letterLabel,                                // ← uses the smart label
+                            $needsAcademic  ? 'academic documents' : null,
                         ])->filter()->implode(', ') }}
                     </div>
                 @endif
@@ -171,15 +235,116 @@
 
                 </div>
 
-                @if($hasApplicationMethod)
-                    <p class="jp-modal-tip mt-4 mb-0">Tip: mention that you found this role on {{ app_name() }}.</p>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
+                {{-- ========================================================= --}}
+                {{-- ATS BOOST — CV + Cover Letter for THIS job               --}}
+                {{-- ========================================================= --}}
+                <div class="jp-modal-boost mt-5">
+
+                    {{-- Eyebrow --}}
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="symbol symbol-20px">
+                            <span class="symbol-label bg-light-warning">
+                                <i class="ki-duotone ki-flash fs-7 text-warning">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </span>
+                        <span class="text-muted fw-semibold fs-8 text-uppercase ls-1">
+                            ATS boost
+                        </span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+
+                        {{-- ── Tailor CV ───────────────────────────────────────── --}}
+                        <a href="{{ $cvServiceUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="card card-flush card-bordered border-gray-300 bg-hover-light-primary text-hover-primary text-decoration-none">
+                            <div class="card-body p-3 p-md-4">
+                                <div class="d-flex align-items-center gap-3">
+
+                                    {{-- Icon --}}
+                                    <span class="symbol symbol-40px symbol-circle flex-shrink-0">
+                                        <span class="symbol-label bg-light-primary">
+                                            <i class="ki-duotone ki-document fs-2x text-primary">
+                                                <span class="path1"></span><span class="path2"></span>
+                                            </i>
+                                        </span>
+                                    </span>
+
+                                    {{-- Content --}}
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-bold fs-7 text-gray-900 mb-1">
+                                            Tailor my CV to this job
+                                        </div>
+                                        <div class="text-muted fs-8 lh-sm">
+                                            AI rewrites your CV to match this exact advert so it passes the ATS scan.
+                                        </div>
+                                    </div>
+
+                                    {{-- CTA --}}
+                                    <span class="d-none d-sm-flex align-items-center gap-1 text-primary fw-bold fs-8 flex-shrink-0">
+                                        Open
+                                        <i class="ki-duotone ki-arrow-right fs-7">
+                                            <span class="path1"></span><span class="path2"></span>
+                                        </i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+
+                        {{-- ── Letter (cover OR application) — shown when EITHER is required ── --}}
+                        @if($needsLetter)
+                            <a href="{{ $letterServiceUrl }}"
+                            target="_blank"
+                            rel="noopener"
+                            class="card card-flush card-bordered border-gray-300 bg-hover-light-success text-hover-success text-decoration-none">
+                                <div class="card-body p-3 p-md-4">
+                                    <div class="d-flex align-items-center gap-3">
+
+                                        <span class="symbol symbol-40px symbol-circle flex-shrink-0">
+                                            <span class="symbol-label bg-light-success">
+                                                <i class="ki-duotone ki-message-text-2 fs-2x text-success">
+                                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                </i>
+                                            </span>
+                                        </span>
+
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-bold fs-7 text-gray-900 mb-1">
+                                                {{ $needsCover && $needsApplication
+                                                    ? 'Write a letter for this job'
+                                                    : ($needsCover ? 'Write a cover letter for this job' : 'Write an application letter for this job') }}
+                                            </div>
+                                            <div class="text-muted fs-8 lh-sm">
+                                                A short, formal letter generated for <strong>{{ $companyName }}</strong> — no blank page.
+                                            </div>
+                                        </div>
+
+                                        <span class="d-none d-sm-flex align-items-center gap-1 text-success fw-bold fs-8 flex-shrink-0">
+                                            Open
+                                            <i class="ki-duotone ki-arrow-right fs-7">
+                                                <span class="path1"></span><span class="path2"></span>
+                                            </i>
+                                        </span>
+                                    </div>
+                                </div>
+                                                        </a>
+                        @endif
+
+                    </div>{{-- /.d-flex flex-column gap-3 (boost cards) --}}
+
+                </div>{{-- /.jp-modal-boost --}}
+
+            </div>{{-- /.modal-body --}}
+
+        </div>{{-- /.modal-content --}}
+    </div>{{-- /.modal-dialog --}}
+</div>{{-- /#applyModal --}}
 
 
+@push('scripts')
 <script>
 // ---------- Copy helper (used by the apply modal) ----------
 function jpCopy(el, text) {
@@ -199,7 +364,6 @@ function jpCopy(el, text) {
         return;
     }
 
-    // Fallback for older browsers / non-secure contexts
     const t = document.createElement('textarea');
     t.value = text;
     t.style.position = 'fixed';
@@ -219,9 +383,6 @@ function jpCopy(el, text) {
     const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
     const PAGE_JOB_ID = {!! json_encode($jobId ?? null) !!};
 
-    // ─────────────────────────────────────────────────────────────
-    // Shared toast helper — uses window.showToast when available
-    // ─────────────────────────────────────────────────────────────
     function toast(type, msg, title) {
         if (typeof window.showToast === 'function') {
             window.showToast(type, msg, title || (type === 'success' ? 'Done' : type === 'error' ? 'Error' : 'Info'));
@@ -230,9 +391,6 @@ function jpCopy(el, text) {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Login gate — reuses whatever login/guest modal this page has
-    // ─────────────────────────────────────────────────────────────
     function showLoginGate() {
         if (typeof window.showSaveLoginModal === 'function') {
             window.showSaveLoginModal();
@@ -242,14 +400,10 @@ function jpCopy(el, text) {
             window.showLoginOrGuestModal();
             return;
         }
-        // Fallback redirect
         const back = encodeURIComponent(window.location.href);
         window.location.href = '{{ route("login") }}?redirect=' + back;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Flip every apply button on the page to the "Applied" state
-    // ─────────────────────────────────────────────────────────────
     function markPageAsApplied() {
         document.querySelectorAll('.jp-easy-apply-btn').forEach(btn => {
             btn.dataset.applied = 'true';
@@ -268,13 +422,8 @@ function jpCopy(el, text) {
         });
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Track application — the ONE function both buttons use
-    // ─────────────────────────────────────────────────────────────
     async function trackApplication(jobId) {
-        if (!jobId) {
-            return { success: false, message: 'Missing job id.' };
-        }
+        if (!jobId) return { success: false, message: 'Missing job id.' };
 
         try {
             const res = await fetch(`/jobs/${jobId}/track-application`, {
@@ -285,33 +434,24 @@ function jpCopy(el, text) {
                     'X-CSRF-TOKEN': CSRF,
                 },
             });
-
-            const data = await res.json();
-            return data;
-
+            return await res.json();
         } catch (err) {
             console.error('trackApplication error:', err);
             return { success: false, message: 'Network error. Please try again.' };
         }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Unified click handler for BOTH button types
-    // ─────────────────────────────────────────────────────────────
     async function handleApplyClick(btn, { useModal }) {
-        // Already applied?
         if (btn.dataset.applied === 'true') {
             toast('info', 'You have already applied to this job.', 'Applied');
             return;
         }
 
-        // Not logged in? Open the login gate (unless the modal itself handles it)
         if (!isLoggedIn && !useModal) {
             showLoginGate();
             return;
         }
         if (!isLoggedIn && useModal) {
-            // Let the normal modal flow open; it has its own login check
             return false;
         }
 
@@ -321,28 +461,23 @@ function jpCopy(el, text) {
             return;
         }
 
-        // Visual feedback
         const original = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Applying...';
 
         const data = await trackApplication(jobId);
 
-        // ── Success
         if (data.success) {
             markPageAsApplied();
-
             if (data.is_applied && data.message === 'Already applied') {
                 toast('info', 'You have already applied to this job.', 'Applied');
             } else {
                 toast('success', 'Application submitted successfully!', 'Applied');
             }
-
             btn.disabled = false;
             return;
         }
 
-        // ── Not logged in (server said so)
         if (data.requires_login) {
             btn.disabled = false;
             btn.innerHTML = original;
@@ -350,7 +485,6 @@ function jpCopy(el, text) {
             return;
         }
 
-        // ── Profile incomplete
         if (data.code === 'profile_incomplete') {
             btn.disabled = false;
             btn.innerHTML = original;
@@ -358,20 +492,37 @@ function jpCopy(el, text) {
             return;
         }
 
-        // ── Any other error
         btn.disabled = false;
         btn.innerHTML = original;
         toast('error', data.message || 'Could not submit your application.', 'Error');
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Bind buttons
-    // ─────────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
+    async function trackGuestApplication(jobId) {
+        if (!jobId) return;
 
-        // ── Easy Apply buttons — direct track, no modal
+        const key  = 'guest_apply_tracked_' + jobId;
+        const last = parseInt(sessionStorage.getItem(key) || '0', 10);
+        if (last && (Date.now() - last) < 30 * 60 * 1000) return;
+
+        sessionStorage.setItem(key, String(Date.now()));
+
+        try {
+            await fetch(`/jobs/${jobId}/track-application-guest`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ source: 'apply_modal_guest' }),
+            });
+        } catch (e) {
+            console.warn('[guest-tracking] failed:', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.jp-easy-apply-btn').forEach(btn => {
-            // If already in "Applied" state, bind only the info toast
             if (btn.dataset.applied === 'true') {
                 btn.addEventListener('click', e => {
                     e.preventDefault();
@@ -379,52 +530,43 @@ function jpCopy(el, text) {
                 });
                 return;
             }
-
             btn.addEventListener('click', e => {
                 e.preventDefault();
                 handleApplyClick(btn, { useModal: false });
             });
         });
 
-        // ── Normal Apply Now buttons — open the modal, but pre-gate on login
         document.querySelectorAll('[data-bs-target="#applyModal"]').forEach(btn => {
             btn.addEventListener('click', e => {
-                // If already applied via this session, don't open the modal
                 if (btn.dataset.applied === 'true') {
                     e.preventDefault();
                     e.stopPropagation();
                     toast('info', 'You have already applied to this job.', 'Applied');
                     return;
                 }
-
-                if (!isLoggedIn) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    showLoginGate();
-                    return;
-                }
-
-                // Let the modal open — its own show handler will track
             });
         });
 
-        // ── The modal's own show handler tracks intent
         const applyModal = document.getElementById('applyModal');
         if (applyModal) {
             let tracked = false;
 
             applyModal.addEventListener('show.bs.modal', function () {
-                if (tracked || !isLoggedIn) return;
+                if (tracked) return;
                 tracked = true;
 
-                // Prefer the id rendered by the server; fall back to the save button's id
                 const jobId = PAGE_JOB_ID || document.querySelector('.jp-save-job-btn')?.dataset.jobId;
+                if (!jobId) return;
 
-                trackApplication(jobId).then(data => {
-                    if (data.success && data.is_applied) {
-                        markPageAsApplied();
-                    }
-                });
+                if (isLoggedIn) {
+                    trackApplication(jobId).then(data => {
+                        if (data.success && data.is_applied) {
+                            markPageAsApplied();
+                        }
+                    }).catch(() => {});
+                } else {
+                    trackGuestApplication(jobId);
+                }
             });
         }
     });
@@ -432,119 +574,116 @@ function jpCopy(el, text) {
 </script>
 
 <script>
-    // ---------- Save Job Functionality ----------
-    document.addEventListener('DOMContentLoaded', function () {
-        const saveBtn = document.querySelector('.jp-save-job-btn');
-        if (!saveBtn) return;
+document.addEventListener('DOMContentLoaded', function () {
+    const saveBtn = document.querySelector('.jp-save-job-btn');
+    if (!saveBtn) return;
 
-        saveBtn.addEventListener('click', function () {
-            if (this.dataset.busy === 'true') return; // ignore double-taps while a request is running
+    saveBtn.addEventListener('click', function () {
+        if (this.dataset.busy === 'true') return;
 
-            const jobId = this.dataset.jobId;
-            const isSaved = this.dataset.isSaved === 'true';
-            const icon = this.querySelector('i');
-            const text = this.querySelector('span');
-            const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
+        const jobId = this.dataset.jobId;
+        const isSaved = this.dataset.isSaved === 'true';
+        const icon = this.querySelector('i');
+        const text = this.querySelector('span');
+        const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.content === 'true';
 
-            if (!isLoggedIn) {
-                showSaveLoginModal();
-                return;
-            }
+        if (!isLoggedIn) {
+            showSaveLoginModal();
+            return;
+        }
 
-            toggleSaveJob(jobId, isSaved, icon, text, this);
-        });
+        toggleSaveJob(jobId, isSaved, icon, text, this);
     });
+});
 
-    function toggleSaveJob(jobId, isSaved, icon, text, btn) {
-        if (btn) btn.dataset.busy = 'true';
+function toggleSaveJob(jobId, isSaved, icon, text, btn) {
+    if (btn) btn.dataset.busy = 'true';
 
-        fetch(`/jobs/${jobId}/save`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-            },
-            body: JSON.stringify({}),
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) {
-                if (data.requires_login) {
-                    showSaveLoginModal();
-                } else if (typeof window.showToast === 'function') {
-                    window.showToast('error', data.message || 'Could not update your saved jobs.', 'Error');
-                }
-                return;
+    fetch(`/jobs/${jobId}/save`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            if (data.requires_login) {
+                showSaveLoginModal();
+            } else if (typeof window.showToast === 'function') {
+                window.showToast('error', data.message || 'Could not update your saved jobs.', 'Error');
             }
-            const newState = data.is_saved;
+            return;
+        }
+        const newState = data.is_saved;
 
-            icon.className = newState ? 'bi bi-heart-fill fs-3 me-2 text-danger' : 'bi bi-heart fs-3 me-2';
-            text.textContent = newState ? 'Saved' : 'Save';
+        icon.className = newState ? 'bi bi-heart-fill fs-3 me-2 text-danger' : 'bi bi-heart fs-3 me-2';
+        text.textContent = newState ? 'Saved' : 'Save';
 
-            if (typeof window.showToast === 'function') {
-                window.showToast(
-                    newState ? 'success' : 'info',
-                    newState ? 'Job saved successfully!' : 'Job removed from saved.',
-                    newState ? 'Saved' : 'Unsaved'
-                );
-            }
+        if (typeof window.showToast === 'function') {
+            window.showToast(
+                newState ? 'success' : 'info',
+                newState ? 'Job saved successfully!' : 'Job removed from saved.',
+                newState ? 'Saved' : 'Unsaved'
+            );
+        }
 
-            document.querySelector('.jp-save-job-btn').dataset.isSaved = newState;
-        })
-        .catch(() => {
-            if (typeof window.showToast === 'function') {
-                window.showToast('error', 'Something went wrong. Please try again.', 'Error');
-            }
-        })
-        .finally(() => {
-            if (btn) btn.dataset.busy = 'false';
-        });
-    }
+        document.querySelector('.jp-save-job-btn').dataset.isSaved = newState;
+    })
+    .catch(() => {
+        if (typeof window.showToast === 'function') {
+            window.showToast('error', 'Something went wrong. Please try again.', 'Error');
+        }
+    })
+    .finally(() => {
+        if (btn) btn.dataset.busy = 'false';
+    });
+}
 
-    function showSaveLoginModal() {
-        const back = encodeURIComponent(window.location.href);
-        const modalHtml = `
-            <div class="modal fade" id="saveLoginModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" style="margin-left:auto; margin-right:auto;">
-                    <div class="modal-content border-0 shadow-lg rounded-4">
-                        <div class="modal-body text-center p-5">
-                            <div class="mb-4">
-                                <div class="symbol symbol-80px bg-light-warning rounded-3 d-flex align-items-center justify-content-center mx-auto">
-                                    <i class="bi bi-heart fs-3x text-warning"></i>
-                                </div>
+function showSaveLoginModal() {
+    const back = encodeURIComponent(window.location.href);
+    const modalHtml = `
+        <div class="modal fade" id="saveLoginModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="margin-left:auto; margin-right:auto;">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-body text-center p-5">
+                        <div class="mb-4">
+                            <div class="symbol symbol-80px bg-light-warning rounded-3 d-flex align-items-center justify-content-center mx-auto">
+                                <i class="bi bi-heart fs-3x text-warning"></i>
                             </div>
-                            <h4 class="fw-bold mb-2">Sign in to save jobs</h4>
-                            <p class="text-muted mb-4">
-                                Create a free account or sign in to save jobs, apply faster and track every application in one place.
-                            </p>
-                            <div class="d-flex flex-column gap-3">
-                                <a href="{{ route('login') }}?redirect=${back}" class="btn jp-btn-primary py-3">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>
-                                    Sign In
-                                </a>
-                                <a href="{{ route('register') }}" class="btn jp-btn-outline py-3">
-                                    <i class="bi bi-person-plus me-2"></i>
-                                    Create Account
-                                </a>
-                            </div>
-                            <button type="button" class="btn btn-link text-muted mt-3 p-0" data-bs-dismiss="modal">Not now</button>
                         </div>
+                        <h4 class="fw-bold mb-2">Sign in to save jobs</h4>
+                        <p class="text-muted mb-4">
+                            Create a free account or sign in to save jobs, apply faster and track every application in one place.
+                        </p>
+                        <div class="d-flex flex-column gap-3">
+                            <a href="{{ route('login') }}?redirect=${back}" class="btn jp-btn-primary py-3">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                Sign In
+                            </a>
+                            <a href="{{ route('register') }}" class="btn jp-btn-outline py-3">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Create Account
+                            </a>
+                        </div>
+                        <button type="button" class="btn btn-link text-muted mt-3 p-0" data-bs-dismiss="modal">Not now</button>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
 
-        const existingModal = document.getElementById('saveLoginModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
+    const existingModal = document.getElementById('saveLoginModal');
+    if (existingModal) existingModal.remove();
 
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        const el = document.getElementById('saveLoginModal');
-        // Clean up the element once it has been closed
-        el.addEventListener('hidden.bs.modal', () => el.remove());
-        const modal = new bootstrap.Modal(el);
-        modal.show();
-    }
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const el = document.getElementById('saveLoginModal');
+    el.addEventListener('hidden.bs.modal', () => el.remove());
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+}
 </script>
+@endpush

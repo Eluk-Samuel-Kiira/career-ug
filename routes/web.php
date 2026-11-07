@@ -20,7 +20,8 @@ Route::get('/jobs', [JobsController::class, 'jobs'])->name('jobs.index');
 // Job detail
 Route::get('/job/{id}', [JobsController::class, 'show'])->name('jobs.show');
 // Job application
-Route::post('/guest/track-application', [JobsController::class, 'trackGuestApplication'])->name('guest.track-application');
+Route::post('/jobs/{id}/track-application-guest', [JobsController::class, 'trackGuestApplication'])
+    ->name('jobs.track-application-guest');
 
 Route::middleware(['auth.web'])->group(function () {
     Route::post('/jobs/{id}/save', [JobsController::class, 'toggleSave'])->name('jobs.toggle-save');

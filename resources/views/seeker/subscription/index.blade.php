@@ -13,7 +13,7 @@
         <div class="col-md-3">
             <div class="card card-flush">
                 <div class="card-body py-5">
-                    <div class="text-muted fs-7 mb-1">Total Paid</div>
+                    <div class="text-muted fs-7 mb-1">Total Paid (all services)</div>
                     <div class="fs-2 fw-bold text-gray-900">
                         {{ strtoupper($active['currency'] ?? 'UGX') }}
                         {{ number_format(($summary['total_paid_cents'] ?? 0) / 100, ($active['currency'] ?? 'UGX') === 'UGX' ? 0 : 2) }}
@@ -56,11 +56,11 @@
         @php
             $status = $active['status'] ?? 'active';
             $tone = match (true) {
-                $status === 'past_due'                 => 'danger',
-                $status === 'trialing'                 => 'info',
+                $status === 'past_due'                  => 'danger',
+                $status === 'trialing'                  => 'info',
                 !empty($active['cancel_at_period_end']) => 'warning',
-                $active['is_active']                   => 'success',
-                default                                => 'secondary',
+                !empty($active['is_active'])            => 'success',
+                default                                 => 'secondary',
             };
         @endphp
 
@@ -99,11 +99,21 @@
     {{-- ══════════════════════════════════════════════════════ --}}
     {{-- PAYMENT HISTORY                                        --}}
     {{-- ══════════════════════════════════════════════════════ --}}
+    @php
+        $paymentsPagination = $pagination['payments'] ?? [
+            'current_page' => 1, 'last_page' => 1, 'per_page' => 10,
+            'total' => count($payments ?? []), 'has_more' => false,
+        ];
+        $paymentsTotal      = $paymentsPagination['total'];
+        $paymentsCurrent    = $paymentsPagination['current_page'];
+        $paymentsLast       = $paymentsPagination['last_page'];
+    @endphp
+
     <div class="card card-flush mb-6">
         <div class="card-header align-items-center py-5">
             <h3 class="card-title fw-bold mb-0">Payment History</h3>
             <div class="card-toolbar">
-                <span class="badge badge-light-secondary">{{ count($payments) }} records</span>
+                <span class="badge badge-light-secondary">{{ $paymentsTotal }} records</span>
             </div>
         </div>
 
@@ -121,7 +131,7 @@
                     <table class="table align-middle table-row-dashed table-row-gray-300 fs-7 gy-3">
                         <thead>
                             <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                <th class="text-start min-w-180px">Plan</th>
+                                <th class="text-start min-w-180px">Purpose</th>
                                 <th class="text-start min-w-140px">Amount</th>
                                 <th class="text-start min-w-130px">Status</th>
                                 <th class="text-start min-w-180px">Reference</th>
@@ -131,29 +141,50 @@
                         <tbody>
                             @foreach($payments as $p)
                                 @php
-                                    $pColor = match($p['status'] ?? '') {
-                                        'succeeded' => 'success',
+                                    $pStatus = $p['status'] ?? '';
+
+                                    $pColor = match($pStatus) {
+                                        'completed' => 'success',
                                         'pending'   => 'info',
                                         'failed'    => 'danger',
-                                        'refunded'  => 'warning',
+                                        'cancelled' => 'secondary',
                                         default     => 'secondary',
+                                    };
+
+                                    $purposeColor = match($p['purpose_type'] ?? '') {
+                                        'subscription'     => 'primary',
+                                        'cv_review'        => 'info',
+                                        'cv_rewrite',
+                                        'cv_rewrite_human' => 'success',
+                                        'cover_letter'     => 'warning',
+                                        'job_submission'   => 'dark',
+                                        default            => 'secondary',
                                     };
                                 @endphp
                                 <tr>
                                     <td class="text-start">
-                                        <div class="fw-bold text-gray-800">{{ $p['service_name'] ?? '—' }}</div>
-                                        <div class="text-muted fs-8">{{ $p['service_key'] ?? '' }}</div>
-                                    </td>
-                                    <td class="text-start fw-bold">{{ $p['amount_formatted'] }}</td>
-                                    <td class="text-start">
-                                        <span class="badge badge-light-{{ $pColor }}">{{ $p['status_label'] }}</span>
-                                        @if(!empty($p['failure_reason']))
-                                            <div class="text-danger fs-8 mt-1">{{ $p['failure_reason'] }}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge badge-light-{{ $purposeColor }}">
+                                                {{ $p['purpose_label'] ?? '—' }}
+                                            </span>
+                                        </div>
+                                        @if(!empty($p['description']))
+                                            <div class="text-muted fs-8 mt-1">
+                                                {{ \Illuminate\Support\Str::limit($p['description'], 60) }}
+                                            </div>
                                         @endif
+                                    </td>
+                                    <td class="text-start fw-bold">{{ $p['amount_formatted'] ?? '—' }}</td>
+                                    <td class="text-start">
+                                        <span class="badge badge-light-{{ $pColor }}">
+                                            {{ $p['status_label'] ?? $pStatus }}
+                                        </span>
                                     </td>
                                     <td class="text-start text-muted fs-8">
                                         <div>{{ $p['gateway'] ?? '—' }}</div>
-                                        <div>{{ $p['reference'] ?? '—' }}</div>
+                                        <div style="font-family:monospace;">
+                                            {{ \Illuminate\Support\Str::limit($p['reference'] ?? '—', 16) }}
+                                        </div>
                                     </td>
                                     <td class="text-start text-muted fs-8">
                                         @if(!empty($p['paid_at']))
@@ -167,6 +198,63 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- ── Payments pagination ─────────────────────── --}}
+                @if($paymentsLast > 1)
+                    <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
+                        <div class="text-muted fs-8">
+                            Page <span class="fw-bold">{{ $paymentsCurrent }}</span>
+                            of <span class="fw-bold">{{ $paymentsLast }}</span>
+                            — {{ $paymentsTotal }} total
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm m-0">
+                                <li class="page-item {{ $paymentsCurrent <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['payments_page' => max(1, $paymentsCurrent - 1)]) }}">
+                                        ‹ Prev
+                                    </a>
+                                </li>
+
+                                @php
+                                    $start = max(1, $paymentsCurrent - 2);
+                                    $end   = min($paymentsLast, $paymentsCurrent + 2);
+                                @endphp
+
+                                @if($start > 1)
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['payments_page' => 1]) }}">1</a>
+                                    </li>
+                                    @if($start > 2)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                @endif
+
+                                @for($i = $start; $i <= $end; $i++)
+                                    <li class="page-item {{ $i === $paymentsCurrent ? 'active' : '' }}">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['payments_page' => $i]) }}">{{ $i }}</a>
+                                    </li>
+                                @endfor
+
+                                @if($end < $paymentsLast)
+                                    @if($end < $paymentsLast - 1)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['payments_page' => $paymentsLast]) }}">
+                                            {{ $paymentsLast }}
+                                        </a>
+                                    </li>
+                                @endif
+
+                                <li class="page-item {{ $paymentsCurrent >= $paymentsLast ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['payments_page' => min($paymentsLast, $paymentsCurrent + 1)]) }}">
+                                        Next ›
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
@@ -174,11 +262,21 @@
     {{-- ══════════════════════════════════════════════════════ --}}
     {{-- SUBSCRIPTION HISTORY                                   --}}
     {{-- ══════════════════════════════════════════════════════ --}}
+    @php
+        $subsPagination = $pagination['subscriptions'] ?? [
+            'current_page' => 1, 'last_page' => 1, 'per_page' => 10,
+            'total' => count($subscriptions ?? []), 'has_more' => false,
+        ];
+        $subsTotal   = $subsPagination['total'];
+        $subsCurrent = $subsPagination['current_page'];
+        $subsLast    = $subsPagination['last_page'];
+    @endphp
+
     <div class="card card-flush">
         <div class="card-header align-items-center py-5">
             <h3 class="card-title fw-bold mb-0">Subscription History</h3>
             <div class="card-toolbar">
-                <span class="badge badge-light-secondary">{{ count($subscriptions) }} records</span>
+                <span class="badge badge-light-secondary">{{ $subsTotal }} records</span>
             </div>
         </div>
 
@@ -210,7 +308,7 @@
                                         ($s['status'] ?? '') === 'past_due' => 'danger',
                                         ($s['status'] ?? '') === 'trialing' => 'info',
                                         !empty($s['cancel_at_period_end'])  => 'warning',
-                                        ($s['is_active'] ?? false)          => 'success',
+                                        !empty($s['is_active'])             => 'success',
                                         default                             => 'secondary',
                                     };
                                 @endphp
@@ -237,6 +335,63 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- ── Subscriptions pagination ────────────────── --}}
+                @if($subsLast > 1)
+                    <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
+                        <div class="text-muted fs-8">
+                            Page <span class="fw-bold">{{ $subsCurrent }}</span>
+                            of <span class="fw-bold">{{ $subsLast }}</span>
+                            — {{ $subsTotal }} total
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm m-0">
+                                <li class="page-item {{ $subsCurrent <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => max(1, $subsCurrent - 1)]) }}">
+                                        ‹ Prev
+                                    </a>
+                                </li>
+
+                                @php
+                                    $start = max(1, $subsCurrent - 2);
+                                    $end   = min($subsLast, $subsCurrent + 2);
+                                @endphp
+
+                                @if($start > 1)
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => 1]) }}">1</a>
+                                    </li>
+                                    @if($start > 2)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                @endif
+
+                                @for($i = $start; $i <= $end; $i++)
+                                    <li class="page-item {{ $i === $subsCurrent ? 'active' : '' }}">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => $i]) }}">{{ $i }}</a>
+                                    </li>
+                                @endfor
+
+                                @if($end < $subsLast)
+                                    @if($end < $subsLast - 1)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => $subsLast]) }}">
+                                            {{ $subsLast }}
+                                        </a>
+                                    </li>
+                                @endif
+
+                                <li class="page-item {{ $subsCurrent >= $subsLast ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => min($subsLast, $subsCurrent + 1)]) }}">
+                                        Next ›
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                @endif
             @endif
         </div>
     </div>

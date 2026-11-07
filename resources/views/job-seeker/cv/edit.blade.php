@@ -230,15 +230,15 @@
 						</div>
 						<div class="col-md-4">
 							<label class="fw-semibold fs-6 mb-2">LinkedIn</label>
-							<input type="url" class="form-control form-control-lg" id="f_linkedin_url" />
+							<input type="text" class="form-control form-control-lg" id="f_linkedin_url" />
 						</div>
 						<div class="col-md-4">
 							<label class="fw-semibold fs-6 mb-2">GitHub</label>
-							<input type="url" class="form-control form-control-lg" id="f_github_url" />
+							<input type="text" class="form-control form-control-lg" id="f_github_url" />
 						</div>
 						<div class="col-md-4">
 							<label class="fw-semibold fs-6 mb-2">Portfolio</label>
-							<input type="url" class="form-control form-control-lg" id="f_portfolio_url" />
+							<input type="text" class="form-control form-control-lg" id="f_portfolio_url" />
 						</div>
 						<div class="col-12">
 							<label class="fw-semibold fs-6 mb-2">Professional Summary</label>

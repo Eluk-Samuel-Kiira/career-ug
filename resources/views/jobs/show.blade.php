@@ -494,8 +494,56 @@
 @endpush
 
 @section('content')
+@php
+    /* ──────────────────────────────────────────────────────────
+     | Pre-fill URLs for the two ATS boost cards.
+     |
+     | Both create pages accept the same inputs:
+     |   job_source=paste
+     |   + job title / company / full description
+     |
+     | We combine description + responsibilities + qualifications
+     | + skills into a single "job post" blob so the AI on the
+     | target page has the full context, not just the title.
+     * ────────────────────────────────────────────────────────── */
 
+    $targetTitle   = $jobTitle    ?? ($job['job_title'] ?? '');
+    $targetCompany = $companyName ?? ($job['company']['name'] ?? '');
+
+    $jdParts = array_filter([
+        trim(strip_tags((string) ($job['job_description'] ?? ''))),
+        !empty($job['responsibilities'])
+            ? "Key Responsibilities:\n" . trim(strip_tags((string) $job['responsibilities']))
+            : null,
+        !empty($job['qualifications'])
+            ? "Qualifications:\n" . trim(strip_tags((string) $job['qualifications']))
+            : null,
+        !empty($job['skills'])
+            ? "Required Skills:\n" . trim(strip_tags((string) $job['skills']))
+            : null,
+    ]);
+
+    $targetDescription = implode("\n\n", $jdParts);
+    $targetDescription = mb_substr($targetDescription, 0, 8000);   // safe URL cap
+
+    // ── CV Review: /cv-review/new?job_source=paste&target_job_title=… ──
+    $cvServiceUrl = route('cv-review.create', array_filter([
+        'job_source'             => 'paste',
+        'target_job_title'       => $targetTitle,
+        'target_company_name'    => $targetCompany,
+        'target_job_description' => $targetDescription,
+    ], fn ($v) => $v !== '' && $v !== null));
+
+    // ── Cover Letter: /letters/create?job_source=paste&job_title=… ──
+    $letterServiceUrl = route('letters.create', array_filter([
+        'job_source'      => 'paste',
+        'job_title'       => $targetTitle,
+        'company_name'    => $targetCompany,
+        'job_description' => $targetDescription,
+    ], fn ($v) => $v !== '' && $v !== null));
+@endphp
 <div class="jp-page">
+
 
 <!-- ====================== BREADCRUMB ====================== -->
 <div class="border-bottom" style="border-color:var(--jp-line) !important; background:#fff;">
@@ -616,7 +664,7 @@
 						<div class="jp-prose">{!! $job['job_description'] ?? '<p>No description provided.</p>' !!}</div>
 					</div>
 					@include('jobs.partials.promo-banner', [
-						'href'    => route('cv-review.my'),
+						'href'    => $cvServiceUrl,
 						'image'   => 'assets/media/banners/cv-banner.svg',
 						'alt'     => 'Job seeker holding a professional CV',
 						'eyebrow' => 'CV Tailor & Maker',
@@ -685,15 +733,27 @@
 						</div>
 					</div>
 
-					@include('jobs.partials.promo-banner', [
-						'href'    => route('letters.index'),
-						'image'   => 'assets/media/banners/cover-letter-banner.svg',
-						'alt'     => 'Applicant writing a cover letter',
-						'eyebrow' => 'Cover Letter Generator',
-						'title'   => 'Stop starting from a blank page.',
-						'text'    => 'A cover letter written for this role, in one minute.',
-						'cta'     => 'Write my cover letter',
-					])
+					@php
+						$bannerNeedsCover       = !empty($job['is_cover_letter_required']);
+						$bannerNeedsApplication = !empty($job['is_application_required']);
+						$bannerNeedsLetter      = $bannerNeedsCover || $bannerNeedsApplication;
+					@endphp
+
+					@if($bannerNeedsLetter)
+						@include('jobs.partials.promo-banner', [
+							'href'    => $letterServiceUrl,
+							'image'   => 'assets/media/banners/cover-letter-banner.svg',
+							'alt'     => 'Applicant writing a letter',
+							'eyebrow' => 'Letter Generator',
+							'title'   => $bannerNeedsCover && $bannerNeedsApplication
+											? 'This job requires a letter.'
+											: ($bannerNeedsCover
+												? 'This job requires a cover letter.'
+												: 'This job requires an application letter.'),
+							'text'    => 'Generate one tailored to this role in one minute — no blank page.',
+							'cta'     => 'Write my letter',
+						])
+					@endif
 
 					<div class="jp-content-card" id="apply">
 						<h2><i class="ki-duotone ki-send fs-3"><span class="path1"></span><span class="path2"></span></i>How to Apply</h2>

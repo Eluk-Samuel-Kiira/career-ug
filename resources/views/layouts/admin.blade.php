@@ -13,6 +13,248 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @stack('styles')
     <script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
+    <style>
+        /* ==========================================================================
+        WhatsApp float widget
+        ========================================================================== */
+        .jp-wa-float-wrap {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+            pointer-events: none;   /* only the button + popover capture clicks */
+        }
+
+        .jp-wa-float,
+        .jp-wa-popover {
+            pointer-events: auto;
+        }
+
+        /* ── Floating button ──────────────────────────────────── */
+        .jp-wa-float {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: #25D366;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+            cursor: pointer;
+            position: relative;
+            padding: 0;
+        }
+
+        .jp-wa-float svg {
+            width: 28px;
+            height: 28px;
+            display: block;
+        }
+
+        .jp-wa-float:hover {
+            background: #1ebe5b;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 12px 28px rgba(37, 211, 102, 0.45), 0 4px 10px rgba(0, 0, 0, 0.18);
+        }
+
+        .jp-wa-float:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .jp-wa-float[aria-expanded="true"] {
+            background: #128C7E;   /* darker green — indicates "open" */
+        }
+
+        /* Small unread-style badge */
+        .jp-wa-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            background: #FE3C30;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 20px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(254, 60, 48, 0.5);
+            border: 2px solid #fff;
+            pointer-events: none;
+            transition: transform .2s ease;
+        }
+
+        .jp-wa-float[aria-expanded="true"] .jp-wa-badge {
+            transform: scale(0);
+        }
+
+        /* ── Popover ──────────────────────────────────────────── */
+        .jp-wa-popover {
+            width: 320px;
+            max-width: calc(100vw - 32px);
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(11, 28, 46, 0.22), 0 6px 14px rgba(0, 0, 0, 0.08);
+            padding: 18px;
+            position: relative;
+            transform-origin: bottom right;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px) scale(0.96);
+            transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+        }
+
+        .jp-wa-popover.jp-wa-open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Little tail pointing at the button */
+        .jp-wa-popover::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            right: 22px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            transform: rotate(45deg);
+            box-shadow: 4px 4px 8px rgba(11, 28, 46, 0.06);
+        }
+
+        .jp-wa-popover-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: #64748B;
+            font-size: 20px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background .15s ease, color .15s ease;
+        }
+
+        .jp-wa-popover-close:hover {
+            background: #F4F8F7;
+            color: #0F1B2D;
+        }
+
+        .jp-wa-popover-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding-right: 24px;   /* leave room for close button */
+        }
+
+        .jp-wa-popover-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #25D366;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .jp-wa-popover-avatar svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        .jp-wa-popover-title {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #0F1B2D;
+            line-height: 1.25;
+            margin-bottom: 2px;
+        }
+
+        .jp-wa-popover-sub {
+            font-size: 0.78rem;
+            color: #64748B;
+            line-height: 1.3;
+        }
+
+        .jp-wa-popover-body {
+            font-size: 0.85rem;
+            color: #33475B;
+            line-height: 1.5;
+            margin: 0 0 14px;
+        }
+
+        .jp-wa-popover-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            background: #25D366;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 10px;
+            transition: background .15s ease, transform .1s ease;
+        }
+
+        .jp-wa-popover-cta:hover {
+            background: #1ebe5b;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .jp-wa-popover-phone {
+            font-size: 0.75rem;
+            color: #64748B;
+            text-align: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(15, 27, 45, 0.08);
+        }
+
+        /* ── Mobile ──────────────────────────────────────────── */
+        @media (max-width: 575.98px) {
+            .jp-wa-float-wrap {
+                bottom: 16px;
+                right: 16px;
+            }
+            .jp-wa-float {
+                width: 52px;
+                height: 52px;
+            }
+            .jp-wa-float svg {
+                width: 26px;
+                height: 26px;
+            }
+            .jp-wa-popover {
+                width: calc(100vw - 32px);
+                max-width: 340px;
+                padding: 16px;
+            }
+        }
+    </style>
 </head>
 <body id="kt_app_body"
     data-kt-app-layout="dark-sidebar"
@@ -41,6 +283,17 @@
         }
     </script>
 
+    @php
+        // Turn the display phone ("+256 754 428 612") into a digits-only number
+        // wa.me requires: country code + number, no "+", no spaces, no dashes.
+        $waRaw   = support_phone();            // "+256 754 428 612"
+        $waDigits = preg_replace('/\D+/', '', $waRaw);  // "256754428612"
+        $waDigits = ltrim($waDigits, '0');              // strip leading zeros
+
+        // Optional: pre-fill the greeting so WhatsApp opens with text ready to send
+        $waGreeting = rawurlencode("Hi, I'm on " . config('app.name') . " and I'd like some help.");
+        $waUrl      = "https://wa.me/{$waDigits}?text={$waGreeting}";
+    @endphp
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
 
@@ -84,6 +337,69 @@
                             </div>
                         </div>
 
+                    </div>
+
+                    {{-- ==================================================================
+                        WhatsApp float — clickable "We're here to help" popover
+                        ================================================================== --}}
+                    <div class="jp-wa-float-wrap">
+
+                        {{-- Popover --}}
+                        <div id="jpWaPopover" class="jp-wa-popover" role="dialog" aria-labelledby="jpWaTitle" aria-hidden="true">
+                            <button type="button"
+                                    class="jp-wa-popover-close"
+                                    aria-label="Close"
+                                    data-jp-wa-close>
+                                &times;
+                            </button>
+
+                            <div class="jp-wa-popover-head">
+                                <span class="jp-wa-popover-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M17.6 6.32A8.86 8.86 0 0 0 12.02 3.5c-4.87 0-8.83 3.94-8.83 8.79 0 1.55.41 3.06 1.19 4.39L3.2 21l4.44-1.16a8.9 8.9 0 0 0 4.37 1.12h.01c4.87 0 8.83-3.94 8.83-8.79a8.7 8.7 0 0 0-2.25-5.85Zm-5.58 13.5h-.01c-1.36 0-2.7-.36-3.86-1.05l-.28-.16-2.87.75.77-2.79-.18-.29a7.3 7.3 0 0 1-1.13-3.9c0-4.03 3.3-7.32 7.36-7.32a7.3 7.3 0 0 1 5.2 2.15 7.24 7.24 0 0 1 2.16 5.17c0 4.03-3.3 7.32-7.36 7.32Zm4.03-5.48c-.22-.11-1.3-.64-1.5-.71-.2-.07-.35-.11-.5.11s-.58.71-.71.86-.26.16-.48.05a6.03 6.03 0 0 1-1.77-1.09 6.6 6.6 0 0 1-1.22-1.52c-.13-.22 0-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.6.28-.2.22-.79.77-.79 1.87 0 1.1.81 2.17.92 2.32.11.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.3-.53 1.49-1.04.18-.51.18-.94.13-1.03-.05-.09-.2-.15-.42-.26Z"/>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <div id="jpWaTitle" class="jp-wa-popover-title">We're here to help</div>
+                                    <div class="jp-wa-popover-sub">Chat with us on WhatsApp</div>
+                                </div>
+                            </div>
+
+                            <p class="jp-wa-popover-body">
+                                Have a question about a job, an application, or our services?
+                                Send us a message and we'll reply as soon as we can.
+                            </p>
+
+                            <a href="{{ $waUrl }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="jp-wa-popover-cta"
+                            data-jp-wa-cta>
+                                Continue to WhatsApp
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                    <path d="M5 12h14M13 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+
+                            <div class="jp-wa-popover-phone">
+                                Or call us: <a href="tel:{{ preg_replace('/\s+/', '', support_phone()) }}" style="color:inherit;">{{ support_phone() }}</a>
+                            </div>
+                        </div>
+
+                        {{-- Floating button --}}
+                        <button type="button"
+                                id="jpWaButton"
+                                class="jp-wa-float"
+                                aria-label="Chat with us on WhatsApp"
+                                aria-expanded="false"
+                                aria-controls="jpWaPopover">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M17.6 6.32A8.86 8.86 0 0 0 12.02 3.5c-4.87 0-8.83 3.94-8.83 8.79 0 1.55.41 3.06 1.19 4.39L3.2 21l4.44-1.16a8.9 8.9 0 0 0 4.37 1.12h.01c4.87 0 8.83-3.94 8.83-8.79a8.7 8.7 0 0 0-2.25-5.85Zm-5.58 13.5h-.01c-1.36 0-2.7-.36-3.86-1.05l-.28-.16-2.87.75.77-2.79-.18-.29a7.3 7.3 0 0 1-1.13-3.9c0-4.03 3.3-7.32 7.36-7.32a7.3 7.3 0 0 1 5.2 2.15 7.24 7.24 0 0 1 2.16 5.17c0 4.03-3.3 7.32-7.36 7.32Zm4.03-5.48c-.22-.11-1.3-.64-1.5-.71-.2-.07-.35-.11-.5.11s-.58.71-.71.86-.26.16-.48.05a6.03 6.03 0 0 1-1.77-1.09 6.6 6.6 0 0 1-1.22-1.52c-.13-.22 0-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.6.28-.2.22-.79.77-.79 1.87 0 1.1.81 2.17.92 2.32.11.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.3-.53 1.49-1.04.18-.51.18-.94.13-1.03-.05-.09-.2-.15-.42-.26Z"/>
+                            </svg>
+
+                            {{-- Tiny badge --}}
+                            <span class="jp-wa-badge" aria-hidden="true">1</span>
+                        </button>
                     </div>
 
                     {{-- Footer --}}
@@ -268,6 +584,82 @@
         };
 
 
+    </script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const wrap    = document.querySelector('.jp-wa-float-wrap');
+        const btn     = document.getElementById('jpWaButton');
+        const popover = document.getElementById('jpWaPopover');
+        if (!wrap || !btn || !popover) return;
+
+        const closeBtn = popover.querySelector('[data-jp-wa-close]');
+
+        function openPopover() {
+            popover.classList.add('jp-wa-open');
+            popover.setAttribute('aria-hidden', 'false');
+            btn.setAttribute('aria-expanded', 'true');
+        }
+
+        function closePopover() {
+            popover.classList.remove('jp-wa-open');
+            popover.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function togglePopover() {
+            if (popover.classList.contains('jp-wa-open')) closePopover();
+            else openPopover();
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            togglePopover();
+        });
+
+        closeBtn?.addEventListener('click', function (e) {
+            e.stopPropagation();
+            closePopover();
+        });
+
+        // Click outside closes
+        document.addEventListener('click', function (e) {
+            if (!wrap.contains(e.target) && popover.classList.contains('jp-wa-open')) {
+                closePopover();
+            }
+        });
+
+        // Escape key closes
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && popover.classList.contains('jp-wa-open')) {
+                closePopover();
+                btn.focus();
+            }
+        });
+
+        // Opening the WhatsApp link — auto-close so it doesn't linger on return
+        popover.querySelector('[data-jp-wa-cta]')?.addEventListener('click', function () {
+            // Wait for the navigation to kick off, then close the popover
+            setTimeout(closePopover, 100);
+        });
+
+        // Optional: show the popover automatically the first time a guest
+        // stays on the page for 8+ seconds without clicking
+        const KEY = 'jp_wa_greeted';
+        if (!sessionStorage.getItem(KEY)) {
+            const t = setTimeout(function () {
+                if (!popover.classList.contains('jp-wa-open')) {
+                    openPopover();
+                    sessionStorage.setItem(KEY, '1');
+                }
+            }, 8000);
+
+            // If they interact first, cancel the auto-open
+            document.addEventListener('click', () => clearTimeout(t), { once: true });
+        }
+    })();
     </script>
 
     <script>

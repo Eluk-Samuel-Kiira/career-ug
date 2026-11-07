@@ -12,6 +12,12 @@
     $service = $isAvailable ? $quote['service'] : null;
     $price   = $isAvailable ? $quote['price']   : null;
 @endphp
+@php
+    $prefill       = $prefill ?? [];
+    $prefillSource = in_array($prefill['job_source'] ?? null, ['db', 'manual', 'paste', 'none'], true)
+                        ? $prefill['job_source']
+                        : 'db';
+@endphp
 
 <div class="container py-4 py-md-6">
 
@@ -138,7 +144,8 @@
                         <span class="form-check-label fs-7 fs-md-6">Enter title &amp; company</span>
                     </label>
                     <label class="form-check form-check-inline mb-0">
-                        <input class="form-check-input" type="radio" name="job_source" value="paste">
+                        <input class="form-check-input" type="radio" name="job_source" value="paste"
+                            {{ $prefillSource === 'paste' ? 'checked' : '' }}>  
                         <span class="form-check-label fs-7 fs-md-6">Paste job post</span>
                     </label>
                     <label class="form-check form-check-inline mb-0">
@@ -174,11 +181,15 @@
                 <div id="jobPastePanel" class="d-none row g-3">
                     <div class="col-12 col-md-6">
                         <label class="fw-semibold mb-2 fs-7 fs-md-6">Job Title</label>
-                        <input type="text" id="job_title_paste" name="target_job_title" class="form-control">
+                        <input type="text" id="job_title_paste" name="target_job_title"
+                            class="form-control"
+                            value="{{ old('target_job_title', $prefill['target_job_title'] ?? '') }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="fw-semibold mb-2 fs-7 fs-md-6">Company Name</label>
-                        <input type="text" id="company_name_paste" name="target_company_name" class="form-control">
+                        <input type="text" id="company_name_paste" name="target_company_name"
+                            class="form-control"
+                            value="{{ old('target_company_name', $prefill['target_company_name'] ?? '') }}">
                     </div>
                     <div class="col-12">
                         <label class="fw-semibold mb-2 fs-7 fs-md-6">
@@ -186,8 +197,7 @@
                             <span class="text-muted fw-normal fs-8">(description, responsibilities, qualifications, skills)</span>
                         </label>
                         <textarea id="job_description_paste" name="target_job_description" rows="8"
-                                  class="form-control"
-                                  placeholder="Paste the ENTIRE job post here — the description, key responsibilities, qualifications/requirements, and required skills. The more detail you give, the better the AI matches your CV to the role."></textarea>
+                            class="form-control">{{ old('target_job_description', $prefill['target_job_description'] ?? '') }}</textarea>
                         <div class="text-muted fs-8 mt-1">
                             Paste everything from the job advert: what the role does, what's required, and what skills they list.
                             This is what the AI reads when tailoring your CV.
@@ -230,45 +240,6 @@
 </div>
 @endsection
 
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<style>
-    @media (max-width: 575.98px) {
-        .w-sm-auto { width: 100% !important; }
-    }
-    @media (min-width: 576px) {
-        .w-sm-auto { width: auto !important; }
-    }
-    .cursor-pointer { cursor: pointer; }
-
-    /* Select2 — match Metronic form-select-solid */
-    #job_search + .select2-container .select2-selection--single {
-        display: flex; align-items: center; height: 44px;
-        padding: 0 40px 0 12px;
-        border: 1px solid var(--bs-gray-300);
-        border-radius: 0.475rem;
-        background-color: var(--bs-gray-100);
-        transition: border-color .15s ease, background-color .15s ease;
-    }
-    #job_search + .select2-container .select2-selection--single:hover,
-    #job_search + .select2-container.select2-container--focus .select2-selection--single {
-        border-color: var(--bs-primary); background-color: var(--bs-white);
-    }
-    #job_search + .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: normal !important; padding: 0 !important; margin: 0 !important;
-        color: var(--bs-gray-800); font-size: 0.95rem;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
-    }
-    #job_search + .select2-container .select2-selection--single .select2-selection__placeholder {
-        color: var(--bs-gray-500); line-height: normal !important;
-    }
-    #job_search + .select2-container .select2-selection--single .select2-selection__arrow {
-        height: 100% !important; top: 0; right: 8px;
-        display: flex; align-items: center; justify-content: center; width: 24px;
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -283,7 +254,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!form || !drop || !fileInput) return;
 
-    // ── Job source switcher ─────────────────────────────────
+    // ── Server prefill ───────────────────────────────────────
+    const SERVER_PREFILL_SOURCE = @json($prefillSource);
+
+    // ── Job source switcher ──────────────────────────────────
     const dbPanel     = document.getElementById('jobDbPanel');
     const manualPanel = document.getElementById('jobManualPanel');
     const pastePanel  = document.getElementById('jobPastePanel');
@@ -294,12 +268,16 @@ document.addEventListener('DOMContentLoaded', function () {
         manualPanel.classList.toggle('d-none', source !== 'manual');
         pastePanel.classList.toggle('d-none',  source !== 'paste');
 
-        // Disable hidden inputs so they don't submit
         manualPanel.querySelectorAll('input, textarea, select')
             .forEach(el => el.disabled = source !== 'manual');
         pastePanel.querySelectorAll('input, textarea, select')
             .forEach(el => el.disabled = source !== 'paste');
         if (jobPostIdIn) jobPostIdIn.disabled = source !== 'db';
+
+        // Sync radio states with the visible panel
+        document.querySelectorAll('input[name="job_source"]').forEach(r => {
+            r.checked = (r.value === source);
+        });
     }
 
     document.querySelectorAll('input[name="job_source"]').forEach(radio => {
@@ -308,8 +286,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    const initialSource = document.querySelector('input[name="job_source"]:checked')?.value || 'db';
-    setPanelVisibility(initialSource);
+    // ── Apply prefill on load ───────────────────────────────
+    // SERVER_PREFILL_SOURCE comes from the controller's $prefill['job_source'].
+    // Falls back to 'db' when no query params were supplied.
+    setPanelVisibility(SERVER_PREFILL_SOURCE || 'db');
 
     // ── Select2 for job search ──────────────────────────────
     if (window.jQuery && jQuery.fn.select2) {
