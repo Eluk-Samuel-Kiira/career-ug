@@ -3,6 +3,17 @@
 @section('title', 'My Letters')
 @section('page_title', 'Cover / Application Letters')
 
+@php
+    $pagination  = $pagination ?? [
+        'current_page' => 1,
+        'last_page'    => 1,
+        'per_page'     => 10,
+        'total'        => count($letters ?? []),
+    ];
+    $currentPage = $pagination['current_page'];
+    $lastPage    = $pagination['last_page'];
+    $totalCount  = $pagination['total'];
+@endphp
 @section('content')
 <div class="container py-4 py-md-6">
 
@@ -27,7 +38,7 @@
         <div class="card-header align-items-center py-4 py-md-5 flex-wrap gap-2">
             <h3 class="card-title fw-bold text-gray-800 fs-4 fs-md-3">
                 My Letters
-                <span class="badge badge-light-primary ms-2">{{ count($letters) }}</span>
+                <span class="badge badge-light-primary ms-2">{{ $totalCount }}</span>
             </h3>
             <div class="card-toolbar w-100 w-sm-auto">
                 <a href="{{ route('letters.create') }}" class="btn btn-sm btn-primary w-100 w-sm-auto">
@@ -316,6 +327,65 @@
                     @endforeach
                 </div>
 
+                {{-- ── Pagination ──────────────────────── --}}
+                @if($lastPage > 1)
+                    <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
+                        <div class="text-muted fs-7">
+                            Page <span class="fw-bold">{{ $currentPage }}</span>
+                            of <span class="fw-bold">{{ $lastPage }}</span>
+                            — {{ $totalCount }} {{ \Illuminate\Support\Str::plural('letter', $totalCount) }}
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm m-0">
+                                <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link"
+                                       href="{{ request()->fullUrlWithQuery(['page' => max(1, $currentPage - 1)]) }}">
+                                        ‹ Prev
+                                    </a>
+                                </li>
+
+                                @php
+                                    $start = max(1, $currentPage - 2);
+                                    $end   = min($lastPage, $currentPage + 2);
+                                @endphp
+
+                                @if($start > 1)
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => 1]) }}">1</a>
+                                    </li>
+                                    @if($start > 2)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                @endif
+
+                                @for($i = $start; $i <= $end; $i++)
+                                    <li class="page-item {{ $i === $currentPage ? 'active' : '' }}">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $i]) }}">{{ $i }}</a>
+                                    </li>
+                                @endfor
+
+                                @if($end < $lastPage)
+                                    @if($end < $lastPage - 1)
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    @endif
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $lastPage]) }}">
+                                            {{ $lastPage }}
+                                        </a>
+                                    </li>
+                                @endif
+
+                                <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
+                                    <a class="page-link"
+                                       href="{{ request()->fullUrlWithQuery(['page' => min($lastPage, $currentPage + 1)]) }}">
+                                        Next ›
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                @endif
+
             @endif
         </div>
     </div>
@@ -462,6 +532,15 @@
                             window.location.reload();
                         }
                     }, 200);
+
+                    
+                    const remaining = document.querySelectorAll('tr, [data-letter-uuid]').length;
+                    if (remaining === 0 && new URLSearchParams(location.search).get('page') > 1) {
+                        const currentPage = parseInt(new URLSearchParams(location.search).get('page'));
+                        const url = new URL(location.href);
+                        url.searchParams.set('page', Math.max(1, currentPage - 1));
+                        window.location.href = url.toString();
+                    }
                 }
             } catch (e) {
                 toast('error', 'Network error: ' + e.message);

@@ -68,12 +68,42 @@
                                     <span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Browse Jobs</span>
+                            <span class="menu-title">Browse All Jobs</span>
                         </a>
                     </div>
 
                     {{-- ===================== JOB SEEKER MENU ===================== --}}
                     @if($userRole === 'job_seeker' || $userRole === 'seeker')
+
+                    {{-- ===================== MY JOBS (dropdown) ===================== --}}
+                    <div data-kt-menu-trigger="click"
+                        class="menu-item menu-accordion {{ request()->routeIs('my-jobs.*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-briefcase fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">My Jobs</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('my-jobs.category') ? 'active' : '' }}"
+                                href="{{ route('my-jobs.category') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">By Category</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('my-jobs.skills') ? 'active' : '' }}"
+                                href="{{ route('my-jobs.skills') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">By Skills</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                     
                     {{-- CV Upload --}}
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('cv.edit*') ? 'show here' : '' }}">
@@ -127,17 +157,17 @@
                                 </a>
                             </div>
                             <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('letters.index') ? 'active' : '' }}"
-                                href="{{ route('letters.index') }}">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">My Letters</span>
-                                </a>
-                            </div>
-                            <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('letters.create') ? 'active' : '' }}"
                                 href="{{ route('letters.create') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Generate a Letter</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('letters.index') ? 'active' : '' }}"
+                                href="{{ route('letters.index') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">My Letters</span>
                                 </a>
                             </div>
                         </div>

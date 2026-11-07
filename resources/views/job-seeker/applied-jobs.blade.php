@@ -4,10 +4,21 @@
 @section('page_title', 'My Applications')
 
 @section('content')
+@php
+    $pagination  = $pagination ?? [
+        'current_page' => 1, 'last_page' => 1, 'per_page' => 10, 'total' => $total ?? 0,
+    ];
+    $currentPage = $pagination['current_page'];
+    $lastPage    = $pagination['last_page'];
+    $totalCount  = $pagination['total'];
+    $currentStatus = request('status', 'all');
+@endphp
+
 <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
     <div class="col-xl-12">
         <div class="card card-flush h-md-100">
-            <!--begin::Header-->
+
+            {{-- ── Header ──────────────────────────────────── --}}
             <div class="card-header pt-7">
                 <div class="d-flex align-items-center">
                     <div>
@@ -16,53 +27,41 @@
                     </div>
                 </div>
                 <div class="card-toolbar">
-                    <span class="badge badge-light-primary fs-6 py-3 px-5" id="totalBadge">{{ $total ?? 0 }} Applications</span>
+                    <span class="badge badge-light-primary fs-6 py-3 px-5" id="totalBadge">
+                        {{ $totalCount }} Applications
+                    </span>
                 </div>
             </div>
-            <!--end::Header-->
-            
-            <!--begin::Body-->
-            <div class="card-body pt-6">
-                <!-- Search & Filters -->
-                <div class="d-flex flex-wrap align-items-center gap-4 mb-7">
-                    <!-- Search -->
-                    <div class="position-relative flex-grow-1 min-w-200px">
-                        <i class="bi bi-search fs-3 text-gray-500 position-absolute top-50 translate-middle ms-6"></i>
-                        <input type="text" class="form-control form-control-solid ps-10" 
-                               id="searchInput" 
-                               placeholder="Search applications by job title or company..." />
-                    </div>
 
-                    <!-- Sort By -->
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-7 fw-bold text-gray-700 pe-2 text-nowrap d-none d-md-block">Sort By:</span>
-                        <select class="form-select form-select-sm form-select-solid w-150px" id="sortSelect">
-                            <option value="newest">Newest</option>
-                            <option value="oldest">Oldest</option>
-                            <option value="company">Company A-Z</option>
-                            <option value="status">Status</option>
-                        </select>
-                    </div>
-
-                    <!-- Filter by Status -->
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-7 fw-bold text-gray-700 pe-2 d-none d-md-block">Filter:</span>
-                        <select class="form-select form-select-sm form-select-solid w-140px" id="filterSelect">
-                            <option value="all">All Status</option>
-                            <option value="applied">Applied</option>
-                            <option value="interviewing">Interviewing</option>
-                            <option value="hired">Hired</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-                    </div>
-
-                    <!-- Clear Filters -->
-                    <button class="btn btn-sm btn-light-primary" id="clearFiltersBtn">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
-                    </button>
+            {{-- ── Status filter tabs ──────────────────────── --}}
+            <div class="card-body pt-4 pb-0">
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    @php
+                        $tabs = [
+                            'all'          => 'All',
+                            'applied'      => 'Applied',
+                            'interviewing' => 'Interviewing',
+                            'hired'        => 'Hired',
+                            'rejected'     => 'Rejected',
+                        ];
+                    @endphp
+                    @foreach($tabs as $key => $label)
+                        @php
+                            $isActive = $currentStatus === $key;
+                            $url = $key === 'all'
+                                ? route('jobs.applied')
+                                : route('jobs.applied', ['status' => $key]);
+                        @endphp
+                        <a href="{{ $url }}"
+                           class="btn btn-sm {{ $isActive ? 'btn-primary' : 'btn-light-primary' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
                 </div>
+            </div>
 
-                <!-- Applications Table -->
+            {{-- ── Body ────────────────────────────────────── --}}
+            <div class="card-body pt-0">
                 @if(!empty($appliedJobs) && count($appliedJobs) > 0)
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle gs-0 gy-3 my-0" id="appliedJobsTable">
@@ -79,55 +78,56 @@
                             <tbody id="jobsTableBody">
                                 @foreach($appliedJobs as $item)
                                     @php
-                                        $job = $item['job'] ?? $item;
-                                        $jobTitle = $job['job_title'] ?? 'Job Title';
+                                        $job         = $item['job'] ?? $item;
+                                        $jobTitle    = $job['job_title'] ?? 'Job Title';
                                         $companyName = $job['company']['name'] ?? 'Company';
                                         $companyLogo = $job['company']['logo_url'] ?? null;
-                                        $location = $job['job_location']['name'] ?? $job['duty_station'] ?? 'Not specified';
-                                        $slug = $job['slug'] ?? $job['id'];
-                                        $appliedAt = $item['applied_at'] ?? null;
-                                        $status = $item['status'] ?? 'applied';
-                                        
+                                        $location    = $job['job_location']['name'] ?? $job['duty_station'] ?? 'Not specified';
+                                        $slug        = $job['slug'] ?? $job['id'];
+                                        $appliedAt   = $item['applied_at'] ?? null;
+                                        $status      = $item['status'] ?? 'applied';
+                                        $isExpired   = $item['is_expired']  ?? false;
+                                        $isInactive  = $item['is_inactive'] ?? false;
+                                        $isLive      = !$isExpired && !$isInactive;
+
                                         $statusColors = [
-                                            'applied' => 'primary',
+                                            'applied'      => 'primary',
                                             'interviewing' => 'warning',
-                                            'hired' => 'success',
-                                            'rejected' => 'danger',
+                                            'hired'        => 'success',
+                                            'rejected'     => 'danger',
                                         ];
                                         $statusIcons = [
-                                            'applied' => 'bi-clock',
+                                            'applied'      => 'bi-clock',
                                             'interviewing' => 'bi-calendar-check',
-                                            'hired' => 'bi-check-circle',
-                                            'rejected' => 'bi-x-circle',
+                                            'hired'        => 'bi-check-circle',
+                                            'rejected'     => 'bi-x-circle',
                                         ];
                                         $statusLabels = [
-                                            'applied' => 'Applied',
+                                            'applied'      => 'Applied',
                                             'interviewing' => 'Interviewing',
-                                            'hired' => 'Hired 🎉',
-                                            'rejected' => 'Rejected',
+                                            'hired'        => 'Hired 🎉',
+                                            'rejected'     => 'Rejected',
                                         ];
                                         $statusDescriptions = [
-                                            'applied' => 'Your application has been submitted',
+                                            'applied'      => 'Your application has been submitted',
                                             'interviewing' => 'You have been called for an interview',
-                                            'hired' => 'Congratulations! You got the job!',
-                                            'rejected' => 'Unfortunately, you were not selected',
+                                            'hired'        => 'Congratulations! You got the job!',
+                                            'rejected'     => 'Unfortunately, you were not selected',
                                         ];
                                         $statusColor = $statusColors[$status] ?? 'secondary';
-                                        $statusIcon = $statusIcons[$status] ?? 'bi-clock';
+                                        $statusIcon  = $statusIcons[$status] ?? 'bi-clock';
                                         $statusLabel = $statusLabels[$status] ?? ucfirst($status);
                                         $statusDescription = $statusDescriptions[$status] ?? '';
                                     @endphp
-                                    <tr class="job-row" 
+                                    <tr class="job-row"
                                         data-id="{{ $job['id'] }}"
                                         data-slug="{{ $slug }}"
-                                        data-title="{{ strtolower($jobTitle) }}"
-                                        data-company="{{ strtolower($companyName) }}"
                                         data-status="{{ $status }}">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="symbol symbol-50px me-3">
                                                     @if($companyLogo)
-                                                        <img src="{{ $companyLogo }}" class="" alt="{{ $companyName }}" 
+                                                        <img src="{{ $companyLogo }}" alt="{{ $companyName }}"
                                                              onerror="this.style.display='none'; this.parentElement.querySelector('.symbol-label').style.display='flex';" />
                                                         <div class="symbol-label bg-light-primary text-primary fs-4 fw-bold" style="display:none;">
                                                             {{ strtoupper(substr($companyName, 0, 2)) }}
@@ -139,18 +139,23 @@
                                                     @endif
                                                 </div>
                                                 <div class="d-flex justify-content-start flex-column">
-                                                    <a href="{{ route('jobs.show', $slug) }}" target="_blank" class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6">
+                                                    <a href="{{ route('jobs.show', $slug) }}" target="_blank"
+                                                       class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6 {{ !$isLive ? 'text-muted' : '' }}">
                                                         {{ $jobTitle }}
                                                     </a>
                                                     <span class="text-gray-500 fw-semibold d-block fs-7">
                                                         <i class="bi bi-building me-1"></i>{{ $companyName }}
                                                     </span>
+                                                    @if(!$isLive)
+                                                        <span class="badge badge-light-secondary fs-9 mt-1 align-self-start">
+                                                            <i class="bi bi-exclamation-circle me-1"></i>
+                                                            {{ $isExpired ? 'Expired' : 'No longer active' }}
+                                                        </span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
-                                            <span class="text-gray-600 fw-semibold fs-7">{{ $companyName }}</span>
-                                        </td>
+                                        <td><span class="text-gray-600 fw-semibold fs-7">{{ $companyName }}</span></td>
                                         <td>
                                             <span class="text-gray-600 fw-semibold fs-7">
                                                 <i class="bi bi-geo-alt me-1"></i>{{ $location }}
@@ -162,7 +167,7 @@
                                                     <i class="bi bi-clock me-1"></i>
                                                     {{ \Carbon\Carbon::parse($appliedAt)->format('M d, Y') }}
                                                 @else
-                                                    -
+                                                    —
                                                 @endif
                                             </span>
                                         </td>
@@ -176,41 +181,48 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="d-flex justify-content-end gap-2 flex-wrap" data-job-id="{{ $job['id'] }}" data-slug="{{ $slug }}">
-                                                <a href="{{ route('jobs.show', $slug) }}" target="_blank" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px" title="View Job">
+                                            <div class="d-flex justify-content-end gap-2 flex-wrap"
+                                                 data-job-id="{{ $job['id'] }}" data-slug="{{ $slug }}">
+                                                <a href="{{ route('jobs.show', $slug) }}" target="_blank"
+                                                   class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px"
+                                                   title="View Job">
                                                     <i class="bi bi-eye fs-5 text-gray-500"></i>
                                                 </a>
-                                                
-                                                @if($status === 'applied')
-                                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-warning w-30px h-30px update-status-btn" 
+
+                                                @if($isLive && $status === 'applied')
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-warning w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
                                                             data-status="interviewing"
                                                             title="Mark as Interviewing">
                                                         <i class="bi bi-calendar-check fs-5 text-warning"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn" 
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
                                                             data-status="rejected"
                                                             title="Mark as Rejected">
                                                         <i class="bi bi-x-circle fs-5 text-danger"></i>
                                                     </button>
                                                 @endif
-                                                
-                                                @if($status === 'interviewing')
-                                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success w-30px h-30px update-status-btn" 
+
+                                                @if($isLive && $status === 'interviewing')
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-success w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
                                                             data-status="hired"
                                                             title="Mark as Hired">
                                                         <i class="bi bi-check-circle fs-5 text-success"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn" 
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
                                                             data-status="rejected"
                                                             title="Mark as Rejected">
                                                         <i class="bi bi-x-circle fs-5 text-danger"></i>
                                                     </button>
                                                 @endif
-                                                
+
                                                 @if($status === 'hired' || $status === 'rejected')
                                                     <span class="text-muted fs-7 d-flex align-items-center">
                                                         <i class="bi bi-check-circle-fill text-success me-1"></i>
@@ -224,32 +236,89 @@
                             </tbody>
                         </table>
                     </div>
-                    
-                    <!-- No results message -->
-                    <div id="noResults" class="text-center py-10" style="display: none;">
-                        <div class="symbol symbol-80px bg-light-secondary rounded-3 d-flex align-items-center justify-content-center mx-auto mb-4">
-                            <i class="bi bi-search fs-3x text-muted"></i>
+
+                    {{-- ── Pagination ──────────────────────── --}}
+                    @if($lastPage > 1)
+                        <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
+                            <div class="text-muted fs-7">
+                                Page <span class="fw-bold">{{ $currentPage }}</span>
+                                of <span class="fw-bold">{{ $lastPage }}</span>
+                                — {{ $totalCount }} applications
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
+                                        <a class="page-link"
+                                           href="{{ request()->fullUrlWithQuery(['page' => max(1, $currentPage - 1)]) }}">
+                                            ‹ Prev
+                                        </a>
+                                    </li>
+
+                                    @php
+                                        $start = max(1, $currentPage - 2);
+                                        $end   = min($lastPage, $currentPage + 2);
+                                    @endphp
+
+                                    @if($start > 1)
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => 1]) }}">1</a>
+                                        </li>
+                                        @if($start > 2)
+                                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                                        @endif
+                                    @endif
+
+                                    @for($i = $start; $i <= $end; $i++)
+                                        <li class="page-item {{ $i === $currentPage ? 'active' : '' }}">
+                                            <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $i]) }}">{{ $i }}</a>
+                                        </li>
+                                    @endfor
+
+                                    @if($end < $lastPage)
+                                        @if($end < $lastPage - 1)
+                                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                                        @endif
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $lastPage]) }}">
+                                                {{ $lastPage }}
+                                            </a>
+                                        </li>
+                                    @endif
+
+                                    <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
+                                        <a class="page-link"
+                                           href="{{ request()->fullUrlWithQuery(['page' => min($lastPage, $currentPage + 1)]) }}">
+                                            Next ›
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
                         </div>
-                        <h5 class="fw-bold mb-2">No matching applications found</h5>
-                        <p class="text-muted mb-4">Try adjusting your search or filters.</p>
-                        <button class="btn btn-primary" id="clearFiltersBtn2">
-                            <i class="bi bi-arrow-counterclockwise me-2"></i>Clear Filters
-                        </button>
-                    </div>
+                    @endif
                 @else
+                    {{-- Empty state --}}
                     <div class="text-center py-10">
                         <div class="symbol symbol-80px bg-light-secondary rounded-3 d-flex align-items-center justify-content-center mx-auto mb-4">
                             <i class="bi bi-briefcase fs-3x text-muted"></i>
                         </div>
-                        <h5 class="fw-bold mb-2">No Applications Yet</h5>
-                        <p class="text-muted mb-4">You haven't applied to any jobs yet.</p>
-                        <a href="{{ route('jobs.index') }}" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i> Find Jobs
-                        </a>
+                        <h5 class="fw-bold mb-2">
+                            {{ $currentStatus === 'all' ? 'No Applications Yet' : 'No applications in this category' }}
+                        </h5>
+                        <p class="text-muted mb-4">
+                            {{ $currentStatus === 'all' ? "You haven't applied to any jobs yet." : 'Try switching the filter above.' }}
+                        </p>
+                        @if($currentStatus === 'all')
+                            <a href="{{ route('jobs.index') }}" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i> Find Jobs
+                            </a>
+                        @else
+                            <a href="{{ route('jobs.applied') }}" class="btn btn-light-primary">
+                                View all applications
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>
-            <!--end: Card Body-->
         </div>
     </div>
 </div>
@@ -257,237 +326,68 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-    const searchInput = document.getElementById('searchInput');
-    const sortSelect = document.getElementById('sortSelect');
-    const filterSelect = document.getElementById('filterSelect');
-    const tableBody = document.getElementById('jobsTableBody');
-    const noResults = document.getElementById('noResults');
-    const totalBadge = document.getElementById('totalBadge');
-    let currentRows = [];
 
-    // Store all rows initially
-    function storeRows() {
-        if (tableBody) {
-            currentRows = Array.from(tableBody.querySelectorAll('.job-row'));
-        }
-    }
+    // ── Inline status update ─────────────────────────────
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.update-status-btn');
+        if (!btn) return;
 
-    // Filter and sort function
-    function filterAndSort() {
-        if (!tableBody) return;
+        const jobId     = btn.dataset.jobId;
+        const newStatus = btn.dataset.status;
+        const row       = btn.closest('tr');
+        if (!row) return;
 
-        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-        const sortValue = sortSelect ? sortSelect.value : 'newest';
-        const filterValue = filterSelect ? filterSelect.value : 'all';
+        const labels = {
+            hired:        'HIRED - Congratulations! 🎉',
+            rejected:     'REJECTED',
+            interviewing: 'CALLED FOR INTERVIEW',
+        };
 
-        let visibleRows = currentRows.filter(row => {
-            const title = row.dataset.title || '';
-            const company = row.dataset.company || '';
-            const status = row.dataset.status || '';
-
-            const matchesSearch = searchTerm === '' || 
-                title.includes(searchTerm) || 
-                company.includes(searchTerm);
-
-            const matchesFilter = filterValue === 'all' || status === filterValue;
-
-            return matchesSearch && matchesFilter;
-        });
-
-        // Sort
-        const statusOrder = { 'applied': 0, 'interviewing': 1, 'hired': 2, 'rejected': 3 };
-        
-        visibleRows.sort((a, b) => {
-            const titleA = a.dataset.title || '';
-            const titleB = b.dataset.title || '';
-            const companyA = a.dataset.company || '';
-            const companyB = b.dataset.company || '';
-            const statusA = a.dataset.status || '';
-            const statusB = b.dataset.status || '';
-
-            switch (sortValue) {
-                case 'newest':
-                    return b.dataset.id - a.dataset.id;
-                case 'oldest':
-                    return a.dataset.id - b.dataset.id;
-                case 'company':
-                    return companyA.localeCompare(companyB);
-                case 'status':
-                    return (statusOrder[statusA] || 0) - (statusOrder[statusB] || 0);
-                default:
-                    return 0;
-            }
-        });
-
-        tableBody.innerHTML = '';
-        visibleRows.forEach(row => {
-            tableBody.appendChild(row);
-        });
-
-        if (noResults) {
-            if (visibleRows.length === 0 && currentRows.length > 0) {
-                noResults.style.display = 'block';
-                tableBody.style.display = 'none';
-            } else {
-                noResults.style.display = 'none';
-                tableBody.style.display = '';
-            }
+        if (!confirm(`Mark this application as ${labels[newStatus] || newStatus}?`)) {
+            return;
         }
 
-        if (totalBadge) {
-            totalBadge.textContent = visibleRows.length + ' Applications';
-        }
-    }
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    // Event listeners
-    if (searchInput) {
-        searchInput.addEventListener('keyup', filterAndSort);
-        searchInput.addEventListener('search', filterAndSort);
-    }
-
-    if (sortSelect) {
-        sortSelect.addEventListener('change', filterAndSort);
-    }
-
-    if (filterSelect) {
-        filterSelect.addEventListener('change', filterAndSort);
-    }
-
-    function clearFilters() {
-        if (searchInput) searchInput.value = '';
-        if (sortSelect) sortSelect.value = 'newest';
-        if (filterSelect) filterSelect.value = 'all';
-        filterAndSort();
-    }
-
-    document.getElementById('clearFiltersBtn')?.addEventListener('click', clearFilters);
-    document.getElementById('clearFiltersBtn2')?.addEventListener('click', clearFilters);
-
-    storeRows();
-    filterAndSort();
-
-    // Update Application Status
-    document.querySelectorAll('.update-status-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const jobId = this.dataset.jobId;
-            const newStatus = this.dataset.status;
-            const row = this.closest('tr');
-            const slug = row ? row.dataset.slug : '';
-            
-            const statusLabels = {
-                'hired': 'HIRED - Congratulations! 🎉',
-                'rejected': 'REJECTED',
-                'interviewing': 'CALLED FOR INTERVIEW'
-            };
-            
-            if (!confirm(`Are you sure you want to mark this application as ${statusLabels[newStatus] || newStatus}?`)) {
+        fetch(`/jobs/${jobId}/update-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('error', data.message || 'Failed to update status.', 'Error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = original;
                 return;
             }
-            
-            const originalHtml = this.innerHTML;
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-            
-            fetch(`/jobs/${jobId}/update-status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ status: newStatus })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    if (typeof window.showToast === 'function') {
-                        window.showToast('success', `✅ Application marked as ${statusLabels[newStatus] || newStatus}!`, 'Status Updated');
-                    }
-                    
-                    if (row) {
-                        const statusBadge = row.querySelector('.status-badge');
-                        const statusDesc = row.querySelector('.status-description');
-                        const actionsCell = row.querySelector('td:last-child');
-                        
-                        const statusMap = {
-                            'hired': { color: 'success', icon: 'bi-check-circle', label: 'Hired 🎉', desc: 'Congratulations! You got the job!' },
-                            'rejected': { color: 'danger', icon: 'bi-x-circle', label: 'Rejected', desc: 'Unfortunately, you were not selected' },
-                            'interviewing': { color: 'warning', icon: 'bi-calendar-check', label: 'Interviewing', desc: 'You have been called for an interview' }
-                        };
-                        const info = statusMap[newStatus] || { color: 'primary', icon: 'bi-clock', label: 'Applied', desc: 'Your application has been submitted' };
-                        row.dataset.status = newStatus;
-                        
-                        if (statusBadge) {
-                            statusBadge.className = `badge badge-light-${info.color} fs-7 py-2 px-3 status-badge`;
-                            statusBadge.innerHTML = `<i class="${info.icon} me-1"></i> ${info.label}`;
-                        }
-                        if (statusDesc) {
-                            statusDesc.textContent = info.desc;
-                        }
-                        
-                        if (actionsCell) {
-                            let newHtml = `<div class="d-flex justify-content-end gap-2 flex-wrap">`;
-                            newHtml += `<a href="/jobs/${slug}" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px" title="View Job">
-                                <i class="bi bi-eye fs-5 text-gray-500"></i>
-                            </a>`;
-                            
-                            if (newStatus === 'hired' || newStatus === 'rejected') {
-                                newHtml += `<span class="text-muted fs-7 d-flex align-items-center">
-                                    <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                    Final
-                                </span>`;
-                            } else if (newStatus === 'applied') {
-                                newHtml += `
-                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-warning w-30px h-30px update-status-btn" 
-                                            data-job-id="${jobId}" data-status="interviewing" title="Mark as Interviewing">
-                                        <i class="bi bi-calendar-check fs-5 text-warning"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn" 
-                                            data-job-id="${jobId}" data-status="rejected" title="Mark as Rejected">
-                                        <i class="bi bi-x-circle fs-5 text-danger"></i>
-                                    </button>`;
-                            } else if (newStatus === 'interviewing') {
-                                newHtml += `
-                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success w-30px h-30px update-status-btn" 
-                                            data-job-id="${jobId}" data-status="hired" title="Mark as Hired">
-                                        <i class="bi bi-check-circle fs-5 text-success"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger w-30px h-30px update-status-btn" 
-                                            data-job-id="${jobId}" data-status="rejected" title="Mark as Rejected">
-                                        <i class="bi bi-x-circle fs-5 text-danger"></i>
-                                    </button>`;
-                            }
-                            newHtml += `</div>`;
-                            actionsCell.innerHTML = newHtml;
-                            
-                            // Re-bind event listeners
-                            actionsCell.querySelectorAll('.update-status-btn').forEach(newBtn => {
-                                newBtn.addEventListener('click', function() {
-                                    this.dispatchEvent(new Event('click'));
-                                });
-                            });
-                        }
-                    }
-                    
-                    filterAndSort();
-                } else {
-                    if (typeof window.showToast === 'function') {
-                        window.showToast('error', data.message || 'Failed to update status.', 'Error');
-                    }
-                    this.disabled = false;
-                    this.innerHTML = originalHtml;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (typeof window.showToast === 'function') {
-                    window.showToast('error', 'Something went wrong. Please try again.', 'Error');
-                }
-                this.disabled = false;
-                this.innerHTML = originalHtml;
-            });
+
+            if (typeof window.showToast === 'function') {
+                window.showToast('success', `Application marked as ${labels[newStatus] || newStatus}.`, 'Updated');
+            }
+
+            // Simplest, robust: reload so server re-renders with the correct
+            // actions / badges without keeping DOM state in sync manually.
+            window.location.reload();
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'Something went wrong.', 'Error');
+            }
+            btn.disabled = false;
+            btn.innerHTML = original;
         });
     });
 });

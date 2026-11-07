@@ -26,8 +26,16 @@ class CvReviewController extends Controller
 
     /**
      * Show the submission form for a new request.
+     *
+     * Accepts optional prefill query params so the "Tailor my CV" boost card
+     * on any job page can link straight into a pre-filled form:
+     *
+     *   /cv-review/new?job_source=paste
+     *                  &target_job_title=Senior+Clinical+Officer
+     *                  &target_company_name=Nakasee+District+Service+Commission
+     *                  &target_job_description=<full-jd>
      */
-    public function create()
+    public function create(Request $request)
     {
         if (!Session::has('user')) {
             return redirect()->route('login');
@@ -35,8 +43,6 @@ class CvReviewController extends Controller
 
         $quoteResponse = $this->countryService->api('cv-review/quote', [], 'GET', 0, false);
 
-        // If the quote isn't available, bounce the user back to the index
-        // with a flash message instead of letting the Blade blow up.
         if (
             !is_array($quoteResponse)
             || !($quoteResponse['success'] ?? false)
@@ -49,11 +55,21 @@ class CvReviewController extends Controller
         }
 
         $cvResponse = $this->countryService->api('auth/user/cv', [], 'GET', 0, false);
-        $cvFiles = $cvResponse['cv_files'] ?? [];
+        $cvFiles    = $cvResponse['cv_files'] ?? [];
+
+        // ── Prefill from query string (safe defaults) ─────────────
+        $prefill = [
+            'job_source'             => $request->input('job_source', 'db'),
+            'job_post_id'            => $request->input('job_post_id'),
+            'target_job_title'       => $request->input('target_job_title'),
+            'target_company_name'    => $request->input('target_company_name'),
+            'target_job_description' => $request->input('target_job_description'),
+        ];
 
         return view('job-seeker.cv-review.create', [
             'quote'   => $quoteResponse,
             'cvFiles' => $cvFiles,
+            'prefill' => $prefill,
         ]);
     }
 
@@ -176,14 +192,14 @@ class CvReviewController extends Controller
         $r = $response['request'] ?? [];
 
         // ── LOG WHAT THE PROXY SEES ─────────────────────────────
-        Log::info('[show] CV request fetched from API', [
-            'uuid'                  => $uuid,
-            'status'                => $r['status'] ?? null,
-            'rewrite_mode'          => $r['rewrite_mode'] ?? null,
-            'rewrite_is_ready'      => $r['rewrite_is_ready'] ?? false,
-            'rewrite_generated_at'  => $r['rewrite_generated_at'] ?? null,
-            'rewrite_error_message' => $r['rewrite_error_message'] ?? null,
-        ]);
+        // Log::info('[show] CV request fetched from API', [
+        //     'uuid'                  => $uuid,
+        //     'status'                => $r['status'] ?? null,
+        //     'rewrite_mode'          => $r['rewrite_mode'] ?? null,
+        //     'rewrite_is_ready'      => $r['rewrite_is_ready'] ?? false,
+        //     'rewrite_generated_at'  => $r['rewrite_generated_at'] ?? null,
+        //     'rewrite_error_message' => $r['rewrite_error_message'] ?? null,
+        // ]);
 
         return view('job-seeker.cv-review.show', [
             'cvRequest' => $r,
@@ -551,10 +567,10 @@ class CvReviewController extends Controller
             false
         );
 
-        Log::info('[proxy kick] dispatched', [
-            'uuid' => $uuid,
-            'response' => $response,
-        ]);
+        // Log::info('[proxy kick] dispatched', [
+        //     'uuid' => $uuid,
+        //     'response' => $response,
+        // ]);
 
         return response()->json($response);
     }

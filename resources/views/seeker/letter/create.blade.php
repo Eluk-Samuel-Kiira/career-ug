@@ -12,6 +12,13 @@
     $priceIsFree    = $coverPrice['is_free']        ?? false;
 @endphp
 
+@php
+    $prefill       = $prefill ?? [];
+    $prefillSource = in_array($prefill['job_source'] ?? null, ['db', 'manual', 'paste'], true)
+                        ? $prefill['job_source']
+                        : 'db';
+@endphp
+
 <div class="container py-4 py-md-6">
     <div class="card card-flush">
         <div class="card-body p-4 p-md-8">
@@ -87,7 +94,8 @@
                         <span class="form-check-label fs-7 fs-md-6">Enter title &amp; company</span>
                     </label>
                     <label class="form-check form-check-inline mb-0">
-                        <input class="form-check-input" type="radio" name="job_source" value="paste">
+                        <input class="form-check-input" type="radio" name="job_source" value="paste"
+                            {{ $prefillSource === 'paste' ? 'checked' : '' }}>
                         <span class="form-check-label fs-7 fs-md-6">Paste full job description</span>
                     </label>
                 </div>
@@ -115,17 +123,20 @@
                 <div id="jobPastePanel" class="d-none row g-3 g-md-4">
                     <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-7 mb-2">Job Title</label>
-                        <input type="text" id="job_title_paste" name="job_title_paste" class="form-control">
+                        <input type="text" id="job_title_paste" name="job_title_paste"
+                            class="form-control"
+                            value="{{ old('job_title_paste', $prefill['job_title'] ?? '') }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-7 mb-2">Company Name</label>
-                        <input type="text" id="company_name_paste" name="company_name_paste" class="form-control">
+                        <input type="text" id="company_name_paste" name="company_name_paste"
+                            class="form-control"
+                            value="{{ old('company_name_paste', $prefill['company_name'] ?? '') }}">
                     </div>
                     <div class="col-12">
                         <label class="fw-semibold fs-7 mb-2">Full Job Description</label>
-                        <textarea id="job_description_paste" name="job_description_paste"
-                                  class="form-control" rows="6"
-                                  placeholder="Paste the full job description here..."></textarea>
+                        <textarea id="job_description_paste" name="job_description_paste" rows="6"
+                            class="form-control">{{ old('job_description_paste', $prefill['job_description'] ?? '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -468,18 +479,49 @@
 
     // ── Step 2 ────────────────────────────────────────────────
     function bindJobStep() {
+        // ── Hydrate state from the DOM ────────────────────────────
+        function syncJobStateFromDom() {
+            const src = state.jobSource || 'db';
+
+            if (src === 'manual') {
+                state.jobTitle    = (document.getElementById('job_title_manual')?.value    || '').trim();
+                state.companyName = (document.getElementById('company_name_manual')?.value || '').trim();
+                state.jobDescription = '';
+            } else if (src === 'paste') {
+                state.jobTitle    = (document.getElementById('job_title_paste')?.value    || '').trim();
+                state.companyName = (document.getElementById('company_name_paste')?.value || '').trim();
+                state.jobDescription = (document.getElementById('job_description_paste')?.value || '').trim();
+            } else if (src === 'db') {
+                state.jobPostId = document.getElementById('job_post_id')?.value || null;
+            }
+        }
+
+        // ── Radio switching ──────────────────────────────────────
         document.querySelectorAll('input[name="job_source"]').forEach(r => {
             r.addEventListener('change', () => {
                 state.jobSource = r.value;
                 document.getElementById('jobDbPanel').classList.toggle('d-none',     r.value !== 'db');
                 document.getElementById('jobManualPanel').classList.toggle('d-none', r.value !== 'manual');
                 document.getElementById('jobPastePanel').classList.toggle('d-none',  r.value !== 'paste');
+
+                syncJobStateFromDom();
             });
         });
 
-        const checked = document.querySelector('input[name="job_source"]:checked');
-        if (checked) state.jobSource = checked.value;
+        // ── Apply server prefill on load ─────────────────────────
+        const serverPrefillSource = @json($prefillSource);
 
+        document.querySelectorAll('input[name="job_source"]').forEach(r => {
+            r.checked = (r.value === serverPrefillSource);
+        });
+
+        document.getElementById('jobDbPanel')?.classList.toggle('d-none',     serverPrefillSource !== 'db');
+        document.getElementById('jobManualPanel')?.classList.toggle('d-none', serverPrefillSource !== 'manual');
+        document.getElementById('jobPastePanel')?.classList.toggle('d-none',  serverPrefillSource !== 'paste');
+
+        state.jobSource = serverPrefillSource;
+
+        // ── Select2 for job search ───────────────────────────────
         if (window.jQuery && jQuery.fn.select2) {
             jQuery('#job_search').select2({
                 placeholder: 'Type at least 2 characters...',
@@ -503,8 +545,9 @@
             });
         }
 
+        // ── Input → state ────────────────────────────────────────
         ['job_title_manual', 'company_name_manual',
-         'job_title_paste', 'company_name_paste', 'job_description_paste'].forEach(id => {
+        'job_title_paste', 'company_name_paste', 'job_description_paste'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', function () {
                 if (id === 'job_title_manual')       state.jobTitle      = this.value.trim();
                 if (id === 'company_name_manual')    state.companyName   = this.value.trim();
@@ -513,6 +556,9 @@
                 if (id === 'job_description_paste')  state.jobDescription= this.value.trim();
             });
         });
+
+        // ── Hydrate once on load (pre-filled + autofilled values) ─
+        syncJobStateFromDom();
     }
 
     function validateStep2() {

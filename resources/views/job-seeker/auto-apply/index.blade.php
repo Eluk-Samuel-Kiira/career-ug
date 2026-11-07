@@ -4,9 +4,19 @@
 @section('page_title', 'Auto Apply Agent')
 
 @section('content')
+@php
+    $pagination  = $pagination ?? [
+        'current_page' => 1, 'last_page' => 1, 'per_page' => 10,
+        'total' => count($runs ?? []),
+    ];
+    $currentPage = $pagination['current_page'];
+    $lastPage    = $pagination['last_page'];
+    $totalRuns   = $pagination['total'];
+@endphp
+
 <div class="container py-6">
 
-    {{-- Header --}}
+    {{-- ── Header ──────────────────────────────────────── --}}
     <div class="card card-flush mb-6 bg-light-primary">
         <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-4">
             <div class="d-flex align-items-center gap-4">
@@ -78,7 +88,7 @@
             </div>
         </div>
     @else
-        {{-- Runs --}}
+        {{-- Runs list --}}
         <div class="d-flex flex-column gap-5">
             @foreach($runs as $run)
                 <div class="card card-flush">
@@ -97,7 +107,7 @@
                                     {{ \Carbon\Carbon::parse($run['run_date'])->format('l') }}
                                 </div>
                                 <div class="text-muted fs-7">
-                                    @if($run['applied_count'] > 0)
+                                    @if(($run['applied_count'] ?? 0) > 0)
                                         We applied to <strong>{{ $run['applied_count'] }}</strong>
                                         {{ \Illuminate\Support\Str::plural('job', $run['applied_count']) }} for you
                                     @else
@@ -107,17 +117,17 @@
                             </div>
                         </div>
                         <div class="card-toolbar gap-2">
-                            @if($run['applied_count'] > 0)
+                            @if(($run['applied_count'] ?? 0) > 0)
                                 <span class="badge badge-light-success">
                                     {{ $run['applied_count'] }} applied
                                 </span>
                             @endif
-                            @if($run['relayed_count'] > 0)
+                            @if(($run['relayed_count'] ?? 0) > 0)
                                 <span class="badge badge-light-warning">
                                     {{ $run['relayed_count'] }} to apply
                                 </span>
                             @endif
-                            <span class="badge badge-light-secondary">{{ $run['status_label'] }}</span>
+                            <span class="badge badge-light-secondary">{{ $run['status_label'] ?? 'Done' }}</span>
                         </div>
                     </div>
 
@@ -135,24 +145,43 @@
 
                             <div class="d-flex flex-column gap-3">
                                 @foreach($run['relays'] as $relay)
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center p-4 bg-light-warning rounded">
+                                    @php
+                                        $isExpired = $relay['is_expired'] ?? false;
+                                    @endphp
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center p-4 rounded {{ $isExpired ? 'bg-light-secondary' : 'bg-light-warning' }}">
                                         <div class="min-w-0">
-                                            <div class="fw-bold text-gray-800">{{ $relay['job_title'] ?? 'Job' }}</div>
+                                            <div class="fw-bold text-gray-800 d-flex flex-wrap align-items-center gap-2">
+                                                {{ $relay['job_title'] ?? 'Job' }}
+                                                @if($isExpired)
+                                                    <span class="badge badge-light-danger fs-9">
+                                                        <i class="bi bi-exclamation-circle me-1"></i>Expired
+                                                    </span>
+                                                @endif
+                                            </div>
                                             <div class="text-muted fs-7">
                                                 {{ $relay['company'] ?? 'Company' }}
-                                                @if($relay['reason'] === 'academic_documents_required')
+                                                @if(($relay['reason'] ?? '') === 'academic_documents_required')
                                                     · requires academic documents
                                                 @else
                                                     · apply on the employer's site
                                                 @endif
                                             </div>
                                         </div>
-                                        @if($relay['job_slug'])
-                                            <a href="{{ url('/job/' . $relay['job_slug']) }}"
-                                               target="_blank"
-                                               class="btn btn-sm btn-primary">
-                                                Apply Now
-                                            </a>
+                                        @if(!empty($relay['job_slug']))
+                                            @if($isExpired)
+                                                {{-- Still allow viewing, but no expectation of applying --}}
+                                                <a href="{{ url('/job/' . $relay['job_slug']) }}"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-light">
+                                                    View Job
+                                                </a>
+                                            @else
+                                                <a href="{{ url('/job/' . $relay['job_slug']) }}"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-primary">
+                                                    Apply Now
+                                                </a>
+                                            @endif
                                         @endif
                                     </div>
                                 @endforeach
@@ -162,7 +191,63 @@
                 </div>
             @endforeach
         </div>
-    @endif
 
+        {{-- ── Pagination ──────────────────────────────── --}}
+        @if($lastPage > 1)
+            <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
+                <div class="text-muted fs-7">
+                    Page <span class="fw-bold">{{ $currentPage }}</span>
+                    of <span class="fw-bold">{{ $lastPage }}</span>
+                    — {{ $totalRuns }} {{ \Illuminate\Support\Str::plural('run', $totalRuns) }}
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => max(1, $currentPage - 1)]) }}">
+                                ‹ Prev
+                            </a>
+                        </li>
+
+                        @php
+                            $start = max(1, $currentPage - 2);
+                            $end   = min($lastPage, $currentPage + 2);
+                        @endphp
+
+                        @if($start > 1)
+                            <li class="page-item">
+                                <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => 1]) }}">1</a>
+                            </li>
+                            @if($start > 2)
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            @endif
+                        @endif
+
+                        @for($i = $start; $i <= $end; $i++)
+                            <li class="page-item {{ $i === $currentPage ? 'active' : '' }}">
+                                <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $i]) }}">{{ $i }}</a>
+                            </li>
+                        @endfor
+
+                        @if($end < $lastPage)
+                            @if($end < $lastPage - 1)
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            @endif
+                            <li class="page-item">
+                                <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $lastPage]) }}">
+                                    {{ $lastPage }}
+                                </a>
+                            </li>
+                        @endif
+
+                        <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => min($lastPage, $currentPage + 1)]) }}">
+                                Next ›
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        @endif
+    @endif
 </div>
 @endsection

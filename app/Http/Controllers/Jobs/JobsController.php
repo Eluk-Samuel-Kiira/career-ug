@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Jobs;
 use App\Http\Controllers\Controller;
 use App\Services\CountryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
 
 class JobsController extends Controller
 {
@@ -152,70 +154,91 @@ class JobsController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * Track application for logged-in user (AJAX)
-     */
     public function trackApplication(Request $request, $id)
     {
         $user = session('user');
-        
-        $result = $this->countryService->api("job-action/{$id}/track-application", [], 'POST', 0, false);
 
+        // ── Guest path ────────────────────────────────────────────
         if (!$user) {
-            // For guests, store in session
-            $sessionKey = 'guest_applied_jobs';
-            $guestJobs = $request->session()->get($sessionKey, []);
-            if (!in_array($id, $guestJobs)) {
-                $guestJobs[] = $id;
-                $request->session()->put($sessionKey, $guestJobs);
-            }
-            
+            return $this->trackGuestApplication($id);
+        }
+
+        // ── Logged-in path ────────────────────────────────────────
+        $sessionKey = 'applied_job_' . $id;
+
+        // Already recorded in this browser session → cheap success
+        if ($request->session()->has($sessionKey)) {
             return response()->json([
-                'success' => true,
-                'already_recorded' => false,
-                'data' => $result,
-                'guest' => true,
+                'success'           => true,
+                'already_recorded'  => true,
+                'already_applied'   => true,
+                'is_applied'        => true,
             ]);
         }
 
-        $sessionKey = 'applied_job_' . $id;
-        if ($request->session()->has($sessionKey)) {
-            return response()->json(['success' => true, 'already_recorded' => true]);
+        // Call the API — the API is source of truth for DB state
+        $result = $this->countryService->api(
+            "job-action/{$id}/track-application",
+            [],
+            'POST',
+            0,
+            false
+        );
+
+        // Handle API failure cleanly
+        if (!is_array($result) || !($result['success'] ?? false)) {
+            Log::warning('[job-apply] API rejected', [
+                'job_id' => $id,
+                'user'   => $user['id'] ?? null,
+                'result' => $result,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Could not record application.',
+                'code'    => $result['code']    ?? null,
+            ], $result['status'] ?? 422);
         }
 
+        // API succeeded — cache the flag for the rest of this session
         $request->session()->put($sessionKey, true);
 
+        Log::info('[job-apply] recorded', [
+            'job_id'            => $id,
+            'user'              => $user['id'] ?? null,
+            'already_applied'   => (bool) ($result['already_applied'] ?? false),
+            'application_count' => $result['application_count'] ?? null,
+        ]);
+
         return response()->json([
-            'success' => true,
-            'already_recorded' => false,
-            'data' => $result,
+            'success'           => true,
+            'already_recorded'  => (bool) ($result['already_applied'] ?? false),
+            'already_applied'   => (bool) ($result['already_applied'] ?? false),
+            'is_applied'        => true,
+            'application_count' => $result['application_count'] ?? null,
         ]);
     }
 
-    /**
-     * Track application for guest users (AJAX)
-     */
-    public function trackGuestApplication(Request $request)
+    public function trackGuestApplication($id)
     {
-        $request->validate([
-            'job_id' => 'required|integer',
-        ]);
+        try {
+            $response = $this->countryService->api(
+                "jobs/{$id}/track-application-guest",
+                [],
+                'POST',
+                0,
+                false
+            );
 
-        $jobId = $request->job_id;
-        $sessionKey = 'guest_applied_jobs';
+            return response()->json($response ?: ['success' => true]);
+        } catch (\Throwable $e) {
+            Log::warning('[guest-apply] proxy failed', [
+                'job_id' => $id,
+                'error'  => $e->getMessage(),
+            ]);
 
-        $guestJobs = $request->session()->get($sessionKey, []);
-
-        if (!in_array($jobId, $guestJobs)) {
-            $guestJobs[] = $jobId;
-            $request->session()->put($sessionKey, $guestJobs);
-            $this->countryService->api("job-action/{$jobId}/track-application-guest", [], 'POST', 0, false);
+            return response()->json(['success' => true]);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Application tracked for guest',
-        ]);
     }
 
     /**
@@ -268,12 +291,23 @@ class JobsController extends Controller
             return redirect()->route('login')->with('error', 'Please login to view saved jobs.');
         }
 
-        $response = $this->countryService->api('job-action/saved', [], 'GET', 0, false);
-        
-        $savedJobs = $response['data'] ?? [];
-        $total = $response['total'] ?? 0;
+        $params = array_filter([
+            'page'     => $request->get('page'),
+            'per_page' => $request->get('per_page'),
+        ], fn ($v) => $v !== null && $v !== '');
 
-        return view('job-seeker.saved-jobs', compact('savedJobs', 'total'));
+        $response = $this->countryService->api('job-action/saved', $params, 'GET', 0, false);
+
+        $savedJobs = $response['data'] ?? [];
+        $total     = $response['total'] ?? 0;
+        $pagination = $response['pagination'] ?? [
+            'current_page' => 1,
+            'last_page'    => 1,
+            'per_page'     => 10,
+            'total'        => $total,
+        ];
+
+        return view('job-seeker.saved-jobs', compact('savedJobs', 'total', 'pagination'));
     }
 
     /**
@@ -286,12 +320,24 @@ class JobsController extends Controller
             return redirect()->route('login')->with('error', 'Please login to view your applications.');
         }
 
-        $response = $this->countryService->api('job-action/applied', [], 'GET', 0, false);
-        
-        $appliedJobs = $response['data'] ?? [];
-        $total = $response['total'] ?? 0;
+        $params = array_filter([
+            'page'     => $request->get('page'),
+            'per_page' => $request->get('per_page'),
+            'status'   => $request->get('status'),
+        ], fn ($v) => $v !== null && $v !== '');
 
-        return view('job-seeker.applied-jobs', compact('appliedJobs', 'total'));
+        $response = $this->countryService->api('job-action/applied', $params, 'GET', 0, false);
+
+        $appliedJobs = $response['data'] ?? [];
+        $total       = $response['total'] ?? 0;
+        $pagination  = $response['pagination'] ?? [
+            'current_page' => 1,
+            'last_page'    => 1,
+            'per_page'     => 10,
+            'total'        => $total,
+        ];
+
+        return view('job-seeker.applied-jobs', compact('appliedJobs', 'total', 'pagination'));
     }
 
     /**

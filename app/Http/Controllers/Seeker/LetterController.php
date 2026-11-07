@@ -19,18 +19,42 @@ class LetterController extends Controller
         return null;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if ($r = $this->requireAuth()) return $r;
 
-        $response = $this->countryService->api('letters', [], 'GET', 0, false);
+        $params = array_filter([
+            'page'     => $request->get('page'),
+            'per_page' => $request->get('per_page'),
+            'status'   => $request->get('status'),
+        ], fn ($v) => $v !== null && $v !== '');
 
-        return view('seeker.letter.index', [
-            'letters' => $response['data'] ?? [],
-        ]);
+        $response = $this->countryService->api('letters', $params, 'GET', 0, false);
+
+        $letters    = $response['data'] ?? [];
+        $total      = $response['total'] ?? 0;
+        $pagination = $response['pagination'] ?? [
+            'current_page' => 1,
+            'last_page'    => 1,
+            'per_page'     => 10,
+            'total'        => $total,
+        ];
+
+        return view('seeker.letter.index', compact('letters', 'total', 'pagination'));
     }
 
-    public function create()
+    /**
+     * Show the "generate a letter" form.
+     *
+     * Accepts optional prefill query params so the "Cover letter" boost card
+     * on any job page can link straight into a pre-filled form:
+     *
+     *   /letters/create?job_source=paste
+     *                  &job_title=Senior+Clinical+Officer
+     *                  &company_name=Nakaseke+District+Service+Commission
+     *                  &job_description=<full-jd>
+     */
+    public function create(Request $request)
     {
         if ($r = $this->requireAuth()) return $r;
 
@@ -57,25 +81,32 @@ class LetterController extends Controller
 
         foreach ($letters as $l) {
             $status = $l['status'] ?? null;
-
-            // pending_payment letters are ABANDONED — let user create a fresh one
-            // paid/processing = actively generating → LOCK
             if (in_array($status, ['paid', 'processing'], true)) {
                 $inProgress = [
-                    'uuid'        => $l['uuid'] ?? null,
-                    'status'      => $status,
-                    'job_title'   => $l['job_title'] ?? null,
-                    'company'     => $l['company_name'] ?? null,
-                    'created_at'  => $l['created_at'] ?? null,
+                    'uuid'       => $l['uuid'] ?? null,
+                    'status'     => $status,
+                    'job_title'  => $l['job_title'] ?? null,
+                    'company'    => $l['company_name'] ?? null,
+                    'created_at' => $l['created_at'] ?? null,
                 ];
                 break;
             }
         }
 
+        // ── Prefill from query string (safe defaults) ─────────────
+        $prefill = [
+            'job_source'      => $request->input('job_source', 'db'),
+            'job_post_id'     => $request->input('job_post_id'),
+            'job_title'       => $request->input('job_title'),
+            'company_name'    => $request->input('company_name'),
+            'job_description' => $request->input('job_description'),
+        ];
+
         return view('seeker.letter.create', [
             'cvFiles'    => $cvFiles,
             'companies'  => $companies['data'] ?? [],
             'inProgress' => $inProgress,
+            'prefill'    => $prefill,
         ]);
     }
 

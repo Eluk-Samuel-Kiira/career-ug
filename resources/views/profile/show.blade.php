@@ -290,19 +290,19 @@
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <label class="fw-semibold fs-7 mb-1">LinkedIn</label>
-                                        <input type="url" name="linkedin_url" class="form-control form-control-lg" 
+                                        <input type="text" name="linkedin_url" class="form-control form-control-lg" 
                                             value="{{ $user['linkedin_url'] ?? '' }}" 
                                             placeholder="https://linkedin.com/in/username" />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="fw-semibold fs-7 mb-1">GitHub</label>
-                                        <input type="url" name="github_url" class="form-control form-control-lg" 
+                                        <input type="text" name="github_url" class="form-control form-control-lg" 
                                             value="{{ $user['github_url'] ?? '' }}" 
                                             placeholder="https://github.com/username" />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="fw-semibold fs-7 mb-1">Portfolio</label>
-                                        <input type="url" name="portfolio_url" class="form-control form-control-lg" 
+                                        <input type="text" name="portfolio_url" class="form-control form-control-lg" 
                                             value="{{ $user['portfolio_url'] ?? '' }}" 
                                             placeholder="https://yourportfolio.com" />
                                     </div>

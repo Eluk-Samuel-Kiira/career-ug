@@ -504,22 +504,40 @@
                     <div class="card-body d-flex align-items-center py-6">
                         <div class="symbol symbol-50px me-5">
                             <span class="symbol-label bg-light-info">
-                                <i class="ki-duotone ki-abstract-26 fs-2x text-info">
-                                    <span class="path1"></span><span class="path2"></span>
+                                <i class="ki-duotone ki-chart-simple fs-2x text-info">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                                 </i>
                             </span>
                         </div>
                         <div class="d-flex flex-column">
-                            <span class="fw-semibold text-gray-600 fs-7">Avg. AI Match</span>
-                            <span class="fw-bold fs-2x text-gray-900">
-                                {{ ($stats['avg_ai_score'] ?? null) !== null ? $stats['avg_ai_score'] . '%' : '—' }}
-                            </span>
-                            @if(!empty($stats['ai_screened_count']))
-                                <span class="text-muted fs-8">
-                                    {{ $stats['ai_screened_count'] }} of your applications screened
+
+                            <span class="fw-semibold text-gray-600 fs-7">Skill Match Threshold</span>
+
+                            @if(!empty($stats['skill_match_configured']))
+                                {{-- Configured — show the % and matched jobs --}}
+                                <span class="fw-bold fs-2x text-gray-900">
+                                    {{ $stats['skill_match_threshold'] }}%
                                 </span>
+                                @if(!empty($stats['skill_matched_jobs']))
+                                    <span class="text-success fs-8">
+                                        {{ $stats['skill_matched_jobs'] }}
+                                        {{ \Illuminate\Support\Str::plural('job', $stats['skill_matched_jobs']) }} match
+                                    </span>
+                                @else
+                                    <span class="text-muted fs-8">No live jobs match yet</span>
+                                @endif
                             @else
-                                <span class="text-muted fs-8">Not yet screened</span>
+                                {{-- Not configured — nudge to set it --}}
+                                <span class="fw-bold fs-2x text-gray-500">Not set</span>
+                                @if(empty($stats['has_skills']))
+                                    <a href="{{ route('profile.show') }}" class="text-info fs-8">
+                                        Add skills →
+                                    </a>
+                                @else
+                                    <a href="{{ route('alert.preferences') }}" class="text-info fs-8">
+                                        Set threshold →
+                                    </a>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -539,10 +557,10 @@
                         <div class="d-flex flex-column">
                             <span class="fw-semibold text-gray-600 fs-7">Interviews</span>
                             <span class="fw-bold fs-2x text-gray-900">{{ $stats['interview_count'] ?? 0 }}</span>
-                            @if(!empty($stats['strong_yes_count']))
-                                <span class="text-success fs-8">
-                                    {{ $stats['strong_yes_count'] }} strong matches
-                                </span>
+                            @if(!empty($stats['interview_count']))
+                                <span class="text-muted fs-8">invitations received</span>
+                            @else
+                                <span class="text-muted fs-8">none yet</span>
                             @endif
                         </div>
                     </div>
@@ -645,6 +663,108 @@
                 </div>
             </div>
         </div>
+
+        {{-- Seeker: third row — Services used ────────────────────── --}}
+        <div class="row g-5 g-xl-8 mb-6">
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-success">
+                                <i class="ki-duotone ki-document fs-2x text-success">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">CV Reviews</span>
+                            <span class="fw-bold fs-2x text-gray-900">
+                                {{ $stats['cv_reviews_total'] ?? 0 }}
+                            </span>
+                            @if(!empty($stats['cv_reviews_completed']))
+                                <span class="text-success fs-8">
+                                    {{ $stats['cv_reviews_completed'] }} completed
+                                </span>
+                            @else
+                                <span class="text-muted fs-8">No reviews yet</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-warning">
+                                <i class="ki-duotone ki-message-text-2 fs-2x text-warning">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">Letters</span>
+                            <span class="fw-bold fs-2x text-gray-900">
+                                {{ $stats['letters_total'] ?? 0 }}
+                            </span>
+                            @if(!empty($stats['letters_pending']))
+                                <span class="text-warning fs-8">
+                                    {{ $stats['letters_pending'] }} awaiting payment
+                                </span>
+                            @elseif(!empty($stats['letters_generated']))
+                                <span class="text-success fs-8">
+                                    {{ $stats['letters_generated'] }} generated
+                                </span>
+                            @else
+                                <span class="text-muted fs-8">No letters yet</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center py-6">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label bg-light-primary">
+                                <i class="ki-duotone ki-arrows-circle fs-2x text-primary">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold text-gray-600 fs-7">CV Rewrites Ready</span>
+                            <span class="fw-bold fs-2x text-gray-900">
+                                {{ $stats['cv_rewrites_ready'] ?? 0 }}
+                            </span>
+                            <span class="text-muted fs-8">AI-generated CVs to download</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-flush h-100 bg-light-primary">
+                    <div class="card-body d-flex flex-column justify-content-center py-6">
+                        <div class="fw-bold fs-6 text-gray-900 mb-2">
+                            Need a tailored CV?
+                        </div>
+                        <div class="text-muted fs-8 mb-3">
+                            Let our AI rewrite your CV for the jobs you're applying to.
+                        </div>
+                        <a href="{{ route('cv-review.index') }}" class="btn btn-sm btn-primary">
+                            <i class="ki-duotone ki-rocket fs-6 me-1">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            Get a Review
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     @endif
 
     {{-- ══════════════════════════════════════════════════════ --}}
