@@ -322,4 +322,47 @@ class CountryService
         return $digits;
     }
     
+
+        /**
+     * Send a GET request to a fully-formed, absolute URL using standard headers.
+     * Used for signed URLs where modifying the URL would invalidate the signature.
+     */
+    public function sendSignedRequest(string $absoluteUrl): array
+    {
+        try {
+            // The API key must go in the HEADER, not the query string
+            // because appending to the URL breaks the signature.
+            $headers = [
+                'X-Country-Code' => $this->countryCode,
+                'X-API-KEY'      => $this->apiKey,  // <--- Header, not query
+                'Accept'         => 'application/json',
+            ];
+
+            $response = \Illuminate\Support\Facades\Http::timeout(30)
+                ->withHeaders($headers)
+                ->get($absoluteUrl);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            return [
+                'success' => false,
+                'message' => $response->json()['message'] ?? 'Request failed',
+                'status'  => $response->status(),
+            ];
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('❌ Signed URL request error: ' . $e->getMessage(), [
+                'url' => $absoluteUrl,
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Connection error: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+
 }
