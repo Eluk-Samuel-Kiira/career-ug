@@ -145,7 +145,8 @@ Route::get('/sitemaps/{country}/{filename}', function ($country, $filename) {
 
 
 
-
+use App\Http\Controllers\UnsubscribeController;
+Route::get('/unsubscribe', [UnsubscribeController::class, 'handle'])->name('unsubscribe');
 
 
 require __DIR__.'/auth.php';
