@@ -234,9 +234,25 @@
 	// Brief description: the job's meta description (or the start of the description), cut at a word
 	$shareBrief = Str::limit($descSource, 140, '...', true);
 
-	// Message sent by WhatsApp / email and copied by "Copy"
-	$shareTextNoLink = trim($shareHeadline . ($shareBrief !== '' ? "\n\n" . $shareBrief : ''));
-	$shareText       = $shareTextNoLink . "\n\n" . $canonicalUrl;
+	// Deadline line: only for a real deadline that has not passed
+	$shareDeadlineLine = null;
+	if ($hasRealDeadline && ($daysLeft === null || $daysLeft >= 0)) {
+		try {
+			$shareDeadlineLine = 'Deadline: ' . \Carbon\Carbon::parse($job['deadline'])->format('jS M Y');
+		} catch (\Throwable $e) {}
+	}
+	// Do not repeat it if the brief already carries the date
+	if ($shareDeadlineLine && $deadlineLabel && Str::contains($shareBrief, $deadlineLabel)) {
+		$shareDeadlineLine = null;
+	}
+
+	// Message: headline, brief, deadline, then a blank line and the link
+	$shareTextNoLink = implode("\n\n", array_filter([
+		$shareHeadline,
+		$shareBrief !== '' ? $shareBrief : null,
+		$shareDeadlineLine,
+	]));
+	$shareText = $shareTextNoLink . "\n\n" . $canonicalUrl;
 
 	// Preview card: headline beside the logo, brief description under it
 	$shareTitle       = $shareHeadline;
@@ -678,7 +694,7 @@
 					<a class="jp-share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on LinkedIn" aria-label="Share on LinkedIn">
 						<i class="bi bi-linkedin fs-5"></i>
 					</a>
-					<a class="jp-share-btn" href="https://twitter.com/intent/tweet?text={{ $enc($shareHeadline) }}&url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on X" aria-label="Share on X">
+					<a class="jp-share-btn" href="https://twitter.com/intent/tweet?text={{ $enc(trim($shareHeadline . ($shareDeadlineLine ? "\n" . $shareDeadlineLine : ''))) }}&url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on X" aria-label="Share on X">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-7l-5.5-6.9L4.2 22H1l8.1-9.3L1 2h7.2l5 6.3L18.9 2Zm-1.2 18h1.7L7.4 4H5.6l12.1 16Z"/></svg>
 					</a>
 					<a class="jp-share-btn" href="mailto:?subject={{ $enc($jobTitle . ' at ' . $companyName) }}&body={{ $enc($shareText) }}" title="Share by email" aria-label="Share by email">
@@ -1045,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-native-share]').forEach(function (btn) {
             btn.classList.remove('d-none');
             btn.addEventListener('click', function () {
-				navigator.share({ title: shareTitle, text: shareBody, url: shareUrl }).catch(function () {});
+				navigator.share({ title: shareTitle, text: shareText }).catch(function () {});
             });
         });
     }
