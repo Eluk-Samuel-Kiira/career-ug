@@ -29,13 +29,44 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		
 		<!-- Open Graph -->
+		@php
+			// Absolute URL helper for share images (WhatsApp/Facebook ignore relative URLs)
+			$__abs = function ($u) {
+				if (empty($u)) return null;
+				if (\Illuminate\Support\Str::startsWith($u, ['http://', 'https://'])) return $u;
+				if (\Illuminate\Support\Str::startsWith($u, '//')) return 'https:' . $u;
+				return url(ltrim($u, '/'));
+			};
+
+			$__ogTitle = trim($__env->yieldContent('og_title'))       ?: (config('app.name', 'JobMatch') . ' - ' . country_name());
+			$__ogDesc  = trim($__env->yieldContent('og_description')) ?: ('Find the best jobs and talent in ' . country_name() . '. Post jobs, hire candidates, and grow your career with AI-powered matching.');
+			$__ogUrl   = trim($__env->yieldContent('og_url'))         ?: trim($__env->yieldContent('canonical')) ?: url('/');
+			$__ogImage = trim($__env->yieldContent('og_image'))       ?: ($__abs(country_logo()) ?: $__abs(country_favicon()));
+			$__ogAlt   = trim($__env->yieldContent('og_image_alt'))   ?: config('app.name', 'JobMatch');
+			$__twCard  = trim($__env->yieldContent('twitter_card'))   ?: 'summary_large_image';
+			$__canon   = trim($__env->yieldContent('canonical'))      ?: trim($__env->yieldContent('canonical_url')) ?: url('/');
+		@endphp
+
+		<!-- Open Graph -->
 		<meta property="og:locale" content="en_{{ country_code() }}" />
-		<meta property="og:type" content="website" />
-		<meta property="og:title" content="{{ config('app.name', 'JobMatch') }} - {{ country_name() }}" />
-		<meta property="og:site_name" content="{{ config('app.name', 'JobMatch') }} - {{ country_name() }}" />
-		<meta property="og:description" content="@yield('og_description', 'Find the best jobs and talent in ' . country_name() . '. Post jobs, hire candidates, and grow your career with AI-powered matching.')" />
-		<meta property="og:url" content="{{ url('/') }}" />
-		<meta property="og:image" content="{{ country_logo() }}" />
+		<meta property="og:type" content="@yield('og_type', 'website')" />
+		<meta property="og:site_name" content="{{ config('app.name', 'JobMatch') }}" />
+		<meta property="og:title" content="{{ $__ogTitle }}" />
+		<meta property="og:description" content="{{ $__ogDesc }}" />
+		<meta property="og:url" content="{{ $__ogUrl }}" />
+		<meta property="og:image" content="{{ $__ogImage }}" />
+		<meta property="og:image:secure_url" content="{{ $__ogImage }}" />
+		<meta property="og:image:alt" content="{{ $__ogAlt }}" />
+
+		<!-- Twitter Cards -->
+		<meta name="twitter:card" content="{{ $__twCard }}" />
+		<meta name="twitter:title" content="{{ trim($__env->yieldContent('twitter_title')) ?: $__ogTitle }}" />
+		<meta name="twitter:description" content="{{ trim($__env->yieldContent('twitter_description')) ?: $__ogDesc }}" />
+		<meta name="twitter:image" content="{{ trim($__env->yieldContent('twitter_image')) ?: $__ogImage }}" />
+		<meta name="twitter:image:alt" content="{{ trim($__env->yieldContent('twitter_image_alt')) ?: $__ogAlt }}" />
+
+		<!-- Canonical -->
+		<link rel="canonical" href="{{ $__canon }}" />
 		
 		<!-- Twitter Cards -->
 		<meta name="twitter:card" content="summary_large_image" />
