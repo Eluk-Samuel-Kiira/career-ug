@@ -227,34 +227,20 @@
     }
 
 	/* ---------------------------------------------------------------
-	| Share message + link-preview text
+	| Share message + link-preview text (no emojis)
 	* --------------------------------------------------------------- */
-	$shareDeadline = null;
-	if ($hasRealDeadline && ($daysLeft === null || $daysLeft >= 0)) {
-		try { $shareDeadline = \Carbon\Carbon::parse($job['deadline'])->format('jS M Y'); } catch (\Throwable $e) {}
-	}
-	$shareSkills = $skills->take(4)->implode(' • ');
+	$shareHeadline = $jobTitle . ' at ' . $companyName . ($location ? ' - ' . $location : '');
 
-	// The message sent by WhatsApp / Telegram / email and copied by "Copy"
-	$shareText = implode("\n", array_filter([
-		'🔎 ' . $jobTitle . ' - ' . $companyName,
-		$location ? '📍 ' . $location : null,
-		$shareSkills !== '' ? '💡 ' . $shareSkills : null,
-		$shareDeadline ? '🗓️ ' . $shareDeadline : null,
-		'🔗 ' . $canonicalUrl,
-	]));
+	// Brief description: the job's meta description (or the start of the description), cut at a word
+	$shareBrief = Str::limit($descSource, 140, '...', true);
 
-	// What appears in the preview card beside the logo
-	$shareTitle = '🔎 ' . $jobTitle . ' - ' . $companyName;
-	$shareDescription = implode(' · ', array_filter([
-		$location ? '📍 ' . $location : null,
-		$shareSkills !== '' ? '💡 ' . $shareSkills : null,
-		$shareDeadline ? '🗓️ Apply by ' . $shareDeadline : null,
-	]));
-	if ($shareDescription === '') {
-		$shareDescription = $seoDescription;
-	}
-	$shareDescription = Str::limit($shareDescription, 200, '…');
+	// Message sent by WhatsApp / email and copied by "Copy"
+	$shareTextNoLink = trim($shareHeadline . ($shareBrief !== '' ? "\n\n" . $shareBrief : ''));
+	$shareText       = $shareTextNoLink . "\n\n" . $canonicalUrl;
+
+	// Preview card: headline beside the logo, brief description under it
+	$shareTitle       = $shareHeadline;
+	$shareDescription = $shareBrief !== '' ? $shareBrief : Str::limit($seoDescription, 140, '...', true);
 
 	$enc = fn ($s) => rawurlencode($s);
 
@@ -683,7 +669,7 @@
 					<a class="jp-share-btn" href="https://wa.me/?text={{ $enc($shareText) }}" target="_blank" rel="noopener noreferrer" title="Share on WhatsApp" aria-label="Share on WhatsApp">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.02 3.5c-4.87 0-8.83 3.94-8.83 8.79 0 1.55.41 3.06 1.19 4.39L3.2 21l4.44-1.16a8.9 8.9 0 0 0 4.37 1.12h.01c4.87 0 8.83-3.94 8.83-8.79a8.7 8.7 0 0 0-2.25-5.85Zm-5.58 13.5h-.01c-1.36 0-2.7-.36-3.86-1.05l-.28-.16-2.87.75.77-2.79-.18-.29a7.3 7.3 0 0 1-1.13-3.9c0-4.03 3.3-7.32 7.36-7.32a7.3 7.3 0 0 1 5.2 2.15 7.24 7.24 0 0 1 2.16 5.17c0 4.03-3.3 7.32-7.36 7.32Zm4.03-5.48c-.22-.11-1.3-.64-1.5-.71-.2-.07-.35-.11-.5.11s-.58.71-.71.86-.26.16-.48.05a6.03 6.03 0 0 1-1.77-1.09 6.6 6.6 0 0 1-1.22-1.52c-.13-.22 0-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.39.06-.6.28-.2.22-.79.77-.79 1.87 0 1.1.81 2.17.92 2.32.11.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.3-.53 1.49-1.04.18-.51.18-.94.13-1.03-.05-.09-.2-.15-.42-.26Z"/></svg>
 					</a>
-					<a class="jp-share-btn" href="https://t.me/share/url?url={{ $enc($canonicalUrl) }}&text={{ $enc(Str::before($shareText, "\n🔗")) }}" target="_blank" rel="noopener noreferrer" title="Share on Telegram" aria-label="Share on Telegram">
+					<a class="jp-share-btn" href="https://t.me/share/url?url={{ $enc($canonicalUrl) }}&text={{ $enc($shareTextNoLink) }}" target="_blank" rel="noopener noreferrer" title="Share on Telegram" aria-label="Share on Telegram">
 						<i class="bi bi-telegram fs-5"></i>
 					</a>
 					<a class="jp-share-btn" href="https://www.facebook.com/sharer/sharer.php?u={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on Facebook" aria-label="Share on Facebook">
@@ -692,7 +678,7 @@
 					<a class="jp-share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on LinkedIn" aria-label="Share on LinkedIn">
 						<i class="bi bi-linkedin fs-5"></i>
 					</a>
-					<a class="jp-share-btn" href="https://twitter.com/intent/tweet?text={{ $enc(Str::before($shareText, "\n🔗")) }}&url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on X" aria-label="Share on X">
+					<a class="jp-share-btn" href="https://twitter.com/intent/tweet?text={{ $enc($shareHeadline) }}&url={{ $enc($canonicalUrl) }}" target="_blank" rel="noopener noreferrer" title="Share on X" aria-label="Share on X">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-7l-5.5-6.9L4.2 22H1l8.1-9.3L1 2h7.2l5 6.3L18.9 2Zm-1.2 18h1.7L7.4 4H5.6l12.1 16Z"/></svg>
 					</a>
 					<a class="jp-share-btn" href="mailto:?subject={{ $enc($jobTitle . ' at ' . $companyName) }}&body={{ $enc($shareText) }}" title="Share by email" aria-label="Share by email">
@@ -1025,8 +1011,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var shareText  = @json($shareText);
-    var shareTitle = @json($shareTitle);
-    var shareUrl   = @json($canonicalUrl);
+	var shareTitle = @json($shareTitle);
+	var shareUrl   = @json($canonicalUrl);
+	var shareBody  = @json($shareTextNoLink);
 
     function copyText(text, done) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1058,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-native-share]').forEach(function (btn) {
             btn.classList.remove('d-none');
             btn.addEventListener('click', function () {
-                navigator.share({ title: shareTitle, text: shareText.replace(/\n?🔗.*$/s, ''), url: shareUrl }).catch(function () {});
+				navigator.share({ title: shareTitle, text: shareBody, url: shareUrl }).catch(function () {});
             });
         });
     }

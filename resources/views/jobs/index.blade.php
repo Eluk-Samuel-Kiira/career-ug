@@ -273,12 +273,26 @@
 			<!-- ====================== JOB LISTINGS ====================== -->
 			<div class="col-lg-9">
 
+				@php
+					// Drop featured jobs whose deadline has passed. Jobs with no real deadline stay.
+					$activeFeaturedJobs = collect($featuredJobs ?? [])->filter(function ($j) {
+						if (empty($j['has_real_deadline']) || empty($j['deadline'])) {
+							return true;
+						}
+						try {
+							return \Carbon\Carbon::parse($j['deadline'])->endOfDay()->greaterThanOrEqualTo(now());
+						} catch (\Throwable $e) {
+							return true; // unreadable date: keep it rather than hide a valid job
+						}
+					})->values();
+				@endphp
+
 				<!-- Featured jobs: ONE per line -->
-				@if(!empty($featuredJobs))
+				@if($activeFeaturedJobs->isNotEmpty())
 				<div class="mb-10">
 					<div class="jp-kicker mb-2">Featured</div>
 					<div class="jp-featured-stack">
-						@foreach($featuredJobs as $job)
+						@foreach($activeFeaturedJobs as $job)
 						<div class="jp-featured-card">
 							<div class="jp-logo-sq">
 								@if(!empty($job['company']['logo']))
