@@ -105,7 +105,7 @@
                         </div>
                     </div>
                     
-                    {{-- CV Upload --}}
+                    {{-- My CV --}}
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('cv.edit*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -122,6 +122,13 @@
                                 <a class="menu-link {{ request()->routeIs('cv.edit*') ? 'active' : '' }}" href="{{ route('cv.edit') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Upload / Edit CV</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('cv.edit*') && request()->query('tab') === 'academic' ? 'active' : '' }}"
+                                href="{{ route('cv.edit') }}?tab=academic">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Academic Documents</span>
                                 </a>
                             </div>
                         </div>

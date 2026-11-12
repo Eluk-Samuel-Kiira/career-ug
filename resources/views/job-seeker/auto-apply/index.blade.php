@@ -134,58 +134,30 @@
                     @if(!empty($run['relays']))
                         <div class="card-body pt-0">
                             <div class="separator my-4"></div>
-                            <div class="d-flex align-items-center gap-2 mb-4">
-                                <i class="ki-duotone ki-information-5 fs-3 text-warning">
-                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                                </i>
-                                <span class="fw-semibold text-gray-800">
-                                    Apply to these yourself — we could not submit them automatically
-                                </span>
-                            </div>
+                            
+                            @foreach($run['relays'] as $relay)
+                                <div class="d-flex flex-wrap justify-content-between align-items-center p-4 bg-light-warning rounded mb-3">
+                                    <div>
+                                        <div class="fw-bold">{{ $relay['job_title'] }}</div>
+                                        <div class="text-muted fs-7">{{ $relay['company'] }}</div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2 mt-sm-0">
+                                        {{-- NEW: View Documents Button --}}
+                                        @if(!empty($relay['cv_html']) || !empty($relay['cover_html']))
+                                            <button class="btn btn-sm btn-light-primary" onclick='openSeekerDrawer(@json($relay))'>
+                                                <i class="ki-duotone ki-eye fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                                View Documents
+                                            </button>
+                                        @endif
 
-                            <div class="d-flex flex-column gap-3">
-                                @foreach($run['relays'] as $relay)
-                                    @php
-                                        $isExpired = $relay['is_expired'] ?? false;
-                                    @endphp
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center p-4 rounded {{ $isExpired ? 'bg-light-secondary' : 'bg-light-warning' }}">
-                                        <div class="min-w-0">
-                                            <div class="fw-bold text-gray-800 d-flex flex-wrap align-items-center gap-2">
-                                                {{ $relay['job_title'] ?? 'Job' }}
-                                                @if($isExpired)
-                                                    <span class="badge badge-light-danger fs-9">
-                                                        <i class="bi bi-exclamation-circle me-1"></i>Expired
-                                                    </span>
-                                                @endif
-                                            </div>
-                                            <div class="text-muted fs-7">
-                                                {{ $relay['company'] ?? 'Company' }}
-                                                @if(($relay['reason'] ?? '') === 'academic_documents_required')
-                                                    · requires academic documents
-                                                @else
-                                                    · apply on the employer's site
-                                                @endif
-                                            </div>
-                                        </div>
-                                        @if(!empty($relay['job_slug']))
-                                            @if($isExpired)
-                                                {{-- Still allow viewing, but no expectation of applying --}}
-                                                <a href="{{ url('/job/' . $relay['job_slug']) }}"
-                                                   target="_blank"
-                                                   class="btn btn-sm btn-light">
-                                                    View Job
-                                                </a>
-                                            @else
-                                                <a href="{{ url('/job/' . $relay['job_slug']) }}"
-                                                   target="_blank"
-                                                   class="btn btn-sm btn-primary">
-                                                    Apply Now
-                                                </a>
-                                            @endif
+                                        @if($relay['status'] === 'applied')
+                                            <span class="badge badge-success py-3 px-4">Applied ✓</span>
+                                        @else
+                                            <a href="{{ url('/job/' . $relay['job_slug']) }}" class="btn btn-sm btn-primary">Apply Now</a>
                                         @endif
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 </div>
@@ -250,4 +222,59 @@
         @endif
     @endif
 </div>
+
+{{-- ══════════════════ SEEKER DOCUMENTS DRAWER ══════════════════ --}}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="seekerDrawer" style="width: 800px;">
+    <div class="offcanvas-header border-bottom">
+        <div>
+            <h5 class="offcanvas-title mb-0" id="sdTitle">Application Documents</h5>
+            <div class="text-muted fs-8" id="sdCompany"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        
+        <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-6 fw-semibold mb-4" id="sdTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#sd_cv">CV Used</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#sd_cover">Cover Letter Used</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="sd_cv">
+                <div id="sdCvContent" class="bg-white p-4 rounded shadow-sm border" style="font-family: Georgia, serif; font-size: 13px; line-height: 1.6; color: #0F1B2D; min-height: 200px;">
+                    <p class="text-muted text-center py-10">Loading...</p>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="sd_cover">
+                <div id="sdCoverContent" class="bg-white p-4 rounded shadow-sm border" style="font-family: Georgia, serif; font-size: 13px; line-height: 1.6; color: #0F1B2D; min-height: 200px;">
+                    <p class="text-muted text-center py-10">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+    const seekerDrawer = new bootstrap.Offcanvas(document.getElementById('seekerDrawer'));
+
+    window.openSeekerDrawer = function(relay) {
+        document.getElementById('sdTitle').textContent = relay.job_title || 'Application Documents';
+        document.getElementById('sdCompany').textContent = relay.company || '';
+
+        document.getElementById('sdCvContent').innerHTML = relay.cv_html || '<p class="text-muted">No CV generated.</p>';
+        document.getElementById('sdCoverContent').innerHTML = relay.cover_html || '<p class="text-muted">No cover letter generated.</p>';
+
+        // Reset tabs to first
+        new bootstrap.Tab(document.querySelector('#sdTabs a[href="#sd_cv"]')).show();
+
+        seekerDrawer.show();
+    };
+</script>
+@endpush

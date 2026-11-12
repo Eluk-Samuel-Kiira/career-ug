@@ -28,17 +28,15 @@ class AutoApplyController extends Controller
             return view('job-seeker.auto-apply.index', [
                 'feature_enabled' => false,
                 'runs'            => [],
+                'applied_jobs'    => [],
                 'stats'           => [],
-                'pagination'      => [
-                    'current_page' => 1, 'last_page' => 1,
-                    'per_page' => 10, 'total' => 0,
-                ],
             ]);
         }
 
         return view('job-seeker.auto-apply.index', [
             'feature_enabled' => $response['feature_enabled'] ?? false,
             'runs'            => $response['runs'] ?? [],
+            'applied_jobs'    => $response['applied_jobs'] ?? [], // <--- Pass the jobs
             'stats'           => $response['stats'] ?? [],
             'pagination'      => $response['pagination'] ?? [
                 'current_page' => 1, 'last_page' => 1,
@@ -46,5 +44,4 @@ class AutoApplyController extends Controller
             ],
         ]);
     }
-
 }

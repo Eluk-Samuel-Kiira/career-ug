@@ -31,6 +31,15 @@ Route::middleware(['auth.web'])->group(function () {
 });
 
 
+Route::middleware(['auth.web'])->prefix('cv')->name('cv.')->group(function () {
+    Route::get('/download', [\App\Http\Controllers\Home\CvDownloadController::class, 'download'])->name('download');
+
+    // Academic documents
+    Route::post('/academic-documents/upload',    [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'upload'])->name('academic.upload');
+    Route::delete('/academic-documents',         [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'destroy'])->name('academic.destroy');
+    Route::get('/academic-documents/download',   [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'download'])->name('academic.download');
+});
+
 Route::middleware(['auth.web'])->group(function () {
     // Alert Preferences
     Route::get('/alert-preferences', [AlertPreferenceController::class, 'edit'])->name('alert.preferences');
