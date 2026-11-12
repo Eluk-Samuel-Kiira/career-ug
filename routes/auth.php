@@ -31,6 +31,15 @@ Route::middleware(['auth.web'])->group(function () {
 });
 
 
+Route::middleware(['auth.web'])->prefix('cv')->name('cv.')->group(function () {
+    Route::get('/download', [\App\Http\Controllers\Home\CvDownloadController::class, 'download'])->name('download');
+
+    // Academic documents
+    Route::post('/academic-documents/upload',    [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'upload'])->name('academic.upload');
+    Route::delete('/academic-documents',         [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'destroy'])->name('academic.destroy');
+    Route::get('/academic-documents/download',   [\App\Http\Controllers\Home\AcademicDocumentsController::class, 'download'])->name('academic.download');
+});
+
 Route::middleware(['auth.web'])->group(function () {
     // Alert Preferences
     Route::get('/alert-preferences', [AlertPreferenceController::class, 'edit'])->name('alert.preferences');
@@ -182,6 +191,12 @@ Route::middleware(['auth.web'])->prefix('subscription')->name('subscription.')->
 Route::middleware(['auth.web'])->prefix('alerts/log')->name('alert.log.')->group(function () {
     Route::get('/',     [\App\Http\Controllers\Seeker\AlertLogController::class, 'index'])->name('index');
     Route::get('/data', [\App\Http\Controllers\Seeker\AlertLogController::class, 'data'])->name('data');
+});
+
+Route::middleware(['auth.web'])->prefix('auto-apply')->name('auto-apply.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'index'])->name('index');
+    Route::post('/subscribe', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'subscribe'])->name('subscribe');
+    Route::post('/check-status', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'checkStatus'])->name('check-status');
 });
 
 
