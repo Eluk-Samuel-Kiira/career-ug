@@ -114,7 +114,7 @@
                                     <span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">My CV</span>
+                            <span class="menu-title">My CVs & Docs</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
@@ -142,7 +142,7 @@
                                     <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">CV Services</span>
+                            <span class="menu-title">CVs & Letters</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
@@ -190,7 +190,7 @@
                                     <span class="path3"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Job Alerts</span>
+                            <span class="menu-title">My Job Alerts</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">

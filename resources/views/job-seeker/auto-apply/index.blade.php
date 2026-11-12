@@ -54,23 +54,125 @@
         </div>
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════════
+         STATE 1: LOCKED (No active subscription)
+         ═══════════════════════════════════════════════════════════ --}}
     @if(!$feature_enabled)
-        {{-- Locked state --}}
-        <div class="card card-flush">
-            <div class="card-body py-15 text-center">
-                <i class="ki-duotone ki-lock-2 fs-5tx text-warning mb-5 d-block">
-                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                </i>
-                <h3 class="fw-bold text-gray-800 mb-3">Auto Apply is not active on your plan</h3>
-                <p class="text-muted fs-6 mb-6" style="max-width:560px; margin:0 auto 24px;">
-                    Upgrade your subscription to let the Auto Apply Agent apply to matching jobs on your behalf,
-                    with a CV and cover letter tailored for each role.
+        <div class="card card-flush bg-light-primary border-primary border border-dashed overflow-hidden position-relative">
+            <div class="card-body p-10 text-center position-relative z-index-1">
+                <div class="symbol symbol-80px symbol-circle mb-5 mx-auto">
+                    <div class="symbol-label bg-white shadow-sm">
+                        <i class="ki-duotone ki-crown fs-3x text-warning">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                    </div>
+                </div>
+
+                <h2 class="fw-bolder text-gray-900 mb-3">Sit like a boss. Let AI do the work.</h2>
+                <p class="fs-5 text-gray-600 mb-8 mx-auto" style="max-width: 600px;">
+                    Stop hunting for jobs. Our AI Agent finds roles that match your CV, tailors your documents to the job description,
+                    and submits them on your behalf — 24/7. <strong>You only show up for the interviews.</strong>
                 </p>
-                <a href="{{ route('pricing.index') }}" class="btn btn-primary">View Plans</a>
+
+                @if($subscriptionPrice)
+                    <div class="d-flex justify-content-center align-items-center gap-4 mb-8">
+                        <div class="text-end border-end border-gray-300 pe-4">
+                            <div class="text-muted fs-7 text-uppercase fw-bold">Investment</div>
+                            <div class="fs-2hx fw-bolder text-primary">{{ $subscriptionPrice['formatted'] }}</div>
+                        </div>
+                        <div class="text-start">
+                            <div class="text-muted fs-7 text-uppercase fw-bold">Per</div>
+                            <div class="fs-3 fw-bold text-gray-800">Month</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg px-10 shadow-lg" id="upgradeAutoApplyBtn">
+                        <i class="ki-duotone ki-rocket fs-2 me-2">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Activate My Agent
+                    </button>
+                    <div class="text-muted fs-8 mt-3">Cancel anytime. Instant activation.</div>
+                @else
+                    <div class="alert alert-warning">Pricing is not available in your region yet.</div>
+                @endif
             </div>
+
+            {{-- Decorative background --}}
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at 10% 90%, rgba(32,170,62,0.05) 0%, transparent 40%);"></div>
         </div>
+
+        {{-- Payment Modal --}}
+        @if($subscriptionPrice)
+            <div class="modal fade" id="paymentModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header border-0 pb-0">
+                            <h3 class="fw-bold mb-0">Activate Auto Apply Agent</h3>
+                            <button type="button" class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal" id="paymentModalClose">
+                                <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="bg-light-primary rounded p-4 mb-5 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted fs-8">Premium Subscription</div>
+                                    <div class="fw-bold fs-5">Auto Apply Agent</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted fs-8">Amount</div>
+                                    <div class="fw-bold fs-4 text-primary" id="pm_amount">{{ $subscriptionPrice['formatted'] }}</div>
+                                </div>
+                            </div>
+
+                            <label class="fw-semibold fs-7 mb-2">Pay with</label>
+                            <div class="d-flex flex-column gap-2 mb-5">
+                                <label class="d-flex align-items-center gap-3 p-3 border rounded cursor-pointer pm-method-option">
+                                    <input type="radio" name="pm_method" value="mobile_money" class="form-check-input mt-0" checked>
+                                    <i class="ki-duotone ki-phone fs-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold fs-7">Mobile Money</div>
+                                        <div class="text-muted fs-8">MTN or Airtel — prompt on your phone</div>
+                                    </div>
+                                </label>
+                                <label class="d-flex align-items-center gap-3 p-3 border rounded cursor-pointer pm-method-option">
+                                    <input type="radio" name="pm_method" value="card" class="form-check-input mt-0">
+                                    <i class="ki-duotone ki-credit-cart fs-2 text-success"><span class="path1"></span><span class="path2"></span></i>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold fs-7">Card</div>
+                                        <div class="text-muted fs-8">Visa or Mastercard</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div id="pm_phone_wrap" class="mb-4">
+                                <label class="fw-semibold fs-7 mb-2">Mobile Money Number</label>
+                                <input type="tel" id="pm_phone" class="form-control form-control-lg" placeholder="+256 754 428 612">
+                            </div>
+
+                            <div id="pm_error" class="alert alert-light-danger mt-4 mb-0 d-none"></div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="pm_submit_btn" data-kt-indicator="off">
+                                <span class="indicator-label">
+                                    <i class="ki-duotone ki-lock fs-3 me-2"><span class="path1"></span><span class="path2"></span></i>
+                                    Pay Now
+                                </span>
+                                <span class="indicator-progress">
+                                    Please wait... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+    {{-- ═══════════════════════════════════════════════════════════
+         STATE 2: ACTIVE but no runs yet
+         ═══════════════════════════════════════════════════════════ --}}
     @elseif(empty($runs))
-        {{-- Nothing yet --}}
         <div class="card card-flush">
             <div class="card-body py-15 text-center">
                 <i class="ki-duotone ki-rocket fs-5tx text-muted mb-5 d-block">
@@ -87,8 +189,11 @@
                 </div>
             </div>
         </div>
+
+    {{-- ═══════════════════════════════════════════════════════════
+         STATE 3: ACTIVE and has runs
+         ═══════════════════════════════════════════════════════════ --}}
     @else
-        {{-- Runs list --}}
         <div class="d-flex flex-column gap-5">
             @foreach($runs as $run)
                 <div class="card card-flush">
@@ -134,7 +239,7 @@
                     @if(!empty($run['relays']))
                         <div class="card-body pt-0">
                             <div class="separator my-4"></div>
-                            
+
                             @foreach($run['relays'] as $relay)
                                 <div class="d-flex flex-wrap justify-content-between align-items-center p-4 bg-light-warning rounded mb-3">
                                     <div>
@@ -142,7 +247,6 @@
                                         <div class="text-muted fs-7">{{ $relay['company'] }}</div>
                                     </div>
                                     <div class="d-flex gap-2 mt-2 mt-sm-0">
-                                        {{-- NEW: View Documents Button --}}
                                         @if(!empty($relay['cv_html']) || !empty($relay['cover_html']))
                                             <button class="btn btn-sm btn-light-primary" onclick='openSeekerDrawer(@json($relay))'>
                                                 <i class="ki-duotone ki-eye fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
@@ -233,7 +337,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-        
         <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-6 fw-semibold mb-4" id="sdTabs">
             <li class="nav-item">
                 <a class="nav-link active" data-bs-toggle="tab" href="#sd_cv">CV Used</a>
@@ -262,6 +365,7 @@
 
 @push('scripts')
 <script>
+    // ── Seeker documents drawer ──
     const seekerDrawer = new bootstrap.Offcanvas(document.getElementById('seekerDrawer'));
 
     window.openSeekerDrawer = function(relay) {
@@ -271,10 +375,135 @@
         document.getElementById('sdCvContent').innerHTML = relay.cv_html || '<p class="text-muted">No CV generated.</p>';
         document.getElementById('sdCoverContent').innerHTML = relay.cover_html || '<p class="text-muted">No cover letter generated.</p>';
 
-        // Reset tabs to first
         new bootstrap.Tab(document.querySelector('#sdTabs a[href="#sd_cv"]')).show();
-
         seekerDrawer.show();
     };
+
+    // ── Payment modal (only mounted if $subscriptionPrice is set) ──
+    document.addEventListener('DOMContentLoaded', function () {
+        const upgradeBtn = document.getElementById('upgradeAutoApplyBtn');
+        const modalEl    = document.getElementById('paymentModal');
+        if (!upgradeBtn || !modalEl) return;
+
+        const modal      = new bootstrap.Modal(modalEl);
+        const submitBtn  = document.getElementById('pm_submit_btn');
+        const phoneWrap  = document.getElementById('pm_phone_wrap');
+        const phoneInput = document.getElementById('pm_phone');
+        const errorEl    = document.getElementById('pm_error');
+        const csrf       = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        upgradeBtn.addEventListener('click', () => modal.show());
+
+        // Toggle phone input based on method
+        modalEl.querySelectorAll('input[name="pm_method"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                phoneWrap.classList.toggle('d-none', this.value === 'card');
+                errorEl.classList.add('d-none');
+            });
+        });
+
+        submitBtn.addEventListener('click', async function () {
+            const method = modalEl.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
+            const phone  = (phoneInput?.value || '').trim();
+
+            if (method === 'mobile_money' && !phone) {
+                errorEl.textContent = 'Please enter your mobile money number.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            this.disabled = true;
+            this.setAttribute('data-kt-indicator', 'on');
+            errorEl.classList.add('d-none');
+
+            try {
+                const res = await fetch('{{ route("auto-apply.subscribe") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({ phone: method === 'mobile_money' ? phone : null, method }),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                        return;
+                    }
+
+                    // ✅ PROMPT SENT: Start polling for success
+                    this.setAttribute('data-kt-indicator', 'off');
+                    this.disabled = false;
+                    
+                    // Change modal content to show "Waiting for PIN"
+                    document.getElementById('pm_amount').textContent = "Check your phone";
+                    errorEl.className = 'alert alert-light-primary mt-4 mb-0';
+                    errorEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Please enter your PIN on your phone. Waiting for confirmation...';
+                    errorEl.classList.remove('d-none');
+
+                    // Hide the form fields
+                    modalEl.querySelector('.modal-body').querySelectorAll('.mb-4, .mb-5').forEach(el => el.classList.add('d-none'));
+                    submitBtn.classList.add('d-none'); // Hide the Pay button
+                    modalEl.querySelector('.modal-footer .btn-light').classList.add('d-none'); // Hide Cancel
+
+                    // Poll every 3 seconds
+                    let attempts = 0;
+                    const maxAttempts = 40; // 2 minutes max
+                    
+                    const poll = setInterval(async () => {
+                        attempts++;
+                        
+                        try {
+                            const statusRes = await fetch('{{ route("auto-apply.check-status") }}', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                                body: JSON.stringify({ reference: data.deposit_ref })
+                            });
+                            const statusData = await statusRes.json();
+
+                            if (statusData.success && statusData.status === 'completed') {
+                                clearInterval(poll);
+                                errorEl.className = 'alert alert-success mt-4 mb-0';
+                                errorEl.innerHTML = '✅ Payment confirmed! Activating your agent...';
+                                setTimeout(() => window.location.reload(), 1500);
+                                return;
+                            }
+
+                            if (statusData.status === 'failed') {
+                                clearInterval(poll);
+                                errorEl.className = 'alert alert-danger mt-4 mb-0';
+                                errorEl.innerHTML = '❌ Payment failed or was cancelled. Please try again.';
+                                setTimeout(() => window.location.reload(), 3000);
+                                return;
+                            }
+
+                            // Update text with attempt count
+                            errorEl.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Waiting for confirmation... (${attempts * 3}s)`;
+
+                        } catch (e) {
+                            // Network blip, keep trying
+                        }
+
+                        if (attempts >= maxAttempts) {
+                            clearInterval(poll);
+                            errorEl.className = 'alert alert-warning mt-4 mb-0';
+                            errorEl.innerHTML = '⏱️ Timed out. If you paid, please refresh the page.';
+                            setTimeout(() => window.location.reload(), 3000);
+                        }
+                    }, 3000);
+                } else {
+                    errorEl.textContent = data.message || 'Payment failed. Please try again.';
+                    errorEl.classList.remove('d-none');
+                    this.disabled = false;
+                    this.setAttribute('data-kt-indicator', 'off');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Network error. Please check your connection.';
+                errorEl.classList.remove('d-none');
+                this.disabled = false;
+                this.setAttribute('data-kt-indicator', 'off');
+            }
+        });
+        
+    });
 </script>
 @endpush

@@ -193,6 +193,12 @@ Route::middleware(['auth.web'])->prefix('alerts/log')->name('alert.log.')->group
     Route::get('/data', [\App\Http\Controllers\Seeker\AlertLogController::class, 'data'])->name('data');
 });
 
+Route::middleware(['auth.web'])->prefix('auto-apply')->name('auto-apply.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'index'])->name('index');
+    Route::post('/subscribe', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'subscribe'])->name('subscribe');
+    Route::post('/check-status', [\App\Http\Controllers\Seeker\AutoApplyController::class, 'checkStatus'])->name('check-status');
+});
+
 
 
 use App\Http\Controllers\Home\MyJobsController;

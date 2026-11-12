@@ -182,14 +182,16 @@
                                         </td>
                                         <td>
                                             <div class="d-flex justify-content-end gap-2 flex-wrap"
-                                                 data-job-id="{{ $job['id'] }}" data-slug="{{ $slug }}">
+                                                data-job-id="{{ $job['id'] }}" data-slug="{{ $slug }}">
+
                                                 <a href="{{ route('jobs.show', $slug) }}" target="_blank"
-                                                   class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px"
-                                                   title="View Job">
+                                                class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px"
+                                                title="View Job">
                                                     <i class="bi bi-eye fs-5 text-gray-500"></i>
                                                 </a>
 
-                                                @if($isLive && $status === 'applied')
+                                                {{-- Applied → can move to Interviewing or Rejected --}}
+                                                @if($status === 'applied')
                                                     <button type="button"
                                                             class="btn btn-sm btn-icon btn-bg-light btn-active-color-warning w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
@@ -206,7 +208,8 @@
                                                     </button>
                                                 @endif
 
-                                                @if($isLive && $status === 'interviewing')
+                                                {{-- Interviewing → can move to Hired, Rejected, or back to Applied --}}
+                                                @if($status === 'interviewing')
                                                     <button type="button"
                                                             class="btn btn-sm btn-icon btn-bg-light btn-active-color-success w-30px h-30px update-status-btn"
                                                             data-job-id="{{ $job['id'] }}"
@@ -221,13 +224,24 @@
                                                             title="Mark as Rejected">
                                                         <i class="bi bi-x-circle fs-5 text-danger"></i>
                                                     </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-secondary w-30px h-30px update-status-btn"
+                                                            data-job-id="{{ $job['id'] }}"
+                                                            data-status="applied"
+                                                            title="Reset to Applied">
+                                                        <i class="bi bi-arrow-counterclockwise fs-5 text-gray-500"></i>
+                                                    </button>
                                                 @endif
 
+                                                {{-- Hired / Rejected → can reset to Applied (undo accidental mark) --}}
                                                 @if($status === 'hired' || $status === 'rejected')
-                                                    <span class="text-muted fs-7 d-flex align-items-center">
-                                                        <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                                        Final
-                                                    </span>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-icon btn-bg-light btn-active-color-secondary w-30px h-30px update-status-btn"
+                                                            data-job-id="{{ $job['id'] }}"
+                                                            data-status="applied"
+                                                            title="Reset to Applied">
+                                                        <i class="bi bi-arrow-counterclockwise fs-5 text-gray-500"></i>
+                                                    </button>
                                                 @endif
                                             </div>
                                         </td>

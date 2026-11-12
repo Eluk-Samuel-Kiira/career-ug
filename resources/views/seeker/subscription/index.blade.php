@@ -14,9 +14,15 @@
             <div class="card card-flush">
                 <div class="card-body py-5">
                     <div class="text-muted fs-7 mb-1">Total Paid (all services)</div>
+                    @php
+                        $currency = $active['currency'] ?? 'UGX';
+                        $totalPaidRaw = $summary['total_paid_cents'] ?? 0;
+                        $totalPaidDisplay = $currency === 'UGX'
+                            ? number_format($totalPaidRaw, 0)              // UGX has 0 decimals — don't divide
+                            : number_format($totalPaidRaw / 100, 2);       // USD etc. divide by 100
+                    @endphp
                     <div class="fs-2 fw-bold text-gray-900">
-                        {{ strtoupper($active['currency'] ?? 'UGX') }}
-                        {{ number_format(($summary['total_paid_cents'] ?? 0) / 100, ($active['currency'] ?? 'UGX') === 'UGX' ? 0 : 2) }}
+                        {{ strtoupper($currency) }} {{ $totalPaidDisplay }}
                     </div>
                 </div>
             </div>
@@ -80,7 +86,7 @@
                             @endif
                         </div>
                     </div>
-                    <a href="{{ $pricingUrl }}" class="btn btn-primary">Change Plan</a>
+                    <a href="{{ $pricingUrl }}" class="btn btn-primary">View Plan</a>
                 </div>
             </div>
         </div>
@@ -302,7 +308,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($subscriptions as $s)
+                            @foreach($subscriptions as $s)   <!-- ✅ SUBSCRIPTIONS, not payments -->
                                 @php
                                     $sTone = match (true) {
                                         ($s['status'] ?? '') === 'past_due' => 'danger',
@@ -314,15 +320,15 @@
                                 @endphp
                                 <tr>
                                     <td class="text-start">
-                                        <div class="fw-bold text-gray-800">{{ $s['service_name'] }}</div>
-                                        <div class="text-muted fs-8">{{ $s['service_key'] }}</div>
+                                        <div class="fw-bold text-gray-800">{{ $s['service_name'] ?? '—' }}</div>
+                                        <div class="text-muted fs-8">{{ $s['service_key'] ?? '' }}</div>
                                     </td>
                                     <td class="text-start fw-bold">
-                                        {{ $s['amount_formatted'] }}
-                                        <div class="text-muted fs-8 fw-normal">/ {{ $s['interval'] }}</div>
+                                        {{ $s['amount_formatted'] ?? '—' }}
+                                        <div class="text-muted fs-8 fw-normal">/ {{ $s['interval'] ?? 'month' }}</div>
                                     </td>
                                     <td class="text-start">
-                                        <span class="badge badge-light-{{ $sTone }}">{{ $s['status_label'] }}</span>
+                                        <span class="badge badge-light-{{ $sTone }}">{{ $s['status_label'] ?? ucfirst($s['status'] ?? '') }}</span>
                                     </td>
                                     <td class="text-start text-muted fs-8">
                                         {{ !empty($s['starts_at']) ? \Carbon\Carbon::parse($s['starts_at'])->format('M d, Y') : '—' }}
@@ -336,7 +342,7 @@
                     </table>
                 </div>
 
-                {{-- ── Subscriptions pagination ────────────────── --}}
+                {{-- Subscriptions pagination --}}
                 @if($subsLast > 1)
                     <div class="d-flex justify-content-between align-items-center mt-6 flex-wrap gap-2">
                         <div class="text-muted fs-8">
@@ -347,46 +353,27 @@
                         <nav>
                             <ul class="pagination pagination-sm m-0">
                                 <li class="page-item {{ $subsCurrent <= 1 ? 'disabled' : '' }}">
-                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => max(1, $subsCurrent - 1)]) }}">
-                                        ‹ Prev
-                                    </a>
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => max(1, $subsCurrent - 1)]) }}">‹ Prev</a>
                                 </li>
-
                                 @php
                                     $start = max(1, $subsCurrent - 2);
                                     $end   = min($subsLast, $subsCurrent + 2);
                                 @endphp
-
                                 @if($start > 1)
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => 1]) }}">1</a>
-                                    </li>
-                                    @if($start > 2)
-                                        <li class="page-item disabled"><span class="page-link">…</span></li>
-                                    @endif
+                                    <li class="page-item"><a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => 1]) }}">1</a></li>
+                                    @if($start > 2)<li class="page-item disabled"><span class="page-link">…</span></li>@endif
                                 @endif
-
                                 @for($i = $start; $i <= $end; $i++)
                                     <li class="page-item {{ $i === $subsCurrent ? 'active' : '' }}">
                                         <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => $i]) }}">{{ $i }}</a>
                                     </li>
                                 @endfor
-
                                 @if($end < $subsLast)
-                                    @if($end < $subsLast - 1)
-                                        <li class="page-item disabled"><span class="page-link">…</span></li>
-                                    @endif
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => $subsLast]) }}">
-                                            {{ $subsLast }}
-                                        </a>
-                                    </li>
+                                    @if($end < $subsLast - 1)<li class="page-item disabled"><span class="page-link">…</span></li>@endif
+                                    <li class="page-item"><a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => $subsLast]) }}">{{ $subsLast }}</a></li>
                                 @endif
-
                                 <li class="page-item {{ $subsCurrent >= $subsLast ? 'disabled' : '' }}">
-                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => min($subsLast, $subsCurrent + 1)]) }}">
-                                        Next ›
-                                    </a>
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery(['subs_page' => min($subsLast, $subsCurrent + 1)]) }}">Next ›</a>
                                 </li>
                             </ul>
                         </nav>
