@@ -270,8 +270,8 @@
                             <div class="d-flex align-items-center gap-4 flex-grow-1 min-w-0">
                                 <div class="symbol symbol-50px">
                                     <div class="symbol-label bg-white text-success">
-                                        <i class="ki-duotone ki-diploma fs-2x">
-                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                        <i class="ki-duotone ki-document fs-2x">
+                                            <span class="path1"></span><span class="path2"></span>
                                         </i>
                                     </div>
                                 </div>
@@ -282,7 +282,7 @@
                                     <div class="d-flex flex-wrap gap-3 mt-1">
                                         @if($academicDocs['size'])
                                             <span class="text-muted fs-8">
-                                                <i class="ki-duotone ki-weight fs-7 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                                <i class="ki-duotone ki-file fs-7 me-1"><span class="path1"></span><span class="path2"></span></i>
                                                 {{ round($academicDocs['size'] / 1024 / 1024, 2) }} MB
                                             </span>
                                         @endif

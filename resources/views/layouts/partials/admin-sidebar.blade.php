@@ -142,7 +142,7 @@
                                     <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">CVs & Letters</span>
+                            <span class="menu-title">CVs & Cover Letters</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
@@ -150,31 +150,28 @@
                                 <a class="menu-link {{ request()->routeIs('cv-review.index') ? 'active' : '' }}"
                                 href="{{ route('cv-review.index') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Request CV Service</span>
+                                    <span class="menu-title">ATS CV Builder/Tailor</span>
                                 </a>
                             </div>
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('cv-review.my') ? 'active' : '' }}"
                                 href="{{ route('cv-review.my') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">My CV Reviews</span>
-                                    @if(($pendingCount ?? 0) > 0)
-                                        <span class="badge badge-light-warning ms-2">{{ $pendingCount }}</span>
-                                    @endif
+                                    <span class="menu-title">ATS CV Results</span>
                                 </a>
                             </div>
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('letters.create') ? 'active' : '' }}"
                                 href="{{ route('letters.create') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Generate a Letter</span>
+                                    <span class="menu-title">Cover Letters Writer</span>
                                 </a>
                             </div>
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('letters.index') ? 'active' : '' }}"
                                 href="{{ route('letters.index') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">My Letters</span>
+                                    <span class="menu-title">My Cover Letters</span>
                                 </a>
                             </div>
                         </div>
@@ -220,7 +217,7 @@
                                     <span class="path1"></span><span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Auto Apply</span>
+                            <span class="menu-title">Apply Jobs For Me</span>
                         </a>
                     </div>
 

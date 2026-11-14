@@ -28,7 +28,7 @@
                     </div>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-1">Auto Apply Agent</h2>
+                    <h2 class="fw-bold mb-1">Job Application Agent - Apply Jobs On My Behalf</h2>
                     <div class="text-muted fs-7">
                         Every day, we find jobs that match your preferences, tailor your CV and cover letter,
                         and apply on your behalf.

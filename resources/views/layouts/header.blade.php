@@ -199,7 +199,7 @@
 										<!-- Desktop: hover-based dropdown -->
 										<div class="jp-nav-cv-desktop">
 											<span class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('cv-maker.*', 'cv-review.*', 'letters.*') ? 'active' : '' }}" style="cursor: pointer;">
-												CV
+												CV Support
 												<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 													<path d="M6 9l6 6 6-6"/>
 												</svg>
@@ -212,7 +212,7 @@
 														<i class="ki-duotone ki-document fs-4 text-primary">
 															<span class="path1"></span><span class="path2"></span>
 														</i>
-														CV Tailor & Maker
+														CV Builder/Tailor
 													</span>
 												</a>
 												<a href="{{ route('letters.index') }}"
@@ -222,7 +222,7 @@
 														<i class="ki-duotone ki-message-text-2 fs-4 text-success">
 															<span class="path1"></span><span class="path2"></span><span class="path3"></span>
 														</i>
-														Cover Letter Generator
+														Cover Letters Writer
 													</span>
 												</a>
 											</div>
@@ -231,7 +231,7 @@
 										<!-- Mobile: details-based dropdown -->
 										<details class="jp-nav-cv-mobile">
 											<summary class="menu-link nav-link py-3 px-4 px-xxl-6 d-flex align-items-center gap-1 {{ Route::is('cv-maker.*', 'cv-review.*', 'letters.*') ? 'active' : '' }}" style="cursor: pointer;">
-												CV
+												CV Support
 												<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 													<path d="M6 9l6 6 6-6"/>
 												</svg>
@@ -244,7 +244,7 @@
 														<i class="ki-duotone ki-document fs-4 text-primary">
 															<span class="path1"></span><span class="path2"></span>
 														</i>
-														CV Tailor & Maker
+														CV Builder/Tailor
 													</span>
 												</a>
 												<a href="{{ route('letters.index') }}"
@@ -254,7 +254,7 @@
 														<i class="ki-duotone ki-message-text-2 fs-4 text-success">
 															<span class="path1"></span><span class="path2"></span><span class="path3"></span>
 														</i>
-														Cover Letter Generator
+														Cover Letters Writer
 													</span>
 												</a>
 											</div>
