@@ -28,7 +28,7 @@
                                {{ isset($jobPreferences['all_job_alerts']) && $jobPreferences['all_job_alerts'] ? 'checked' : '' }} />
                     </div>
                 </div>
-
+                
                 <!-- Alert by Category -->
                 <div class="p-4 bg-light rounded-3 border border-gray-200 mb-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
