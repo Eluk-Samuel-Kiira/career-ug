@@ -258,6 +258,108 @@
         </div>
     @endif
 
+        {{-- STEP 3b — AWAITING PAYMENT with answers: choose AI vs HR --}}
+    @if($status === 'awaiting_payment' && $hasAnswers)
+    @php
+        $aiPrice    = $r['next_service_price']       ?? null;
+        $humanPrice = $r['next_service_price_human'] ?? null;
+    @endphp
+    <div class="card card-flush mb-6 border border-warning">
+        <div class="card-header bg-light-warning">
+            <h3 class="card-title">
+                <i class="ki-duotone ki-dollar fs-2 me-2">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Choose How To Rewrite Your CV
+            </h3>
+        </div>
+        <div class="card-body">
+
+            {{-- Answers preview --}}
+            <div class="alert alert-light-success d-flex align-items-center mb-5">
+                <i class="ki-duotone ki-check-circle fs-2x text-success me-3">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">Answers saved</div>
+                    <div class="text-muted fs-7">
+                        You can still
+                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline open-answers-btn">
+                            edit them
+                        </button>
+                        before paying.
+                    </div>
+                </div>
+            </div>
+
+            {{-- Two options --}}
+            <div class="row g-4 mb-5">
+                {{-- Option A: AI Tool --}}
+                <div class="col-md-6">
+                    <label class="d-block border border-primary border-2 rounded p-4 cursor-pointer h-100 option-card"
+                        data-mode="ai">
+                        <input type="radio" name="rewrite_mode" value="ai" class="d-none" checked>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="fw-bold fs-4">Let the Rewriter Tool Do It</div>
+                                <div class="text-muted fs-7">CV Generated in 30&ndash;60 seconds</div>
+                            </div>
+                            <i class="ki-duotone ki-rocket fs-2x text-primary">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                        </div>
+                        <ul class="text-muted fs-7 mb-3 ps-4">
+                            <li>Instant delivery</li>
+                            <li>2 free regenerations</li>
+                            <li>Full editing &amp; PDF download</li>
+                        </ul>
+                        <div class="fs-3 fw-bold text-primary">{{ $aiPrice['formatted'] ?? '—' }}</div>
+                    </label>
+                </div>
+
+                {{-- Option B: HR Expert --}}
+                <div class="col-md-6">
+                    <label class="d-block border border-warning border-2 rounded p-4 cursor-pointer h-100 option-card"
+                        data-mode="human">
+                        <input type="radio" name="rewrite_mode" value="human" class="d-none">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="fw-bold fs-4">Let an HR Expert Do It</div>
+                                <div class="text-muted fs-7">Human-written in 12&ndash;24 hours</div>
+                            </div>
+                            <i class="ki-duotone ki-user-tick fs-2x text-warning">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                        </div>
+                        <ul class="text-muted fs-7 mb-3 ps-4">
+                            <li>Reviewed by a senior HR expert</li>
+                            <li>12&ndash;24 hour delivery</li>
+                            <li>1 free revision</li>
+                        </ul>
+                        <div class="fs-3 fw-bold text-warning">{{ $humanPrice['formatted'] ?? '—' }}</div>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Pay button --}}
+            <div class="text-center">
+                <button class="btn btn-success btn-lg px-10" id="payBtn">
+                    <span class="indicator-label">
+                        <i class="ki-duotone ki-lock fs-3 me-2">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Pay Now
+                    </span>
+                    <span class="indicator-progress">
+                        Redirecting...
+                        <span class="spinner-border spinner-border-sm ms-2"></span>
+                    </span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    @endif
 
     {{-- ========================================================= --}}
     {{-- SAVED ANSWERS (visible after answers are submitted)     --}}
@@ -768,109 +870,6 @@
     @endif
 
 
-    {{-- STEP 3b — AWAITING PAYMENT with answers: choose AI vs HR --}}
-    @if($status === 'awaiting_payment' && $hasAnswers)
-    @php
-        $aiPrice    = $r['next_service_price']       ?? null;
-        $humanPrice = $r['next_service_price_human'] ?? null;
-    @endphp
-    <div class="card card-flush mb-6 border border-warning">
-        <div class="card-header bg-light-warning">
-            <h3 class="card-title">
-                <i class="ki-duotone ki-dollar fs-2 me-2">
-                    <span class="path1"></span><span class="path2"></span>
-                </i>
-                Choose How To Rewrite Your CV
-            </h3>
-        </div>
-        <div class="card-body">
-
-            {{-- Answers preview --}}
-            <div class="alert alert-light-success d-flex align-items-center mb-5">
-                <i class="ki-duotone ki-check-circle fs-2x text-success me-3">
-                    <span class="path1"></span><span class="path2"></span>
-                </i>
-                <div class="flex-grow-1">
-                    <div class="fw-bold">Answers saved</div>
-                    <div class="text-muted fs-7">
-                        You can still
-                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline open-answers-btn">
-                            edit them
-                        </button>
-                        before paying.
-                    </div>
-                </div>
-            </div>
-
-            {{-- Two options --}}
-            <div class="row g-4 mb-5">
-                {{-- Option A: AI Tool --}}
-                <div class="col-md-6">
-                    <label class="d-block border border-primary border-2 rounded p-4 cursor-pointer h-100 option-card"
-                        data-mode="ai">
-                        <input type="radio" name="rewrite_mode" value="ai" class="d-none" checked>
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <div class="fw-bold fs-4">Let the Rewriter Tool Do It</div>
-                                <div class="text-muted fs-7">CV Generated in 30&ndash;60 seconds</div>
-                            </div>
-                            <i class="ki-duotone ki-rocket fs-2x text-primary">
-                                <span class="path1"></span><span class="path2"></span>
-                            </i>
-                        </div>
-                        <ul class="text-muted fs-7 mb-3 ps-4">
-                            <li>Instant delivery</li>
-                            <li>2 free regenerations</li>
-                            <li>Full editing &amp; PDF download</li>
-                        </ul>
-                        <div class="fs-3 fw-bold text-primary">{{ $aiPrice['formatted'] ?? '—' }}</div>
-                    </label>
-                </div>
-
-                {{-- Option B: HR Expert --}}
-                <div class="col-md-6">
-                    <label class="d-block border border-warning border-2 rounded p-4 cursor-pointer h-100 option-card"
-                        data-mode="human">
-                        <input type="radio" name="rewrite_mode" value="human" class="d-none">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <div class="fw-bold fs-4">Let an HR Expert Do It</div>
-                                <div class="text-muted fs-7">Human-written in 12&ndash;24 hours</div>
-                            </div>
-                            <i class="ki-duotone ki-user-tick fs-2x text-warning">
-                                <span class="path1"></span><span class="path2"></span>
-                            </i>
-                        </div>
-                        <ul class="text-muted fs-7 mb-3 ps-4">
-                            <li>Reviewed by a senior HR expert</li>
-                            <li>12&ndash;24 hour delivery</li>
-                            <li>1 free revision</li>
-                        </ul>
-                        <div class="fs-3 fw-bold text-warning">{{ $humanPrice['formatted'] ?? '—' }}</div>
-                    </label>
-                </div>
-            </div>
-
-            {{-- Pay button --}}
-            <div class="text-center">
-                <button class="btn btn-success btn-lg px-10" id="payBtn">
-                    <span class="indicator-label">
-                        <i class="ki-duotone ki-lock fs-3 me-2">
-                            <span class="path1"></span><span class="path2"></span>
-                        </i>
-                        Pay Now
-                    </span>
-                    <span class="indicator-progress">
-                        Redirecting...
-                        <span class="spinner-border spinner-border-sm ms-2"></span>
-                    </span>
-                </button>
-            </div>
-
-        </div>
-    </div>
-    @endif
-
     {{-- STEP 4 (HUMAN) — PAID HUMAN / IN PROGRESS --}}
     @if($r['rewrite_mode'] === 'human' && in_array($status, ['paid_human', 'in_progress'], true))
     <div class="card card-flush mb-6 border border-primary">
@@ -1131,6 +1130,7 @@
                         </div>
                     </label>
 
+                    {{-- 
                     <label class="d-flex align-items-center gap-3 p-3 border rounded cursor-pointer pm-method-option">
                         <input type="radio" name="pm_method" value="card" class="form-check-input mt-0">
                         <i class="ki-duotone ki-credit-cart fs-2 text-success">
@@ -1141,6 +1141,7 @@
                             <div class="text-muted fs-8">Visa or Mastercard — you'll be redirected to a secure page</div>
                         </div>
                     </label>
+                    --}}
                 </div>
 
                 {{-- Phone input (mobile money only) --}}

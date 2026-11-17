@@ -511,83 +511,56 @@
         });
     }
 
-    // ── Background status polling (no full page reload until state changes) ──
+    // ── Background status polling ──
+    // pending_payment → poll for up to 30s (short — if user never starts paying, stop)
+    // paid / processing → poll for up to 10 min (queue generation)
+    // generated / failed → no polling needed
     (function setupStatusPolling() {
-        // Only poll if we're actively generating
-        if (STATUS !== 'processing' && STATUS !== 'paid') {
-            sessionStorage.removeItem('letter_poll_' + UUID);
-            return;
-        }
+        const KEY_STARTED = 'letter_poll_' + UUID + '_started';
 
-        // Disable the "Generate Now" button immediately so it can't be spammed
-        const genBtn = document.getElementById('generateNowBtn');
-        if (genBtn) {
-            genBtn.disabled = true;
-            genBtn.classList.add('disabled');
-            const label = genBtn.querySelector('.indicator-label');
-            const progress = genBtn.querySelector('.indicator-progress');
-            if (label) label.classList.add('d-none');
-            if (progress) progress.classList.remove('d-none');
-        }
+        let maxMs;
+        if (STATUS === 'pending_payment')   maxMs = 30 * 1000;           // 30s
+        else if (STATUS === 'paid')         maxMs = 10 * 60 * 1000;      // 10 min
+        else if (STATUS === 'processing')   maxMs = 10 * 60 * 1000;      // 10 min
+        else return;
 
-        const KEY       = 'letter_poll_' + UUID;
-        const startedAt = parseInt(sessionStorage.getItem(KEY + '_started') || '0', 10) || Date.now();
-        sessionStorage.setItem(KEY + '_started', String(startedAt));
+        const startedAt = parseInt(sessionStorage.getItem(KEY_STARTED) || '0', 10) || Date.now();
+        sessionStorage.setItem(KEY_STARTED, String(startedAt));
 
-        const POLL_MS = 3000;
-        const MAX_MS  = 5 * 60 * 1000;   // give up after 5 min
+        const POLL_MS = 5000;
 
         const tick = async () => {
-            if (Date.now() - startedAt > MAX_MS) {
-                sessionStorage.removeItem(KEY + '_started');
-                // Show a soft timeout message instead of looping forever
-                const wrap = document.querySelector('.card-body');
-                if (wrap && !document.getElementById('pollTimeoutNotice')) {
-                    const notice = document.createElement('div');
-                    notice.id = 'pollTimeoutNotice';
-                    notice.className = 'alert alert-light-warning mt-3 fs-7';
-                    notice.innerHTML =
-                        '<div class="fw-bold">Still working…</div>' +
-                        '<div class="text-muted">Generation is taking longer than usual. ' +
-                        'You can safely leave this page — we\'ll email you when it\'s ready, ' +
-                        'or refresh to check.</div>';
-                    wrap.appendChild(notice);
-                }
+            if (Date.now() - startedAt > maxMs) {
+                sessionStorage.removeItem(KEY_STARTED);
                 return;
             }
 
             try {
                 const r = await fetch(`{{ url('letters') }}/${UUID}/status`, {
                     headers: { 'Accept': 'application/json' },
+                    cache:   'no-store',
                 });
+                if (!r.ok) { setTimeout(tick, POLL_MS); return; }
+
                 const b = await r.json();
                 const current = b?.data?.status;
+                if (!current) { setTimeout(tick, POLL_MS); return; }
 
-                if (!current) {
-                    setTimeout(tick, POLL_MS);
+                if (current !== STATUS) {
+                    sessionStorage.removeItem(KEY_STARTED);
+                    window.location.reload();
                     return;
                 }
 
-                // Still in the same in-flight state — keep waiting
-                if (current === 'paid' || current === 'processing') {
-                    setTimeout(tick, POLL_MS);
-                    return;
-                }
-
-                // State changed (generated / failed / pending_payment) →
-                // reload ONCE so the page re-renders with the new state
-                sessionStorage.removeItem(KEY + '_started');
-                window.location.reload();
-
+                setTimeout(tick, POLL_MS);
             } catch (e) {
-                // Network blip — try again
                 setTimeout(tick, POLL_MS);
             }
         };
 
-        // Small delay so the initial page render isn't blocked
         setTimeout(tick, POLL_MS);
     })();
+
 
     // ── Payment modal ──────────────────────────────────────────
     const modalEl = document.getElementById('paymentModal');
@@ -626,15 +599,90 @@
             r.addEventListener('change', syncMethod);
         });
 
+        let paymentWatcherTimer   = null;
+        let paymentWatcherStopped = false;
+
+        function startPaymentWatcher() {
+            if (paymentWatcherTimer) return;    // already running
+            paymentWatcherStopped = false;
+
+            const POLL_MS = 5000;
+            const MAX_MS  = 3 * 60 * 1000;      // 3 min — enough for MTN prompt
+            const started = Date.now();
+
+            const tick = async () => {
+                if (paymentWatcherStopped) return;
+
+                if (Date.now() - started > MAX_MS) {
+                    modal.hide();
+                    toast('error',
+                        'Payment is still pending. If you approved the prompt, open this letter again in a minute.',
+                        'Timeout');
+                    return;
+                }
+
+                try {
+                    const r = await fetch(`{{ url('letters') }}/${UUID}/status`, {
+                        headers: { 'Accept': 'application/json' },
+                        cache:   'no-store',
+                    });
+                    if (!r.ok) { paymentWatcherTimer = setTimeout(tick, POLL_MS); return; }
+
+                    const b = await r.json();
+                    const status = b?.data?.status;
+
+                    if (!status) { paymentWatcherTimer = setTimeout(tick, POLL_MS); return; }
+
+                    // Payment landed (webhook flipped the letter)
+                    if (status === 'paid' || status === 'processing' || status === 'generated') {
+                        paymentWatcherStopped = true;
+                        modal.hide();
+                        toast('success', 'Payment confirmed! Generating your letter…', 'Paid');
+                        setTimeout(() => window.location.reload(), 500);
+                        return;
+                    }
+
+                    if (status === 'failed') {
+                        paymentWatcherStopped = true;
+                        toast('error', 'Payment failed. Please try again.', 'Failed');
+                        return;
+                    }
+
+                    // Still pending_payment → keep waiting
+                    paymentWatcherTimer = setTimeout(tick, POLL_MS);
+
+                } catch (e) {
+                    paymentWatcherTimer = setTimeout(tick, POLL_MS);
+                }
+            };
+
+            // First check after one interval — gives the deposit a moment to be created
+            paymentWatcherTimer = setTimeout(tick, POLL_MS);
+        }
+
+        function stopPaymentWatcher() {
+            paymentWatcherStopped = true;
+            if (paymentWatcherTimer) {
+                clearTimeout(paymentWatcherTimer);
+                paymentWatcherTimer = null;
+            }
+        }
+
         openBtn?.addEventListener('click', () => {
             if (phoneIn) phoneIn.value = '';
             const mobile = modalEl.querySelector('input[name="pm_method"][value="mobile_money"]');
             if (mobile) mobile.checked = true;
             syncMethod();
             modal.show();
+            startPaymentWatcher();              // ← START ON OPEN
             setTimeout(() => {
                 if (phoneWrap && !phoneWrap.classList.contains('d-none')) phoneIn.focus();
             }, 300);
+        });
+
+        // Stop the watcher when the user cancels or closes the modal
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            stopPaymentWatcher();
         });
 
         submitBtn.addEventListener('click', async () => {
@@ -655,7 +703,7 @@
                     headers: {
                         'X-CSRF-TOKEN': CSRF,
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
+                        'Accept':       'application/json',
                     },
                     body: JSON.stringify({
                         phone:  method === 'mobile_money' ? (phone || null) : null,
@@ -665,15 +713,9 @@
                 const data = await res.json();
 
                 if (!data.success) {
-                    const msg = data.message || 'Payment could not be started.';
-                    if (/phone number/i.test(msg) && !phoneWrap.classList.contains('d-none')) {
-                        phoneIn.classList.add('is-invalid');
-                        phoneIn.focus();
-                        phoneIn.addEventListener('input', () => phoneIn.classList.remove('is-invalid'), { once: true });
-                    }
-                    showError(msg);
+                    showError(data.message || 'Payment could not be started.');
                     unspinButton(submitBtn);
-                    return;
+                    return;   // ← watcher keeps running in background
                 }
 
                 if (data.amount_formatted) {
@@ -683,7 +725,7 @@
                 if (data.is_free) {
                     modal.hide();
                     toast('success', data.message || 'Letter is being generated.', 'Success');
-                    setTimeout(() => window.location.reload(), 1000);
+                    setTimeout(() => window.location.reload(), 500);
                     return;
                 }
 
@@ -692,15 +734,76 @@
                     return;
                 }
 
-                modal.hide();
+                // Mobile money prompt sent
                 toast('success', data.message || 'Prompt sent. Approve on your phone.', 'Sent');
-                setTimeout(() => window.location.reload(), 900);
+                submitBtn.disabled = true;
+                submitBtn.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-2"></span>Waiting for payment…';
+                // watcher is already running — just leave it
 
             } catch (e) {
                 showError('Something went wrong: ' + e.message);
                 unspinButton(submitBtn);
             }
         });
+
+        // ── Wait for the deposit to flip to 'completed', then reload ──
+        // The deposit_ref is what the webhook writes; the letter flips to 'paid'
+        // the same instant inside the same transaction, so waiting on the letter
+        // status is equivalent and one less endpoint to worry about.
+        function startPaymentPolling() {
+            const POLL_MS = 5000;
+            const MAX_MS  = 3 * 60 * 1000;    // 3 min for the MTN prompt to be approved
+            const started = Date.now();
+
+            const tick = async () => {
+                if (Date.now() - started > MAX_MS) {
+                    modal.hide();
+                    toast('error',
+                        'Payment is still pending. If you approved the prompt, open this letter again in a minute.',
+                        'Timeout');
+                    unspinButton(submitBtn);
+                    setTimeout(() => window.location.reload(), 500);
+                    return;
+                }
+
+                try {
+                    const r = await fetch(`{{ url('letters') }}/${UUID}/status`, {
+                        headers: { 'Accept': 'application/json' },
+                        cache:   'no-store',
+                    });
+                    if (!r.ok) { setTimeout(tick, POLL_MS); return; }
+
+                    const b = await r.json();
+                    const status = b?.data?.status;
+
+                    if (!status) { setTimeout(tick, POLL_MS); return; }
+
+                    // Payment landed (webhook flipped letter to 'paid'/'processing')
+                    if (status === 'paid' || status === 'processing' || status === 'generated') {
+                        modal.hide();
+                        toast('success', 'Payment confirmed! Generating your letter…', 'Paid');
+                        setTimeout(() => window.location.reload(), 500);
+                        return;
+                    }
+
+                    if (status === 'failed') {
+                        modal.hide();
+                        toast('error', 'Payment failed. Please try again.', 'Failed');
+                        setTimeout(() => window.location.reload(), 800);
+                        return;
+                    }
+
+                    // Still pending_payment → keep waiting
+                    setTimeout(tick, POLL_MS);
+
+                } catch (e) {
+                    setTimeout(tick, POLL_MS);
+                }
+            };
+
+            setTimeout(tick, POLL_MS);
+        }
 
         closeBtn?.addEventListener('click', () => {
             unspinButton(submitBtn);
