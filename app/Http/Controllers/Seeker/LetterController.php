@@ -102,12 +102,36 @@ class LetterController extends Controller
             'job_description' => $request->input('job_description'),
         ];
 
+        $coverPrice = $this->resolveCoverLetterPrice();
+
         return view('seeker.letter.create', [
             'cvFiles'    => $cvFiles,
             'companies'  => $companies['data'] ?? [],
             'inProgress' => $inProgress,
             'prefill'    => $prefill,
+            'coverPrice' => $coverPrice,
         ]);
+
+    }
+
+    protected function resolveCoverLetterPrice(): ?array
+    {
+        $resp = $this->countryService->api('services/pricing/cover-letter', [], 'GET', 300, false);
+
+        if (!is_array($resp) || !($resp['success'] ?? false) || empty($resp['price'])) {
+            \Illuminate\Support\Facades\Log::warning('Cover-letter price fetch failed', ['response' => $resp]);
+            return null;
+        }
+
+        $p = $resp['price'];
+
+        return [
+            'amount_cents'  => (int) ($p['amount_cents']  ?? 0),
+            'formatted'     => (string) ($p['formatted']  ?? ''),
+            'currency_code' => (string) ($p['currency_code'] ?? ''),
+            'currency_sym'  => (string) ($p['currency_sym']  ?? ''),
+            'is_free'       => (bool) ($p['is_free'] ?? false),
+        ];
     }
 
     public function pay(Request $request, $uuid)

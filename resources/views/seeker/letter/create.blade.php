@@ -5,13 +5,12 @@
 
 @section('content')
 @php
-    // Fallback so this page renders even if the controller doesn't pass coverPrice
-    $priceFormatted = $coverPrice['formatted']      ?? 'UGX 3,000';
-    $priceCents     = $coverPrice['amount_cents']   ?? 3000;
-    $priceCurrency  = $coverPrice['currency_code']  ?? 'UGX';
-    $priceIsFree    = $coverPrice['is_free']        ?? false;
+    $priceAvailable = !empty($coverPrice) && !empty($coverPrice['formatted']);
+    $priceFormatted = $coverPrice['formatted']     ?? null;
+    $priceCents     = $coverPrice['amount_cents']  ?? 0;
+    $priceCurrency  = $coverPrice['currency_code'] ?? config('app.country_currency', 'UGX');
+    $priceIsFree    = $coverPrice['is_free']       ?? false;
 @endphp
-
 @php
     $prefill       = $prefill ?? [];
     $prefillSource = in_array($prefill['job_source'] ?? null, ['db', 'manual', 'paste'], true)
@@ -156,13 +155,19 @@
                     </label>
                 </div>
 
-                <div class="alert alert-light-primary d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 gap-sm-0 mb-3 mb-md-4">
-                    <div class="min-w-0">
-                        <div class="fw-bold fs-5 fs-md-4">One-time payment</div>
-                        <div class="text-muted fs-7">{{ $priceFormatted }} per letter. This is not a subscription.</div>
+                @if($priceAvailable)
+                    <div class="alert alert-light-primary d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 gap-sm-0 mb-3 mb-md-4">
+                        <div class="min-w-0">
+                            <div class="fw-bold fs-5 fs-md-4">One-time payment</div>
+                            <div class="text-muted fs-7">{{ $priceFormatted }} per letter. This is not a subscription.</div>
+                        </div>
+                        <div class="fs-3 fs-md-2 fw-bold text-primary">{{ $priceFormatted }}</div>
                     </div>
-                    <div class="fs-3 fs-md-2 fw-bold text-primary">{{ $priceFormatted }}</div>
-                </div>
+                @else
+                    <div class="alert alert-light-warning mb-3 mb-md-4 fs-7">
+                        <strong>Pricing is temporarily unavailable.</strong> Please try again in a moment.
+                    </div>
+                @endif
 
                 <div class="alert alert-light-info fs-7 d-flex align-items-start">
                     <i class="ki-duotone ki-information-5 fs-3 text-info me-2 mt-1">
@@ -217,15 +222,17 @@
                         class="btn btn-success w-100 w-sm-auto {{ empty($inProgress) ? 'd-none' : '' }}"
                         id="submitBtn"
                         @if(!empty($inProgress)) disabled @endif
-                        data-price-formatted="{{ $priceFormatted }}"
+                        data-price-formatted="{{ $priceFormatted ?? '' }}"
                         data-price-cents="{{ $priceCents }}"
                         data-price-currency="{{ $priceCurrency }}"
                         data-locked="{{ !empty($inProgress) ? '1' : '0' }}">
                     @if(!empty($inProgress))
                         <span class="spinner-border spinner-border-sm me-2"></span>
                         Generating your letter&hellip; please wait
-                    @else
+                    @elseif($priceAvailable)
                         Pay {{ $priceFormatted }} &amp; Generate
+                    @else
+                        Generate Letter
                     @endif
                 </button>
             </div>
@@ -276,6 +283,7 @@
                         </div>
                     </label>
 
+                    {{-- 
                     <label class="d-flex align-items-center gap-2 gap-md-3 p-3 border rounded cursor-pointer pm-method-option">
                         <input type="radio" name="pm_method" value="card" class="form-check-input mt-0 flex-shrink-0">
                         <i class="ki-duotone ki-credit-cart fs-2 text-success flex-shrink-0">
@@ -286,6 +294,7 @@
                             <div class="text-muted fs-8">Visa or Mastercard — redirect to a secure page</div>
                         </div>
                     </label>
+                    --}}
                 </div>
 
                 {{-- Phone input (mobile money only) --}}
@@ -693,7 +702,9 @@
 
     function restoreSubmitButton() {
         els.submitBtn.disabled = false;
-        els.submitBtn.innerHTML = 'Pay ' + PRICE_FORMAT + ' &amp; Generate';
+        els.submitBtn.innerHTML = PRICE_FORMAT
+            ? 'Pay ' + PRICE_FORMAT + ' &amp; Generate'
+            : 'Generate Letter';
     }
 
     // ── Payment modal handlers ────────────────────────────────
@@ -708,19 +719,12 @@
         const warning   = document.getElementById('pm_warning_text');
 
         function syncMethod() {
-            const method = modalEl.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
-            phoneWrap.classList.toggle('d-none', method === 'card');
+            phoneWrap.classList.remove('d-none');
             errorEl.classList.add('d-none');
             errorEl.textContent = '';
-
-            if (method === 'card') {
-                warning.innerHTML = '<strong>Have your card details ready.</strong> ' +
-                    'You will be redirected to a secure payment page to complete the transaction.';
-            } else {
-                warning.innerHTML = '<strong>Make sure you have enough mobile money credit.</strong> ' +
-                    'Your balance must cover the amount above before you can approve the PIN prompt. ' +
-                    'If the payment fails, contact support.';
-            }
+            warning.innerHTML = '<strong>Make sure you have enough mobile money credit.</strong> ' +
+                'Your balance must cover the amount above before you can approve the PIN prompt. ' +
+                'If the payment fails, contact support.';
         }
 
         modalEl.querySelectorAll('input[name="pm_method"]').forEach(r => {
@@ -740,7 +744,7 @@
                 return;
             }
 
-            const method = modalEl.querySelector('input[name="pm_method"]:checked')?.value || 'mobile_money';
+            const method = 'mobile_money';
             const phone  = (phoneIn.value || '').replace(/[^\d+]/g, '').trim();
 
             if (method === 'mobile_money' && phone && !/^\+\d{9,15}$/.test(phone)) {
