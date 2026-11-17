@@ -40,6 +40,7 @@
                         </div>
                     </label>
 
+                    {{--
                     <label class="d-flex align-items-center gap-2 gap-md-3 p-3 border rounded cursor-pointer pm-method-option">
                         <input type="radio" name="pm_method" value="card" class="form-check-input mt-0 flex-shrink-0">
                         <i class="ki-duotone ki-credit-cart fs-2 text-success flex-shrink-0">
@@ -50,6 +51,7 @@
                             <div class="text-muted fs-8">Visa or Mastercard — redirect to a secure page</div>
                         </div>
                     </label>
+                    --}}
                 </div>
 
                 {{-- Phone input (mobile money only) --}}
