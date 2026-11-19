@@ -38,4 +38,21 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    public function stats()
+    {
+        if (!Session::has('user')) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $response = $this->countryService->api(
+            'user/subscriptions/stats',
+            [],
+            'GET',
+            0,
+            false
+        );
+
+        return response()->json($response);
+    }
+
 }
