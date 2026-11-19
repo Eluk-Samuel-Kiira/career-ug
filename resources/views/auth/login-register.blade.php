@@ -99,7 +99,7 @@
 					<p style="color:#B9C6D6;">Switch anytime — your account adapts to job seeker or employer tools.</p>
 
 					<ul class="jp-brand-list">
-						<li><i class="ki-duotone ki-flash fs-4"><span class="path1"></span><span class="path2"></span></i> AI-matched roles and candidates, ranked by fit</li>
+						<li><i class="ki-duotone ki-medal-star fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i> AI-matched roles and candidates, ranked by fit</li>
 						<li><i class="ki-duotone ki-message-text-2 fs-4"><span class="path1"></span><span class="path2"></span></i> Job alerts and applicant updates on WhatsApp</li>
 						<li><i class="ki-duotone ki-shield-tick fs-4"><span class="path1"></span><span class="path2"></span></i> Verified employers and screened candidate profiles</li>
 						<li><i class="ki-duotone ki-document fs-4"><span class="path1"></span><span class="path2"></span></i> CV review, rewriting and cover letters on demand</li>

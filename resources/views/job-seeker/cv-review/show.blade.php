@@ -991,54 +991,155 @@
 </div>
 
 {{-- ============================================================= --}}
-{{-- ANSWERS MODAL — submit or edit                               --}}
+{{-- ANSWERS MODAL — 5-step wizard                                --}}
 {{-- ============================================================= --}}
-<div class="modal fade" id="answersModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+<div class="modal fade" id="answersModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="fw-bold" id="answersModalTitle">Fill In The Gaps</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="answersForm">
-                @csrf
-                <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
-                    <p class="text-muted mb-4">
-                        Tell us about each gap our Team found. Be as specific as you can — this
-                        is what our expert will use when rewriting your CV.
-                    </p>
 
-                    @forelse($missingFields as $field)
-                        <div class="fv-row mb-4">
-                            <label class="fw-semibold mb-2">
-                                {{ ucwords(str_replace('_', ' ', $field)) }}
-                            </label>
-                            <textarea name="answers[{{ $field }}]"
-                                    rows="3"
-                                    class="form-control @error('answers.' . $field) is-invalid @enderror"
-                                    placeholder="Tell us about {{ str_replace('_', ' ', $field) }}..."
-                                    required
-                                    minlength="5">{{ $answers[$field] ?? '' }}</textarea>
-                            <div class="invalid-feedback">
-                                Please answer this question before continuing.
+            {{-- ── HEADER: persuasion + progress ──────────────── --}}
+            <div class="modal-header border-0 pb-2">
+                <div class="w-100">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <h3 class="fw-bold mb-1" id="answersModalTitle">
+                                <i class="ki-duotone ki-rocket fs-2 text-primary me-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                                Let's Build You an Interview-Winning CV
+                            </h3>
+                            <div class="text-muted fs-7">
+                                Just <strong>5 quick questions</strong> — takes about 2 minutes.
+                                Your answers tell our AI the real, specific details that make
+                                recruiters call you back.
                             </div>
                         </div>
-                    @empty
-                        <div class="alert alert-light-info">
-                            No gaps to fill — you can proceed to payment.
+                        <button type="button" class="btn-close flex-shrink-0 mt-1" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    {{-- Progress bar (fills as they advance) --}}
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted fs-8 fw-semibold" id="wizStepLabel">Question 1 of 5</span>
+                            <span class="text-muted fs-8 fw-semibold" id="wizPercentLabel">0%</span>
                         </div>
-                    @endforelse
+                        <div class="progress h-8px">
+                            <div class="progress-bar bg-primary"
+                                 id="wizProgressBar"
+                                 role="progressbar"
+                                 style="width: 0%"
+                                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Save for Later</button>
-                    <button type="submit" class="btn btn-primary" id="answersBtn">
+            </div>
+
+            <form id="answersForm">
+                @csrf
+                <div class="modal-body pt-2" style="max-height:60vh;overflow-y:auto;">
+
+                    {{-- ══ INTRO SCREEN — shown on step 0 ══════════════ --}}
+                    <div class="wizard-step" data-step="0">
+                        <div class="text-center py-4">
+                            <div class="symbol symbol-80px mb-4">
+                                <span class="symbol-label bg-light-primary">
+                                    <i class="ki-duotone ki-document fs-4x text-primary">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                </span>
+                            </div>
+                            <h4 class="fw-bold mb-2">Your CV is about to get much stronger.</h4>
+                            <p class="text-gray-700 fs-6 mb-4 mx-auto" style="max-width: 520px;">
+                                Most CVs get rejected by ATS software before a human ever sees them.
+                                Why? Because they're vague — "responsible for X", "hard-working",
+                                no numbers, no specifics.
+                            </p>
+                            <p class="text-gray-700 fs-6 mb-4 mx-auto" style="max-width: 520px;">
+                                Our AI is ready to rewrite yours. But it needs <strong>real facts</strong>
+                                only you know — not guesses. Your answers power every line that makes
+                                a recruiter stop scrolling and call you.
+                            </p>
+                            <div class="alert alert-light-success d-inline-flex align-items-start gap-2 text-start mb-0 mx-auto" style="max-width: 520px;">
+                                <i class="ki-duotone ki-check-circle fs-3 text-success mt-1 flex-shrink-0">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                                <div class="fs-7">
+                                    <strong>2 minutes of effort. A CV that lands interviews.</strong><br>
+                                    Every detail you share goes straight into the AI's rewrite.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ══ QUESTION SCREENS — 1..N generated from $missingFields ══ --}}
+                    @foreach($missingFields as $i => $field)
+                        @php
+                            // Split "Topic: question" into topic + question for nicer display
+                            $parts = explode(':', $field, 2);
+                            $topic = count($parts) === 2 ? trim($parts[0]) : 'Details';
+                            $question = count($parts) === 2 ? trim($parts[1]) : trim($field);
+                        @endphp
+                        <div class="wizard-step d-none" data-step="{{ $i + 1 }}">
+                            <div class="mb-4">
+                                <span class="badge badge-light-primary fw-bold fs-7 mb-2">{{ strtoupper($topic) }}</span>
+                                <h4 class="fw-bold mb-3">{{ $question }}</h4>
+                                <p class="text-muted fs-7 mb-4">
+                                    Write as much as you can — the more detail, the better
+                                    our AI can make this specific section of your CV stand out.
+                                </p>
+
+                                <label class="fw-semibold fs-7 mb-2">Your answer</label>
+                                <textarea name="answers[{{ $field }}]"
+                                        rows="6"
+                                        class="form-control form-control-lg answer-input"
+                                        data-step="{{ $i + 1 }}"
+                                        placeholder="Type your answer here. Be specific — names, dates, numbers, real duties you performed..."
+                                        minlength="5">{{ $answers[$field] ?? '' }}</textarea>
+                                <div class="invalid-feedback">
+                                    Please answer this question before continuing.
+                                </div>
+                                <div class="text-muted fs-8 mt-1">
+                                    <i class="ki-duotone ki-information-5 fs-7 me-1">
+                                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                    </i>
+                                    Short answers are fine — even one sentence helps.
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+
+                </div>
+
+                <div class="modal-footer border-0 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-light" id="wizBackBtn" disabled>
+                        <i class="ki-duotone ki-arrow-left fs-4 me-1">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        Back
+                    </button>
+
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        Save for Later
+                    </button>
+
+                    <button type="button" class="btn btn-primary" id="wizNextBtn">
                         <span class="indicator-label">
-                            <i class="ki-duotone ki-check-circle fs-3 me-2">
+                            Get Started
+                            <i class="ki-duotone ki-arrow-right fs-4 ms-1">
                                 <span class="path1"></span><span class="path2"></span>
                             </i>
-                            Save & Continue to Payment
                         </span>
-                        <span class="indicator-progress">Saving...
+                    </button>
+
+                    <button type="submit" class="btn btn-success d-none" id="wizFinishBtn">
+                        <span class="indicator-label">
+                            <i class="ki-duotone ki-check-circle fs-4 me-1">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            Save &amp; Continue to Payment
+                        </span>
+                        <span class="indicator-progress">
+                            Saving...
                             <span class="spinner-border spinner-border-sm ms-2"></span>
                         </span>
                     </button>
@@ -1479,7 +1580,7 @@ const confirmAction = (function () {
 
 
 // ─────────────────────────────────────────────────────────────
-// ANSWERS MODAL — init immediately (DOM is ready by the time this runs)
+// ANSWERS MODAL — 5-step wizard
 // ─────────────────────────────────────────────────────────────
 (function () {
     const answersModalEl = document.getElementById('answersModal');
@@ -1487,98 +1588,247 @@ const confirmAction = (function () {
         console.warn('[answers-modal] #answersModal not found in DOM');
         return;
     }
-
-    // Guard against double-init
     if (answersModalEl.dataset.initialized === '1') return;
     answersModalEl.dataset.initialized = '1';
 
-    const answersModal = new bootstrap.Modal(answersModalEl);
+    const totalQuestions = {{ count($missingFields) }};
+    const LAST_STEP      = totalQuestions;  // step 0 = intro, 1..N = questions
+    const answersModal   = new bootstrap.Modal(answersModalEl);
     window.__answersModal = answersModal;
 
-    // Delegated click — matches class OR fallback ID for compat
+    // ── DOM refs ────────────────────────────────────────────
+    const steps         = answersModalEl.querySelectorAll('.wizard-step');
+    const inputs        = answersModalEl.querySelectorAll('.answer-input');
+    const progressBar   = document.getElementById('wizProgressBar');
+    const stepLabel     = document.getElementById('wizStepLabel');
+    const percentLabel  = document.getElementById('wizPercentLabel');
+    const backBtn       = document.getElementById('wizBackBtn');
+    const nextBtn       = document.getElementById('wizNextBtn');
+    const finishBtn     = document.getElementById('wizFinishBtn');
+    const form          = document.getElementById('answersForm');
+
+    let currentStep = 0;
+
+    // ── Visual: render the current step ─────────────────────
+    function showStep(step) {
+        steps.forEach((el, idx) => {
+            el.classList.toggle('d-none', idx !== step);
+        });
+
+        // Progress = (number of completed questions) / total
+        const completed = Math.max(0, step);
+        const pct = totalQuestions > 0
+            ? Math.round((completed / totalQuestions) * 100)
+            : 0;
+
+        progressBar.style.width    = pct + '%';
+        progressBar.setAttribute('aria-valuenow', pct);
+        percentLabel.textContent   = pct + '%';
+
+        if (step === 0) {
+            stepLabel.textContent = 'Getting started';
+        } else if (step === LAST_STEP) {
+            stepLabel.textContent = 'Question ' + step + ' of ' + totalQuestions + ' · Last one!';
+        } else {
+            stepLabel.textContent = 'Question ' + step + ' of ' + totalQuestions;
+        }
+
+        // Button visibility
+        backBtn.disabled   = step === 0;
+
+        // Show "Next" until the last question, then show "Finish"
+        const onLastStep = step === LAST_STEP;
+        nextBtn.classList.toggle('d-none', onLastStep);
+        finishBtn.classList.toggle('d-none', !onLastStep);
+
+        // Scroll to top of body so the next question is visible
+        const body = answersModalEl.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+
+        // Focus the textarea of the current question
+        if (step > 0) {
+            const input = answersModalEl.querySelector(`.answer-input[data-step="${step}"]`);
+            if (input) setTimeout(() => input.focus(), 150);
+        }
+
+        currentStep = step;
+    }
+
+    // ── Validate the current step ───────────────────────────
+    function validateCurrentStep() {
+        if (currentStep === 0) return true;     // intro screen, nothing to validate
+        const input = answersModalEl.querySelector(`.answer-input[data-step="${currentStep}"]`);
+        if (!input) return true;
+
+        const value = input.value.trim();
+        if (value.length < 5) {
+            input.classList.add('is-invalid');
+            input.focus();
+            window.showToast?.(
+                'error',
+                'Please write at least a few words before continuing.',
+                'Answer required'
+            );
+            return false;
+        }
+        input.classList.remove('is-invalid');
+        return true;
+    }
+
+    // ── Button handlers ─────────────────────────────────────
+    nextBtn.addEventListener('click', () => {
+        if (currentStep === 0) {
+            // From intro → question 1
+            showStep(1);
+            return;
+        }
+        if (!validateCurrentStep()) return;
+        if (currentStep < LAST_STEP) showStep(currentStep + 1);
+    });
+
+    backBtn.addEventListener('click', () => {
+        if (currentStep > 0) showStep(currentStep - 1);
+    });
+
+    // Clear invalid state when the user types
+    inputs.forEach(inp => {
+        inp.addEventListener('input', () => {
+            if (inp.value.trim().length >= 5) {
+                inp.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    // ── Open triggers ───────────────────────────────────────
     document.addEventListener('click', function (e) {
         const trigger = e.target.closest('.open-answers-btn, #open-answers-btn, #openAnswersBtn');
         if (!trigger) return;
         e.preventDefault();
+        resetWizard();
         answersModal.show();
     });
 
-    // Auto-open once when status = ai_reviewed and no session flag yet
+    // ── Reset on each open ──────────────────────────────────
+    function resetWizard() {
+        // If there are no questions (edge case), just show intro
+        if (totalQuestions === 0) {
+            showStep(0);
+            return;
+        }
+        showStep(0);
+    }
+
+    answersModalEl.addEventListener('show.bs.modal', resetWizard);
+
+    // ── Auto-open for ai_reviewed on first visit ────────────
     if (STATUS === 'ai_reviewed') {
         const key = 'cv_review_answers_modal_' + UUID;
         if (!sessionStorage.getItem(key)) {
             sessionStorage.setItem(key, '1');
-            // Small delay ensures Bootstrap backdrop is painted first
-            setTimeout(() => answersModal.show(), 300);
+            setTimeout(() => {
+                resetWizard();
+                answersModal.show();
+            }, 300);
         }
     }
+
+    // ── Submit (only fires from the Finish button) ──────────
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Validate every question
+        const missing = [];
+        inputs.forEach(inp => {
+            if (!inp.value.trim() || inp.value.trim().length < 5) {
+                inp.classList.add('is-invalid');
+                missing.push(inp.dataset.step);
+            } else {
+                inp.classList.remove('is-invalid');
+            }
+        });
+
+        if (missing.length > 0) {
+            window.showToast?.(
+                'error',
+                'Please answer all ' + missing.length + ' remaining question(s).',
+                'Almost there!'
+            );
+            // Jump to the first empty one
+            showStep(parseInt(missing[0], 10));
+            return;
+        }
+
+        const btn = finishBtn;
+        btn.disabled = true;
+        btn.setAttribute('data-kt-indicator', 'on');
+        btn.querySelector('.indicator-label')?.classList.add('d-none');
+        btn.querySelector('.indicator-progress')?.classList.remove('d-none');
+
+        const fd = new FormData(form);
+        const answers = {};
+        for (const [k, v] of fd.entries()) {
+            const m = k.match(/answers\[(.+)\]/);
+            if (m) answers[m[1]] = v;
+        }
+
+        fetch(`/cv-review/${UUID}/answers`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ answers }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.showToast?.('success', data.message || 'Answers saved. Let\'s get your CV rewritten!', 'Saved');
+                answersModal.hide();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                window.showToast?.('error', data.message || 'Could not save your answers.', 'Error');
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+                btn.querySelector('.indicator-label')?.classList.remove('d-none');
+                btn.querySelector('.indicator-progress')?.classList.add('d-none');
+            }
+        })
+        .catch(() => {
+            window.showToast?.('error', 'Network error. Please try again.', 'Error');
+            btn.disabled = false;
+            btn.removeAttribute('data-kt-indicator');
+            btn.querySelector('.indicator-label')?.classList.remove('d-none');
+            btn.querySelector('.indicator-progress')?.classList.add('d-none');
+        });
+    });
 })();
 
-// ═══════════════════════════════════════════════════════════════
-// ANSWER SUBMIT — one handler, validations + fetch
-// ═══════════════════════════════════════════════════════════════
-document.addEventListener('submit', function (e) {
-    const form = e.target;
-    if (!form || form.id !== 'answersForm') return;
-    e.preventDefault();
+// Persist each answer as it's typed (survives reload, tab close, etc.)
+const DRAFT_KEY = 'cv_review_draft_' + UUID;
+const savedDraft = (() => {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}'); }
+    catch { return {}; }
+})();
 
-    const textareas = form.querySelectorAll('textarea[name^="answers["]');
-    const missing = [];
-
-    textareas.forEach(ta => {
-        if (!ta.value.trim()) {
-            ta.classList.add('is-invalid');
-            const field = ta.name.match(/answers\[(.+)\]/)?.[1] || 'field';
-            missing.push(field);
-        } else {
-            ta.classList.remove('is-invalid');
-        }
-    });
-
-    if (missing.length > 0) {
-        window.showToast?.(
-            'error',
-            'Please fill in all ' + missing.length + ' field(s) before continuing.',
-            'Missing Answers'
-        );
-        return;
+inputs.forEach(inp => {
+    const fieldName = inp.name.match(/answers\[(.+)\]/)?.[1];
+    if (fieldName && savedDraft[fieldName] && !inp.value) {
+        inp.value = savedDraft[fieldName];
     }
 
-    const btn = document.getElementById('answersBtn');
-    window.showButtonSpinner?.(btn);
-
-    const fd = new FormData(form);
-    const answers = {};
-    for (const [k, v] of fd.entries()) {
-        const m = k.match(/answers\[(.+)\]/);
-        if (m) answers[m[1]] = v;
-    }
-
-    fetch(`/cv-review/${UUID}/answers`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': CSRF,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify({ answers }),
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.showToast?.('success', data.message || 'Answers saved.', 'Saved');
-            window.__answersModal?.hide();
-            setTimeout(() => location.reload(), 800);
-        } else {
-            window.showToast?.('error', data.message || 'Failed to save.', 'Error');
-            window.hideButtonSpinner?.(btn);
-        }
-    })
-    .catch(() => {
-        window.showToast?.('error', 'Network error.', 'Error');
-        window.hideButtonSpinner?.(btn);
+    inp.addEventListener('input', () => {
+        if (!fieldName) return;
+        savedDraft[fieldName] = inp.value;
+        try {
+            sessionStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+        } catch {}
     });
 });
+
+// Clear the draft on successful submit
+// (add this inside the .then() success branch:)
+// sessionStorage.removeItem(DRAFT_KEY);
 
 // ═══════════════════════════════════════════════════════════════
 // Run AI Review

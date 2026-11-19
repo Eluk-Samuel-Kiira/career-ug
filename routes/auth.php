@@ -186,6 +186,7 @@ Route::middleware(['auth.web'])->prefix('auto-apply')->name('auto-apply.')->grou
 
 Route::middleware(['auth.web'])->prefix('subscription')->name('subscription.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Seeker\SubscriptionController::class, 'index'])->name('index');
+    Route::get('/stats', [\App\Http\Controllers\Seeker\SubscriptionController::class, 'stats'])->name('stats');
 });
 
 Route::middleware(['auth.web'])->prefix('alerts/log')->name('alert.log.')->group(function () {
